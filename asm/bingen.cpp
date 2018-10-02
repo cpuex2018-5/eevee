@@ -4,14 +4,6 @@
 #include <string>
 #include <map>
 
-#ifndef __FUNCTION_NAME__
-    #ifdef WIN32   //WINDOWS
-        #define __FUNCTION_NAME__   __FUNCTION__
-    #else
-        #define __FUNCTION_NAME__   __func__
-    #endif
-#endif
-
 std::map<std::string, int> regmap =
 {
     { "zero", 0 },
@@ -64,29 +56,44 @@ void ParseOffset(std::string arg, std::string* reg, uint32_t* offset) {
 }
 
 uint32_t lui (std::string rd, uint32_t imm) {
-    CheckImmediate(imm, 20, __FUNCTION_NAME__);
+    CheckImmediate(imm, 20, "lui");
     return (imm << 12) + (regmap[rd] << 7) + 0b0110111;
 }
 
 uint32_t auipc (std::string rd, uint32_t imm) {
-    CheckImmediate(imm, 20, __FUNCTION_NAME__);
+    CheckImmediate(imm, 20, "auipc");
     return (imm << 12) + (regmap[rd] << 7) + 0b0010111;
 }
 
 uint32_t jal (std::string rd, uint32_t imm) {
     CheckImmediate(imm, 20, "jal");
-    // TODO
-    return 0;
+    return ((imm & 0x80000) << 31) +  // imm[20]
+           ((imm & 0x3ff) << 21) +    // imm[10:1]
+           ((imm & 0x400) << 20) +    // imm[11]
+           ((imm & 0x7f800) << 12) +  // imm[19:12]
+           (regmap[rd] << 7) + 0b1101111;
 }
 
 uint32_t jalr (std::string rd, std::string rs1, uint32_t imm) {
     CheckImmediate(imm, 12, "jalr");
-    return (imm << 20) + (regmap[rs1] << 14) + (regmap[rd] << 7) + 0b1100111;
+    return (imm << 20) + (regmap[rs1] << 15) + (regmap[rd] << 7) + 0b1100111;
 }
 
 // beq, bne, blt, bge, bltu, bgeu
 uint32_t branch (std::string mnemo, std::string rs1, std::string rs2, uint32_t offset) {
-    return 0;
+    CheckImmediate(offset, 12, "jalr");
+    uint32_t funct3;
+    if (mnemo == "beq") funct3 = 0b000;
+    if (mnemo == "bne") funct3 = 0b001;
+    if (mnemo == "blt") funct3 = 0b100;
+    if (mnemo == "bge") funct3 = 0b101;
+    if (mnemo == "bltu") funct3 = 0b110;
+    if (mnemo == "bgeu") funct3 = 0b111;
+    return ((offset & 0x800) << 31) +
+           ((offset & 0x400) << 7) +
+           ((offset & 0x3f0) << 24) +
+           ((offset & 0xf) << 8) +
+           (regmap[rs2] << 20) + (regmap[rs1] << 15) + (funct3 << 12) + 0b1100011;
 }
 
 // lb, lh, lw, lbu, lhu
