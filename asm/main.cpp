@@ -1,8 +1,7 @@
 #include <iostream>
-#include <sstream>
 #include <fstream>
 #include <string>
-#include "asmgen.h"
+#include "bingen.h"
 
 // 2-pass assembler of EEVEE (32-bit)
 int main(int argc, char* argv[])
@@ -29,12 +28,7 @@ int main(int argc, char* argv[])
     // Round 1: Replace the instructions with bytecodes
     while (getline(ifs, str)) {
         // Parse the input.
-        std::istringstream istr(str);
-        std::string mnemo, dst, src1, src2;
-        istr >> mnemo >> dst >> src1 >> src2;
-        if (dst.back() == ',') dst.pop_back();
-        if (src1.back() == ',') src1.pop_back();
-        if (src2.back() == ',') src2.pop_back();
+        bingen(str);
     }
 
     // Round 2: Replace the labels with the actual PC
