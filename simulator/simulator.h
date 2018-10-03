@@ -116,3 +116,4 @@ Op *decode_j(unsigned int inst,Op *op);
 
 //util.c
 unsigned int get_binary(unsigned int,int,int);
+void usage();

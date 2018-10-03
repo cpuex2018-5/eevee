@@ -3,9 +3,6 @@
 #include "./simulator.h"
 #define MEM_SIZE 0x100000
 #define STACK_POS 0xfffff
-void usage(){
-  fprintf(stderr,"Usage: eevee_sim <file>");
-}
 
 int main(int argc,char **argv){
 
@@ -24,10 +21,10 @@ int main(int argc,char **argv){
   Simulator *sim = init(MEM_SIZE,STACK_POS);
 
   load(sim,fp);
-  
-  exec(sim);
-  
+  //exec(sim);
   fclose(fp);
-  
+  destroy(sim);
+  free(sim);
+  sim=NULL;
   exit(0);
 }
