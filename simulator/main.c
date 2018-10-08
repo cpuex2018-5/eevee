@@ -1,11 +1,8 @@
 #include<stdio.h>
 #include<stdlib.h>
-#include "./sim.h"
-#define MEM_SIZE 4194304
-
-void usage(){
-  fprintf(stderr,"Usage: eevee_sim <file>");
-}
+#include "./simulator.h"
+#define MEM_SIZE 0x100000
+#define STACK_POS 0xfffff
 
 int main(int argc,char **argv){
 
@@ -21,13 +18,13 @@ int main(int argc,char **argv){
     exit(1);
   }
 
-  Simulator *sim = init(MEM_SIZE);
+  Simulator *sim = init(MEM_SIZE,STACK_POS);
 
   load(sim,fp);
-  
-  exec(sim);
-  
+  //exec(sim);
   fclose(fp);
-  
+  destroy(sim);
+  free(sim);
+  sim=NULL;
   exit(0);
 }
