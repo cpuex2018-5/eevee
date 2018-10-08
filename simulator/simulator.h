@@ -85,7 +85,7 @@ typedef struct {
   int registers[REG_NUMBER];
   float f_registers[REG_NUMBER];
   char *text_memory;
-  char *data_memory;
+  unsigned char *data_memory;
   unsigned int text_size;
 } Simulator;
 
