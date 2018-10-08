@@ -20,7 +20,7 @@ uint32_t branch (std::string mnemo, std::string rs1, std::string rs2, uint32_t o
 uint32_t load (std::string mnemo, std::string rd, std::string rs1, uint32_t offset);
 
 // sb, sh, sw
-uint32_t store (std::string mnemo, std::string rd, std::string rs1, uint32_t offset);
+uint32_t store (std::string mnemo, std::string rs2, std::string rs1, uint32_t offset);
 
 // addi, slti, sltiu, xori, ori, andi
 uint32_t op_imm (std::string mnemo, std::string rd, std::string rs1, uint32_t imm);

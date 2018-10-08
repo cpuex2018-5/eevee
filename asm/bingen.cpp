@@ -2,7 +2,11 @@
 
 #include <sstream>
 #include <string>
+#include <utility>
+#include <vector>
 #include <map>
+
+typedef std::vector<std::pair<int, uint32_t> >  Fields;
 
 std::map<std::string, int> regmap =
 {
@@ -41,6 +45,15 @@ std::map<std::string, int> regmap =
     { "t6", 31 }
 };
 
+uint32_t Pack(Fields fields) {
+    uint32_t ret = 0;
+    for (const auto& field : fields) {
+        ret <<= field.first;
+        ret += field.second;
+    }
+    return ret;
+}
+
 void CheckImmediate(uint32_t imm, int range, std::string func_name) {
     if (imm >= (1 << range)) {
         std::cout << "ERROR(" << func_name << "): The immediate value should be smaller than 2 ^ " << range << std::endl;
@@ -57,26 +70,43 @@ void ParseOffset(std::string arg, std::string* reg, uint32_t* offset) {
 
 uint32_t lui (std::string rd, uint32_t imm) {
     CheckImmediate(imm, 20, "lui");
-    return (imm << 12) + (regmap[rd] << 7) + 0b0110111;
+    Fields fields;
+    fields.emplace_back(7, 0b0110111);
+    fields.emplace_back(5, regmap[rd]);
+    fields.emplace_back(20, imm);
+    return Pack(fields);
 }
 
 uint32_t auipc (std::string rd, uint32_t imm) {
     CheckImmediate(imm, 20, "auipc");
-    return (imm << 12) + (regmap[rd] << 7) + 0b0010111;
+    Fields fields;
+    fields.emplace_back(7, 0b0010111);
+    fields.emplace_back(5, regmap[rd]);
+    fields.emplace_back(20, imm);
+    return Pack(fields);
 }
 
 uint32_t jal (std::string rd, uint32_t imm) {
     CheckImmediate(imm, 20, "jal");
-    return ((imm & 0x80000) << 31) +  // imm[20]
-           ((imm & 0x3ff) << 21) +    // imm[10:1]
-           ((imm & 0x400) << 20) +    // imm[11]
-           ((imm & 0x7f800) << 12) +  // imm[19:12]
-           (regmap[rd] << 7) + 0b1101111;
+    Fields fields;
+    fields.emplace_back(7, 0b1101111);
+    fields.emplace_back(5, regmap[rd]);
+    fields.emplace_back(8, imm & 0x7f800);
+    fields.emplace_back(1, imm & 0x400);
+    fields.emplace_back(10, imm & 0x3ff);
+    fields.emplace_back(1, imm & 0x80000);
+    return Pack(fields);
 }
 
 uint32_t jalr (std::string rd, std::string rs1, uint32_t imm) {
     CheckImmediate(imm, 12, "jalr");
-    return (imm << 20) + (regmap[rs1] << 15) + (regmap[rd] << 7) + 0b1100111;
+    Fields fields;
+    fields.emplace_back(7, 0b1100111);
+    fields.emplace_back(5, regmap[rd]);
+    fields.emplace_back(3, 0);
+    fields.emplace_back(5, regmap[rs1]);
+    fields.emplace_back(12, imm);
+    return Pack(fields);
 }
 
 // beq, bne, blt, bge, bltu, bgeu
@@ -89,11 +119,16 @@ uint32_t branch (std::string mnemo, std::string rs1, std::string rs2, uint32_t o
     if (mnemo == "bge") funct3 = 0b101;
     if (mnemo == "bltu") funct3 = 0b110;
     if (mnemo == "bgeu") funct3 = 0b111;
-    return ((offset & 0x800) << 31) +
-           ((offset & 0x400) << 7) +
-           ((offset & 0x3f0) << 24) +
-           ((offset & 0xf) << 8) +
-           (regmap[rs2] << 20) + (regmap[rs1] << 15) + (funct3 << 12) + 0b1100011;
+    Fields fields;
+    fields.emplace_back(7, 0b1100011);
+    fields.emplace_back(1, offset & 0x400);
+    fields.emplace_back(4, offset & 0xf);
+    fields.emplace_back(3, funct3);
+    fields.emplace_back(5, regmap[rs1]);
+    fields.emplace_back(5, regmap[rs2]);
+    fields.emplace_back(6, offset & 0x3f0);
+    fields.emplace_back(1, offset & 0x800);
+    return Pack(fields);
 }
 
 // lb, lh, lw, lbu, lhu
@@ -105,27 +140,88 @@ uint32_t load (std::string mnemo, std::string rd, std::string rs1, uint32_t offs
     if (mnemo == "lw") funct3 = 0b010;
     if (mnemo == "lbu") funct3 = 0b100;
     if (mnemo == "lhu") funct3 = 0b101;
-    return (offset << 20) + (regmap[rs1] << 14) + (funct3 << 11) + (regmap[rd] << 7) + 0b0000011;
+    Fields fields;
+    fields.emplace_back(7, 0b0000011);
+    fields.emplace_back(5, regmap[rd]);
+    fields.emplace_back(3, 0);
+    fields.emplace_back(5, regmap[rs1]);
+    fields.emplace_back(12, offset);
+    return Pack(fields);
 }
 
 // sb, sh, sw
-uint32_t store (std::string mnemo, std::string rd, std::string rs1, uint32_t offset) {
-    return 0;
+uint32_t store (std::string mnemo, std::string rs2, std::string rs1, uint32_t offset) {
+    CheckImmediate(offset, 12, "store");
+    uint32_t funct3;
+    if (mnemo == "sb") funct3 = 0b000;
+    if (mnemo == "sh") funct3 = 0b001;
+    if (mnemo == "sw") funct3 = 0b010;
+    Fields fields;
+    fields.emplace_back(7, 0b0100011);
+    fields.emplace_back(5, offset & 0x1f);
+    fields.emplace_back(3, funct3);
+    fields.emplace_back(5, regmap[rs1]);
+    fields.emplace_back(5, regmap[rs2]);
+    fields.emplace_back(7, offset & 0xfe);
+    return Pack(fields);
 }
 
 // addi, slti, sltiu, xori, ori, andi
 uint32_t op_imm (std::string mnemo, std::string rd, std::string rs1, uint32_t imm) {
-    return 0;
+    CheckImmediate(imm, 12, "op_imm");
+    uint32_t funct3;
+    if (mnemo == "addi")  funct3 = 0b000;
+    if (mnemo == "slti")  funct3 = 0b010;
+    if (mnemo == "sltiu") funct3 = 0b011;
+    if (mnemo == "xori")  funct3 = 0b100;
+    if (mnemo == "ori")   funct3 = 0b110;
+    if (mnemo == "andi")  funct3 = 0b111;
+    Fields fields;
+    fields.emplace_back(7, 0b0010011);
+    fields.emplace_back(5, regmap[rd]);
+    fields.emplace_back(3, funct3);
+    fields.emplace_back(5, regmap[rs1]);
+    fields.emplace_back(12, imm);
+    return Pack(fields);
 }
 
 // slli, srli, srai
-uint32_t op_imm_shift (std::string mnemo, std::string rd, std::string rs1, uint32_t imm) {
-    return 0;
+uint32_t op_imm_shift (std::string mnemo, std::string rd, std::string rs1, uint32_t shamt) {
+    CheckImmediate(shamt, 5, "op_imm_shift");
+    uint32_t funct3 = (mnemo == "slli") ? 0b001 : 0b101;
+    uint32_t funct7 = (mnemo == "srai") ? 0b0100000 : 0b0000000;
+    Fields fields;
+    fields.emplace_back(7, 0b0010011);
+    fields.emplace_back(5, regmap[rd]);
+    fields.emplace_back(3, funct3);
+    fields.emplace_back(5, regmap[rs1]);
+    fields.emplace_back(5, shamt);
+    fields.emplace_back(7, funct7);
+    return Pack(fields);
 }
 
 // add, sub, sll, slt, sltu, xor, srl, sra, or, and
 uint32_t op (std::string mnemo, std::string rd, std::string rs1, std::string rs2) {
-    return 0;
+    uint32_t funct3;
+    if (mnemo == "add")  funct3 = 0b000;
+    if (mnemo == "sub")  funct3 = 0b000;
+    if (mnemo == "sll")  funct3 = 0b001;
+    if (mnemo == "slt")  funct3 = 0b010;
+    if (mnemo == "sltu") funct3 = 0b011;
+    if (mnemo == "xor")  funct3 = 0b100;
+    if (mnemo == "srl")  funct3 = 0b101;
+    if (mnemo == "sra")  funct3 = 0b101;
+    if (mnemo == "or")   funct3 = 0b110;
+    if (mnemo == "and")  funct3 = 0b111;
+    uint32_t funct7 = (mnemo == "sub" || mnemo == "sra") ? 0b0100000 : 0b0000000;
+    Fields fields;
+    fields.emplace_back(7, 0b0110011);
+    fields.emplace_back(5, regmap[rd]);
+    fields.emplace_back(3, funct3);
+    fields.emplace_back(5, regmap[rs1]);
+    fields.emplace_back(5, regmap[rs2]);
+    fields.emplace_back(7, funct7);
+    return Pack(fields);
 }
 
 uint32_t bingen (std::string input) {
