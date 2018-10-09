@@ -4,7 +4,7 @@
 #include<unistd.h>
 #include<stdio.h>
 
-
+extern int debug_mode;
 Simulator *init(unsigned long m_size,unsigned long s_pos){
   int i = 0;
   Simulator *sim = malloc(sizeof(Simulator));
@@ -14,11 +14,13 @@ Simulator *init(unsigned long m_size,unsigned long s_pos){
   for(i = 0;i<32;i++){
     sim -> registers[i] = 0;
   }
-  sim -> registers[3] = s_pos;
+
+  sim -> registers[3] = s_pos; //set stack pointer
+  
   for(i = 0;i<32;i++){
     sim -> f_registers[i] = 0.0;
   }
-  
+ 
   sim -> text_memory = malloc(sizeof(char)*m_size);
   memset(sim->text_memory,0,sizeof(char)*m_size);
   sim -> data_memory = malloc(sizeof(unsigned char)*m_size);
@@ -49,9 +51,29 @@ void load(Simulator *sim,FILE *fp){
 
 void exec(Simulator *sim){
   while(1){
-    if(sim->pc>sim->text_size){
+    if(sim->pc>=sim->text_size){
       break;
     }
+
+    if(debug_mode == 1){
+      //for debug
+      int debug_command;
+      fprintf(stdout,"current pc: %ld\n",sim->pc);
+      fprintf(stdout,"next instruction: ");
+      print_instr(sim);
+      char buffer[16] = "";
+      fprintf(stdout,"(edb) ");
+      if(scanf("%15[^\n]%*[^\n]",buffer)==EOF){
+        fprintf(stderr,"Unknown debugger command!!\n");
+        exit(1);
+      }
+      scanf("%*c");
+      debug_command = debug_parser(buffer);
+      debug_exec(sim,debug_command);
+    }
+
+
+
     Op *op = malloc(sizeof(Op));
     memset(&op,0,sizeof(Op));
     unsigned int inst = sim->text_memory[sim->pc];
@@ -339,9 +361,11 @@ void exec(Simulator *sim){
         else{
           fprintf(stderr,"Unknown instruction\n");
         }
+        sim -> pc = sim -> pc + 4;
         break;
       default:
         fprintf(stderr,"unknown instruction\n");
+        sim->pc = sim -> pc + 4;
     }
     free(op);
     op=NULL;

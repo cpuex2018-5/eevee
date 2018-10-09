@@ -117,3 +117,11 @@ Op *decode_j(unsigned int inst,Op *op);
 //util.c
 unsigned int get_binary(unsigned int,int,int);
 void usage();
+void print_binary(int);
+void print_instr(Simulator *);
+//debug.c
+void print_fregs(Simulator *);
+void dump_memory(Simulator *,int,int);
+void print_regs(Simulator *);
+int debug_parser(char *);
+void debug_exec(Simulator *,int);
