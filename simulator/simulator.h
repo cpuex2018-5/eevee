@@ -84,7 +84,7 @@ typedef struct {
   unsigned long pc;
   int registers[REG_NUMBER];
   float f_registers[REG_NUMBER];
-  char *text_memory;
+  unsigned char *text_memory;
   unsigned char *data_memory;
   unsigned int text_size;
 } Simulator;
@@ -119,6 +119,7 @@ unsigned int get_binary(unsigned int,int,int);
 void usage();
 void print_binary(int);
 void print_instr(Simulator *);
+
 //debug.c
 void print_fregs(Simulator *);
 void dump_memory(Simulator *,int,int);

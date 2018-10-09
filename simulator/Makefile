@@ -6,6 +6,6 @@ $(TARGET):$(OBJS)
 	$(CC) $(CFLAGS) -o $(TARGET) $(OBJS)
 
 clean:
-	rm -rf $(OBJS) eevee_sim peda-session* .gdb_history core code.bin
+	rm -rf $(OBJS) eevee_sim peda-session* .gdb_history core
 test:
 	./eevee_sim -d code.bin

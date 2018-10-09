@@ -79,7 +79,7 @@ void exec(Simulator *sim){
 
     Op *op = malloc(sizeof(Op));
     memset(op,0,sizeof(Op));
-    unsigned int inst = *((unsigned int *)(sim->text_memory+sim->pc));
+    unsigned int inst = (sim->text_memory[sim->pc]<<24) | (sim->text_memory[sim->pc+1]<<16) | (sim->text_memory[sim->pc+2]<<8) | sim->text_memory[sim->pc+3];
     unsigned int opcode = get_binary(inst,0,7);
     int s_imm; //sign extended immediate
     unsigned int address;
@@ -179,26 +179,26 @@ void exec(Simulator *sim){
         address = sim -> registers[op->rs1] + s_imm;
         if(op->funct3==0b000){
           //lb
-          sim -> registers[op->rd] = (char)sim -> data_memory[address];
+          sim -> registers[op->rd] = (char)sim -> data_memory[address]; //wrong?
           // cast to char for sign extension
         }
         else if(op->funct3==0b001){
           //lh
-          sim -> registers[op->rd] = (short)((sim->data_memory[address]<<8) + (sim->data_memory[address+1]));
+          sim -> registers[op->rd] = (short)((sim->data_memory[address]<<8) + (sim->data_memory[address+1])); //wrong?
           //cast to short for sign extension
         }
         else if(op->funct3==0b010){
           //lw
           sim -> registers[op->rd] = (sim->data_memory[address]<<24) + (sim -> data_memory[address+1]<<16)
-                                      + (sim->data_memory[address+2]<<8) + (sim->data_memory[address+3]);
+                                      + (sim->data_memory[address+2]<<8) + (sim->data_memory[address+3]); //wrong?
         }
         else if(op->funct3==0b100){
           //lbu
-          sim -> registers[op->rd] = sim -> data_memory[address];
+          sim -> registers[op->rd] = sim -> data_memory[address]; //wrong?
         }
         else if(op->funct3==0b101){
           //lhu
-          sim -> registers[op->rd] = (sim -> data_memory[address]<<8) + sim -> data_memory[address+1];
+          sim -> registers[op->rd] = (sim -> data_memory[address]<<8) + sim -> data_memory[address+1]; //wrong??
         }
         else{
           fprintf(stderr,"Unknown instruction\n");
@@ -374,6 +374,6 @@ void exec(Simulator *sim){
     free(op);
     op=NULL;
   }
-
+  print_regs(sim);
   fprintf(stdout,"simulation finished\n");
 }
