@@ -61,23 +61,26 @@ void exec(Simulator *sim){
       fprintf(stdout,"current pc: %ld\n",sim->pc);
       fprintf(stdout,"next instruction: ");
       print_instr(sim);
-      char buffer[16] = "";
-      fprintf(stdout,"(edb) ");
-      if(scanf("%15[^\n]%*[^\n]",buffer)==EOF){
-        fprintf(stderr,"Unknown debugger command!!\n");
-        exit(1);
+      while(1){
+        char buffer[16] = "";
+        fprintf(stdout,"(edb) ");
+        if(scanf("%15[^\n]%*[^\n]",buffer)==EOF){
+          fprintf(stderr,"Unknown debugger command!!\n");
+          exit(1);
+        }
+        scanf("%*c");
+        debug_command = debug_parser(buffer);
+        int ret = debug_exec(sim,debug_command);
+        if(ret==0) break;
       }
-      scanf("%*c");
-      debug_command = debug_parser(buffer);
-      debug_exec(sim,debug_command);
     }
 
 
 
     Op *op = malloc(sizeof(Op));
-    memset(&op,0,sizeof(Op));
-    unsigned int inst = sim->text_memory[sim->pc];
-    unsigned int opcode = get_binary(inst,0,6);
+    memset(op,0,sizeof(Op));
+    unsigned int inst = *((unsigned int *)(sim->text_memory+sim->pc));
+    unsigned int opcode = get_binary(inst,0,7);
     int s_imm; //sign extended immediate
     unsigned int address;
     switch(opcode){
@@ -169,6 +172,7 @@ void exec(Simulator *sim){
         }
         break;
       case 0b0000011:
+
         //lb,lh,lw,lbu,lhu
         decode_i(inst,op);
         s_imm = (op->imm) | ((op->imm & 0x800) ? 0xFFFFF800:0); //sign extension

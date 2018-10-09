@@ -19,5 +19,5 @@ void print_binary(int val){
   printf("\n");
 }
 void print_instr(Simulator *sim){
-  fprintf(stdout,"%x %x %x %x\n",(char)sim->text_memory[sim->pc],(char)sim->text_memory[sim->pc+1],(char)sim->text_memory[sim->pc+2],(char)sim->text_memory[sim->pc+3]);
+  fprintf(stdout,"%02x %02x %02x %02x\n",(unsigned char)sim->text_memory[sim->pc],(unsigned char)sim->text_memory[sim->pc+1],(unsigned char)sim->text_memory[sim->pc+2],(unsigned char)sim->text_memory[sim->pc+3]);
 }
