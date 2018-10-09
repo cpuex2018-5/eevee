@@ -3,6 +3,17 @@
 #include <string>
 #include "bingen.h"
 
+// 01の列にする(4桁ごとに空白)
+std::string PrettyString(uint32_t inst) {
+    std::string str;
+    for (int i = 0; i < 32; i++) {
+        str.push_back(((inst >> (31 - i)) & 0x1)? '1' : '0');
+        if (i % 4 == 3) str.push_back(' ');
+    }
+    assert(str.size() == 40);
+    return str;
+}
+
 // 2-pass assembler of EEVEE (32-bit)
 int main(int argc, char* argv[])
 {
@@ -24,14 +35,21 @@ int main(int argc, char* argv[])
     std::string outfile(infile.begin(), infile.end() - 2);
     std::ofstream ofs(outfile);
     std::string str;
+    BinGen bingen(std::move(ofs));
 
-    // Round 1: Replace the instructions with bytecodes
+    // Round 1: Skim through the assembly code and get the position of each label
     while (getline(ifs, str)) {
         // Parse the input.
-        bingen(str);
+        bingen.ReadLabels(str);
     }
 
-    // Round 2: Replace the labels with the actual PC
+    ifs.clear();
+    ifs.seekg(0, std::ios::beg);
+
+    // Round 2: Replace the instructions with bytecodes
+    while (getline(ifs, str)) {
+        bingen.ParseAndWrite(str);
+    }
     return 0;
 }
 

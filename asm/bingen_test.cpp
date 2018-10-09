@@ -37,6 +37,9 @@ void TestParseOffset() {
 }
 
 void Test_lui() {
+    // Note: immediate values are interpreted as hexadecimals.
+    std::string lui = "    lui ra, 20";
+    assert("0110 1110 0001 0000 0000 0000 0010 0000 " == PrettyString(bingen(lui)));
 }
 
 void Test_auipc() {
@@ -58,6 +61,10 @@ void Test_store() {
 }
 
 void Test_op_imm() {
+    std::string add = "    add      t1, t2, t3";
+    std::string sub = "    sub      t1, t2, t3";
+    assert("0110 0110 0110 0000 0111 1110 0000 0000 " == PrettyString(bingen(add)));
+    assert("0110 0110 0110 0000 0111 1110 0010 0000 " == PrettyString(bingen(sub)));
 }
 
 void Test_op_imm_shift() {
@@ -70,6 +77,14 @@ int main (void) {
     // TestParseOffset();
     // TestPrettyString();
 
+    Test_lui();
+    Test_auipc();
+    Test_jal();
+    Test_jalr();
+    Test_branch();
+    Test_load();
+    Test_store();
+    Test_op_imm();
     std::cout << "Tests are all finished!" << std::endl;
     return 0;
 }
