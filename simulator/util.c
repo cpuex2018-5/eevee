@@ -8,7 +8,7 @@ unsigned int get_binary(unsigned int n,int start,int end){
 }
 
 void usage(){
-  fprintf(stderr,"Usage: eevee_sim <file>\n");
+  fprintf(stderr,"Usage: ./eevee_sim <file> [-d] [-h]\n");
 }
 
 void print_binary(int val){
