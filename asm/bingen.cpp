@@ -45,29 +45,6 @@ std::map<std::string, int> regmap =
 BinGen::BinGen(std::ofstream ofs)
   : ofs_(std::move(ofs)) {}
 
-uint32_t BinGen::Pack(Fields fields) {
-    uint32_t ret = 0;
-    for (const auto& field : fields) {
-        ret <<= field.first;
-        ret += field.second;
-    }
-    return ret;
-}
-
-void BinGen::CheckImmediate(uint32_t imm, int range, std::string func_name) {
-    if (imm >= (1 << range)) {
-        std::cout << "ERROR(" << func_name << "): The immediate value should be smaller than 2 ^ " << range << std::endl;
-        exit(1);
-    }
-}
-
-void BinGen::ParseOffset(std::string arg, std::string* reg, uint32_t* offset) {
-    size_t pos_lpar = arg.find("(");
-    size_t pos_rpar = arg.find(")");
-    *offset = std::stoi(arg.substr(0, pos_lpar));
-    *reg = arg.substr(pos_lpar + 1, (pos_rpar - pos_lpar - 1));
-}
-
 uint32_t BinGen::lui (std::string rd, uint32_t imm) {
     CheckImmediate(imm, 20, "lui");
     Fields fields;
@@ -233,6 +210,17 @@ void BinGen::WriteData(uint32_t data) {
 void BinGen::ReadLabels(std::string input) {
     if (input.back() != ':') {
         // The input wasn't a label.
+
+        std::istringstream istr(input);
+        std::string mnemo;
+        istr >> mnemo;
+
+        // Some pseudo-instructions will expand to two instrs
+        if (mnemo == "la" || mnemo == "ret" || mnemo == "call") {
+            nline_ += 2;
+            return;
+        }
+
         nline_++;
         return;
     }
@@ -241,56 +229,123 @@ void BinGen::ReadLabels(std::string input) {
     label_map_[input] = nline_;
 }
 
-void BinGen::ParseAndWrite(std::string input) {
+// dirty...
+void BinGen::Parse(std::string input, std::string &mnemo, std::vector<std::string> &arg) {
+    int curr_pos = 0;
+    int start_pos = 0;
+    while (input[curr_pos] == ' ' || input[curr_pos] == '\t') curr_pos++;
+
+    // mnemonic (or label)
+    start_pos = curr_pos;
+    while (!(input[curr_pos] == ' ' || input[curr_pos] == '\t' || input[curr_pos] == '\0')) curr_pos++;
+    mnemo = input.substr(start_pos, curr_pos - start_pos);
+    while (input[curr_pos] == ' ' || input[curr_pos] == '\t') curr_pos++;
+    if (input[curr_pos] == '\0') return;
+
+    // arg[0]
+    start_pos = curr_pos;
+    while (!(input[curr_pos] == ' ' || input[curr_pos] == '\t' || input[curr_pos] == ',' || input[curr_pos] == '\0')) curr_pos++;
+    arg.push_back(input.substr(start_pos, curr_pos - start_pos));
+    while (input[curr_pos] == ' ' || input[curr_pos] == '\t') curr_pos++;
+    if (input[curr_pos] == '\0') return;
+
+    // arg[1]
+    start_pos = curr_pos;
+    while (!(input[curr_pos] == ' ' || input[curr_pos] == '\t' || input[curr_pos] == ',' || input[curr_pos] == '\0')) curr_pos++;
+    arg.push_back(input.substr(start_pos, curr_pos - start_pos));
+    while (input[curr_pos] == ' ' || input[curr_pos] == '\t') curr_pos++;
+    if (input[curr_pos] == '\0') return;
+
+    // arg[2]
+    start_pos = curr_pos;
+    while (!(input[curr_pos] == '\0')) curr_pos++;
+    arg.push_back(input.substr(start_pos, curr_pos - start_pos));
+}
+
+void BinGen::Convert(std::string input) {
     // Parse the input.
-    // TODO: deal with cases without spaces around comma
-    std::istringstream istr(input);
-    std::string mnemo, arg0, arg1, arg2;
-    istr >> mnemo >> arg0 >> arg1 >> arg2;
+    std::string mnemo;
+    std::vector<std::string> arg;
+    Parse(input, mnemo, arg);
     if (mnemo.back() == ':') {
         // Skip the labels.
         return;
     }
 
-    if (arg0.back() == ',') arg0.pop_back();
-    if (arg1.back() == ',') arg1.pop_back();
-    if (arg2.back() == ',') arg2.pop_back();
-
+    // Note: Lack of arguments will cause crash here
     if (mnemo == "lui")
-        WriteData(lui(arg0, std::stoi(arg1, nullptr, 16)));
-    if (mnemo == "auipc")
-        WriteData(auipc(arg0, std::stoi(arg1, nullptr, 16)));
-    if (mnemo == "jal")
-        WriteData(jal(arg0, std::stoi(arg1, nullptr, 16)));
-    if (mnemo == "jalr")
-        WriteData(jalr(arg0, arg1, std::stoi(arg2, nullptr, 16)));
-    if (mnemo == "beq" || mnemo == "bne" || mnemo == "blt" || mnemo == "bge" || mnemo == "bltu") {
-        try {
-            // Only the arg2 can be the label
-            WriteData(branch(mnemo, arg0, arg1, std::stoi(arg2, nullptr, 16)));
-        }
-        catch (...) {
-            WriteData(branch(mnemo, arg0, arg1, label_map_[arg2]));
-        }
+        WriteData(lui(arg[0], std::stoi(arg[1], nullptr, 16)));
+    else if (mnemo == "auipc")
+        WriteData(auipc(arg[0], std::stoi(arg[1], nullptr, 16)));
+    else if (mnemo == "jal")
+        WriteData(jal(arg[0], std::stoi(arg[1], nullptr, 16)));
+    else if (mnemo == "jalr")
+        WriteData(jalr(arg[0], arg[1], std::stoi(arg[2], nullptr, 16)));
+    else if (mnemo == "beq" || mnemo == "bne" || mnemo == "blt" || mnemo == "bge" || mnemo == "bltu") {
+        WriteData(branch(mnemo, arg[0], arg[1], MyStoi(arg[2])));
     }
 
-    if (mnemo == "lb" || mnemo == "lh" || mnemo == "lw" || mnemo == "lbu" || mnemo == "lhu") {
+    else if (mnemo == "lb" || mnemo == "lh" || mnemo == "lw" || mnemo == "lbu" || mnemo == "lhu") {
         std::string rs1; uint32_t offset;
-        ParseOffset(arg1, &rs1, &offset);
-        WriteData(load(mnemo, arg0, rs1, offset));
+        ParseOffset(arg[1], &rs1, &offset);
+        WriteData(load(mnemo, arg[0], rs1, offset));
     }
 
-    if (mnemo == "sb" || mnemo == "sh" || mnemo == "sw") {
+    else if (mnemo == "sb" || mnemo == "sh" || mnemo == "sw") {
         std::string rs1; uint32_t offset;
-        ParseOffset(arg1, &rs1, &offset);
-        WriteData(store(mnemo, arg0, rs1, offset));
+        ParseOffset(arg[1], &rs1, &offset);
+        WriteData(store(mnemo, arg[0], rs1, offset));
     }
 
-    if (mnemo == "addi" || mnemo == "slti" || mnemo == "sltiu" || mnemo == "xori" || mnemo == "ori" || mnemo == "andi")
-        WriteData(op_imm(mnemo, arg0, arg1, std::stoi(arg2, nullptr, 16)));
-    if (mnemo == "slli" || mnemo == "srli" || mnemo == "srai")
-        WriteData(op_imm_shift(mnemo, arg0, arg1, std::stoi(arg2, nullptr, 16)));
-    if (mnemo == "add" || mnemo == "sub" || mnemo == "sll" || mnemo == "slt" || mnemo == "sltu" || mnemo == "xor" ||
+    else if (mnemo == "addi" || mnemo == "slti" || mnemo == "sltiu" || mnemo == "xori" || mnemo == "ori" || mnemo == "andi")
+        WriteData(op_imm(mnemo, arg[0], arg[1], std::stoi(arg[2], nullptr, 16)));
+    else if (mnemo == "slli" || mnemo == "srli" || mnemo == "srai")
+        WriteData(op_imm_shift(mnemo, arg[0], arg[1], std::stoi(arg[2], nullptr, 16)));
+    else if (mnemo == "add" || mnemo == "sub" || mnemo == "sll" || mnemo == "slt" || mnemo == "sltu" || mnemo == "xor" ||
         mnemo == "srl" || mnemo == "sra" || mnemo == "or" || mnemo == "and")
-        WriteData(op(mnemo, arg0, arg1, arg2));
+        WriteData(op(mnemo, arg[0], arg[1], arg[2]));
+
+
+    // Pseudo-instructions
+    else if (mnemo == "ret") {
+        WriteData(jalr("x0", "x1", 0u));
+    }
+
+    else if (mnemo == "call") {
+        WriteData(auipc("x6", MyStoi(arg[0]) >> 12));
+        WriteData(jalr("x1", "x6", MyStoi(arg[0]) & 0xfff));
+    }
+}
+
+uint32_t BinGen::Pack(Fields fields) {
+    uint32_t ret = 0;
+    for (const auto& field : fields) {
+        ret <<= field.first;
+        ret += field.second;
+    }
+    return ret;
+}
+
+void BinGen::CheckImmediate(uint32_t imm, int range, std::string func_name) {
+    if (imm >= (1 << range)) {
+        std::cout << "ERROR(" << func_name << "): The immediate value should be smaller than 2 ^ " << range << std::endl;
+        exit(1);
+    }
+}
+
+void BinGen::ParseOffset(std::string arg, std::string* reg, uint32_t* offset) {
+    size_t pos_lpar = arg.find("(");
+    size_t pos_rpar = arg.find(")");
+    *offset = std::stoi(arg.substr(0, pos_lpar));
+    *reg = arg.substr(pos_lpar + 1, (pos_rpar - pos_lpar - 1));
+}
+
+uint32_t BinGen::MyStoi(std::string imm) {
+    try {
+        return std::stoi(imm, nullptr, 16);
+    }
+    catch (...) {
+        // |imm| was a label.
+        return label_map_[imm];
+    }
 }

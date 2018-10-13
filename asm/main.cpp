@@ -48,7 +48,7 @@ int main(int argc, char* argv[])
 
     // Round 2: Replace the instructions with bytecodes
     while (getline(ifs, str)) {
-        bingen.ParseAndWrite(str);
+        bingen.Convert(str);
     }
     return 0;
 }

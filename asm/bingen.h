@@ -9,8 +9,6 @@ class BinGen {
     public:
         BinGen(std::ofstream ofs);
 
-        void ParseOffset(std::string arg, std::string* reg, uint32_t* offset);
-
         uint32_t lui(std::string rd, uint32_t imm);
 
         uint32_t auipc(std::string rd, uint32_t imm);
@@ -38,21 +36,29 @@ class BinGen {
         uint32_t op(std::string mnemo, std::string rd, std::string rs1, std::string rs2);
 
         // Parses and evaluates the input. Writes to the ofs.
-        void ParseAndWrite(std::string input);
+        void Convert(std::string input);
 
         void ReadLabels(std::string input);
+
+        void Parse(std::string input, std::string &mnemo, std::vector<std::string> &arg);
+
+        void ParseOffset(std::string arg, std::string* reg, uint32_t* offset);
 
     private:
         typedef std::vector<std::pair<int, uint32_t> > Fields;
         uint32_t Pack(Fields fields);
         void CheckImmediate(uint32_t imm, int range, std::string func_name);
         void WriteData(uint32_t data);
-        std::ofstream ofs_;
-        std::map<std::string, int> label_map_;
+
+        // |imm| might be a number or a label.
+        uint32_t MyStoi(std::string imm);
 
         // Number of instructions read so far.
         // Used when reading the input for the first time
         int nline_ = 0;
+
+        std::ofstream ofs_;
+        std::map<std::string, int> label_map_;
 };
 
 #endif  // __BINGEN_H__
