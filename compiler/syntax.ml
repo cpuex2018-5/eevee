@@ -56,21 +56,21 @@ let rec string_of_t ?(do_indent = true) ?(endline = "\n") (exp : t) (depth : int
                          prefix ^ "THEN\n" ^ (string_of_t e1 (depth + 1)) ^
                          prefix ^ "ELSE\n" ^ (string_of_t e2 (depth + 1))
   | Let ((x, _), e1, e2, _) -> prefix ^ "LET " ^ x ^ " =\n" ^ (string_of_t e1 (depth + 1)) ^ (indent ^ "IN\n")
-                               ^ (string_of_t e2 (depth + 1))
+                               ^ (string_of_t e2 depth)
   | Var x -> prefix ^ "VAR " ^ x ^ endline
-  | LetRec (f, e, _) -> prefix ^ "LET REC " ^ (string_of_fundef f (depth + 1)) ^ (indent ^ "IN\n") ^ (string_of_t e (depth + 1))
+  | LetRec (f, e, _) -> prefix ^ "LET REC " ^ (string_of_fundef f (depth + 1)) ^ (indent ^ "IN\n") ^ (string_of_t e depth)
   | App (e1, e2, _) -> (string_of_t e1 depth) ^ String.concat "" (List.map (fun e -> string_of_t e (depth + 1)) e2)
   | Tuple e -> prefix ^ "( " ^
                String.concat ", " (List.map (fun ex -> string_of_t ex (depth + 1) ~do_indent:false ~endline:"") e) ^ " )" ^ endline
   | LetTuple (l, e1, e2, _) -> prefix ^ "LET (" ^ (String.concat ", " (List.map fst l)) ^ ") =\n"
-                               ^ (string_of_t e1 (depth + 1)) ^ (indent ^ "IN\n") ^ (string_of_t e2 (depth + 1))
+                               ^ (string_of_t e1 (depth + 1)) ^ (indent ^ "IN\n") ^ (string_of_t e2 depth)
   | Array (e1, e2, _) -> prefix ^ "[ " ^ (string_of_t e1 depth ~do_indent:false) ^ (string_of_t e2 (depth + 1) ~endline:" ]\n")
   | Get (e1, e2, _) -> (string_of_t e1 depth ~endline:"[ ") ^ (string_of_t e2 (depth + 1) ~do_indent:false ~endline:" ]") ^ endline
   | Put (e1, e2, e3, _) -> (string_of_t e1 depth ~endline:"[ ") ^ (string_of_t e2 (depth + 1) ~do_indent:false ~endline:" ] <-\n")
                            ^ (string_of_t e3 (depth + 1)) ^ endline
 and
   string_of_fundef (f : fundef) (depth : int) =
-  (fst f.name) ^ " (" ^ (String.concat ", " (List.map fst f.args)) ^ ") =\n" ^ (string_of_t f.body depth ~endline:"")
+  (fst f.name) ^ " (" ^ (String.concat ", " (List.map fst f.args)) ^ ") =\n" ^ (string_of_t f.body depth)
 
 (* [WEEK1 Q1] pretty print for Syntax.t *)
 let print_t (exp : t) =

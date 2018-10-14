@@ -46,20 +46,20 @@ let string_of_t (exp : t) =
                                indent ^ "ELSE\n" ^ (str_of_t ef (depth + 1))
     | IfLE (e1, e2, et, ef) -> indent ^ "IF ( " ^ e1 ^ " <= " ^ e2 ^ " ) THEN\n" ^ (str_of_t et (depth + 1)) ^
                                indent ^ "ELSE\n" ^ (str_of_t ef (depth + 1))
-    | Let ((x, _), e1, e2) -> indent ^ "LET " ^ x ^ " =\n" ^ (str_of_t e1 (depth + 1)) ^ (indent ^ "IN\n") ^ (str_of_t e2 (depth + 1))
+    | Let ((x, _), e1, e2) -> indent ^ "LET " ^ x ^ " =\n" ^ (str_of_t e1 (depth + 1)) ^ (indent ^ "IN\n") ^ (str_of_t e2 depth)
     | Var x -> indent ^ "VAR " ^ x ^ endline
-    | LetRec (f, e) -> indent ^ "LET REC " ^ (str_of_fundef f (depth + 1)) ^ (indent ^ "IN\n") ^ (str_of_t e (depth + 1))
+    | LetRec (f, e) -> indent ^ "LET REC " ^ (str_of_fundef f (depth + 1)) ^ (indent ^ "IN\n") ^ (str_of_t e depth)
     | App (e1, e2) -> indent ^ e1 ^ " " ^ String.concat " " e2 ^ endline
     | Tuple e -> (indent ^ "( ") ^ String.concat ", " e ^ " )" ^ endline
     | LetTuple (l, e1, e2) -> indent ^ "LET (" ^ (String.concat ", " (List.map fst l)) ^ ") = " ^ e1 ^ " IN\n" ^
-                              indent ^ (str_of_t e2 (depth + 1))
+                              indent ^ (str_of_t e2 depth)
     | Get (e1, e2) -> indent ^ e1 ^ "[ " ^ e2 ^ "]" ^ endline
     | Put (e1, e2, e3) -> indent ^ e1 ^ "[ " ^ e2 ^ "] <- " ^ e3 ^ endline
     | ExtArray e -> indent ^ e
     | ExtFunApp (e, el) -> indent ^ e ^ " (" ^ (String.concat " " el) ^ ")\n"
   and
     str_of_fundef (f : fundef) (depth : int) =
-    (fst f.name) ^ " (" ^ (String.concat ", " (List.map fst f.args)) ^ ") =\n" ^ (str_of_t f.body depth ~endline:"")
+    (fst f.name) ^ " (" ^ (String.concat ", " (List.map fst f.args)) ^ ") =\n" ^ (str_of_t f.body depth)
   in str_of_t exp 0
 
 (* [WEEK1 Q1] pretty print for KNormal.t *)
@@ -218,25 +218,92 @@ let rec g (env : Type.t M.t) (exp : Syntax.t) : t * Type.t = (* where K-normaliz
           (fun y -> insert_let (g env e3)
               (fun z -> Put(x, y, z), Type.Unit)))
 
-(* [WEEK2 Q2] Eliminate common right-hand-side formula *)
+(* [WEEK2 Q2] Eliminate common subexpression *)
+(* 置換可能な右辺式と、それが代入された変数(左辺)のリスト *)
 type letenv = (t * Id.t) list
 
 let print_letenv (env : letenv) =
   let string_of_letenv (env : letenv) =
     String.concat "" (List.map (fun (e, x) -> x ^ " = " ^ string_of_t e) env)
-  in print_endline (string_of_letenv env)
+  in print_endline ("env:" ^ string_of_letenv env)
 
+let rec may_have_side_effect (exp : t) : bool =
+  match exp with
+  | IfEq (_, _, et, ef) -> (may_have_side_effect et) || (may_have_side_effect ef)
+  | IfLE (_, _, et, ef) -> (may_have_side_effect et) || (may_have_side_effect ef)
+  | Let (_, e1, e2) -> (may_have_side_effect e1) || (may_have_side_effect e2)
+  | LetRec (_, e) -> may_have_side_effect e
+  | App _ -> true
+  | LetTuple (_, _, e2) -> (may_have_side_effect e2)
+  | Put _ -> true
+  | ExtFunApp _ -> true
+  | _ -> false
+
+(* substitute a free variable 'a' in 'e' with 'b' *)
+let rec fv_subst (e : t) (a : Id.t) (b : Id.t) : t =
+  let subst_ x = if x = a then b else x in
+  match e with
+  | Neg e   -> Neg (subst_ e)
+  | Add (e1, e2)  -> Add  (subst_ e1, subst_ e2)
+  | Sub (e1, e2)  -> Sub  (subst_ e1, subst_ e2)
+  | FNeg e        -> FNeg (subst_ e)
+  | FAdd (e1, e2) -> FAdd (subst_ e1, subst_ e2)
+  | FSub (e1, e2) -> FSub (subst_ e1, subst_ e2)
+  | FMul (e1, e2) -> FMul (subst_ e1, subst_ e2)
+  | FDiv (e1, e2) -> FDiv (subst_ e1, subst_ e2)
+  | IfEq (e1, e2, et, ef) -> IfEq (subst_ e1, subst_ e2, fv_subst et a b, fv_subst ef a b)
+  | IfLE (e1, e2, et, ef) -> IfLE (subst_ e1, subst_ e2, fv_subst et a b, fv_subst ef a b)
+  | Let ((x, t), e1, e2) -> Let ((x, t), fv_subst e1 a b, fv_subst e2 a b)
+  | Var x -> Var (subst_ x)
+  | LetRec (f, e) -> LetRec (fv_subst_fun f a b, fv_subst e a b)
+  | App (e1, e2) -> App (subst_ e1, List.map subst_ e2)
+  | Tuple e -> Tuple (List.map subst_ e)
+  | LetTuple (l, e1, e2) -> LetTuple (List.map (fun (x, t) -> (subst_ x, t)) l, subst_ e1, fv_subst e2 a b)
+  | Get (e1, e2) -> Get (subst_ e1, subst_ e2)
+  | Put (e1, e2, e3) -> Put (subst_ e1, subst_ e2, subst_ e3)
+  | ExtArray e -> ExtArray (subst_ e)
+  | ExtFunApp (e, el) -> ExtFunApp (subst_ e, List.map subst_ el)
+  | _ -> e
+and fv_subst_fun (f : fundef) (a : Id.t) (b : Id.t) : fundef =
+  let subst_ x = if x = a then b else x in
+  { name = ((subst_ (fst f.name)), snd f.name); args = (List.map (fun (x, t) -> (subst_ x, t)) f.args); body = fv_subst f.body a b }
+
+(* Equality of KNotmal.t *)
+let rec eq_t (e1 : t) (e2 : t) : bool =
+  match (e1, e2) with
+  | IfEq(e11, e12, e1t, e1f), IfEq(e21, e22, e2t, e2f) -> e11 = e21 && e12 = e22 && (eq_t e1t e2t) && (eq_t e1f e2f)
+  | IfLE(e11, e12, e1t, e1f), IfLE(e21, e22, e2t, e2f) -> e11 = e21 && e12 = e22 && (eq_t e1t e2t) && (eq_t e1f e2f)
+  | Let((x1, t1), e11, e12), Let((x2, t2), e21, e22)   -> (e11 = e21) && eq_t e12 (fv_subst e22 x2 x1)
+  | LetRec(f1, e1'), LetRec(f2, e2')                   -> f1 = f2 && (eq_t e1' e2')
+  | LetTuple(l1, e11, e12), LetTuple(l2, e21, e22)     -> l1 = l2 && e11 = e21 && eq_t e12 e22
+  | _ -> e1 = e2
+
+(* drop all KNormal.t expression from 'env' whose free variables contain 'x' *)
 let delete_changed_fml (env : letenv) (x : Id.t) : letenv =
   List.filter (fun (e, _) -> not (S.mem x (fv e))) env
 
-let rec elim_comm_fml (env : letenv) (exp : t) : t =
+(* essential part of the common subexpression elimination *)
+let rec elim_comm_subexp (env : letenv) (exp : t) : t =
   match exp with
+  | IfEq(e1, e2, et, ef) -> IfEq(e1, e2, (elim_comm_subexp env et), (elim_comm_subexp env ef))
+  | IfLE(e1, e2, et, ef) -> IfLE(e1, e2, (elim_comm_subexp env et), (elim_comm_subexp env ef))
   | Let((x, t), e1, e2) ->
-    (match List.find_opt (fun (e, _) -> e = e1) env with
+    let e1 = elim_comm_subexp env e1 in
+    (match List.find_opt (fun (e, _) -> eq_t e e1) env with
      | Some (e, y) ->
-       Let((x, t), Var y, elim_comm_fml (delete_changed_fml env x) e2)
+       (* before applying the elimination, make sure that the formula doesn't have any side effects *)
+       (match may_have_side_effect e1 with
+        | true  -> Let((x, t), e1, elim_comm_subexp (delete_changed_fml env x) e2)
+        | false -> Let((x, t), Var y, elim_comm_subexp (delete_changed_fml env x) e2))
      | None ->
-       Let((x, t), e1, elim_comm_fml (delete_changed_fml ((e1, x) :: env) x) e2))
+       (* 'e1' is unknown -> register it to the 'env' *)
+       Let((x, t), e1, elim_comm_subexp (delete_changed_fml ((e1, x) :: env) x) e2))
+  | LetRec(f, e) ->
+    let newenv = delete_changed_fml env (fst f.name) in
+    LetRec(f, (elim_comm_subexp newenv e))
+  | LetTuple(l, e1, e2) ->
+    let newenv = List.fold_left delete_changed_fml env (List.map fst l) in
+    LetTuple(l, e1, (elim_comm_subexp newenv e2))
   | _ -> exp
 
-let f e = elim_comm_fml [] (fst (g M.empty e))
+let f e = elim_comm_subexp [] (fst (g M.empty e))
