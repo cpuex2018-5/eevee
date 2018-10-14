@@ -41,7 +41,7 @@ let rec fv = function (* free variable (caml2html: knormal_fv) *)
   | Put(x, y, z) -> S.of_list [x; y; z]
   | LetTuple(xs, y, e) -> S.add y (S.diff (fv e) (S.of_list (List.map fst xs)))
 
-let insert_let (e, t) k =
+let insert_let (e, t) k = (* k : continuation *)
   match e with
   | Var(x) -> k x
   | _ ->
