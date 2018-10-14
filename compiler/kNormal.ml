@@ -26,6 +26,47 @@ type t = (* formula after K-normalization (caml2html: knormal_t) *)
   | ExtFunApp of Id.t * Id.t list
 and fundef = { name : Id.t * Type.t; args : (Id.t * Type.t) list; body : t }
 
+(* [WEEK1 Q1] output pretty string for KNormal.t *)
+let string_of_t (exp : t) =
+  let rec str_of_t ?(endline = "\n") (exp : t) (depth : int) : string =
+    let indent = (String.make (depth * 2) ' ') in
+    match exp with
+    | Unit -> indent ^ "()" ^ endline
+    | Int n   -> indent ^ "INT " ^ (string_of_int n) ^ endline
+    | Float f -> indent ^ "FLOAT " ^ (string_of_float f) ^ endline
+    | Neg e   -> indent ^ "NEG " ^ e ^ endline
+    | Add (e1, e2)  -> indent ^ "ADD " ^ e1 ^ " " ^ e2 ^ endline
+    | Sub (e1, e2)  -> indent ^ "SUB " ^ e1 ^ " " ^ e2 ^ endline
+    | FNeg e        -> indent ^ "FNEG " ^ e ^ endline
+    | FAdd (e1, e2) -> indent ^ "FADD " ^ e1 ^ " " ^ e2 ^ endline
+    | FSub (e1, e2) -> indent ^ "FSUB " ^ e1 ^ " " ^ e2 ^ endline
+    | FMul (e1, e2) -> indent ^ "FMUL " ^ e1 ^ " " ^ e2 ^ endline
+    | FDiv (e1, e2) -> indent ^ "FDIV " ^ e1 ^ " " ^ e2 ^ endline
+    | IfEq (e1, e2, et, ef) -> indent ^ "IF ( " ^ e1 ^ " = " ^ e2 ^ " ) THEN\n" ^ (str_of_t et (depth + 1)) ^
+                               indent ^ "ELSE\n" ^ (str_of_t ef (depth + 1))
+    | IfLE (e1, e2, et, ef) -> indent ^ "IF ( " ^ e1 ^ " <= " ^ e2 ^ " ) THEN\n" ^ (str_of_t et (depth + 1)) ^
+                               indent ^ "ELSE\n" ^ (str_of_t ef (depth + 1))
+    | Let ((x, _), e1, e2) -> indent ^ "LET " ^ x ^ " =\n" ^ (str_of_t e1 (depth + 1)) ^ (indent ^ "IN\n") ^ (str_of_t e2 (depth + 1))
+    | Var x -> indent ^ "VAR " ^ x ^ endline
+    | LetRec (f, e) -> indent ^ "LET REC " ^ (str_of_fundef f (depth + 1)) ^ (indent ^ "IN\n") ^ (str_of_t e (depth + 1))
+    | App (e1, e2) -> indent ^ e1 ^ " " ^ String.concat " " e2 ^ endline
+    | Tuple e -> (indent ^ "( ") ^ String.concat ", " e ^ " )" ^ endline
+    | LetTuple (l, e1, e2) -> indent ^ "LET (" ^ (String.concat ", " (List.map fst l)) ^ ") = " ^ e1 ^ " IN\n" ^
+                              indent ^ (str_of_t e2 (depth + 1))
+    | Get (e1, e2) -> indent ^ e1 ^ "[ " ^ e2 ^ "]" ^ endline
+    | Put (e1, e2, e3) -> indent ^ e1 ^ "[ " ^ e2 ^ "] <- " ^ e3 ^ endline
+    | ExtArray e -> indent ^ e
+    | ExtFunApp (e, el) -> indent ^ e ^ " (" ^ (String.concat " " el) ^ ")\n"
+  and
+    str_of_fundef (f : fundef) (depth : int) =
+    (fst f.name) ^ " (" ^ (String.concat ", " (List.map fst f.args)) ^ ") =\n" ^ (str_of_t f.body depth ~endline:"")
+  in str_of_t exp 0
+
+(* [WEEK1 Q1] pretty print for KNormal.t *)
+let print_t (exp : t) =
+  print_string (string_of_t exp)
+
+(* S.t = Id.t *)
 let rec fv = function (* free variable (caml2html: knormal_fv) *)
   | Unit | Int(_) | Float(_) | ExtArray(_) -> S.empty
   | Neg(x) | FNeg(x) -> S.singleton x
@@ -49,7 +90,8 @@ let insert_let (e, t) k = (* k : continuation *)
     let e', t' = k x in
     Let((x, t), e, e'), t'
 
-let rec g env = function (* where K-normalization happens (caml2html: knormal_g) *)
+let rec g (env : Type.t M.t) (exp : Syntax.t) : t * Type.t = (* where K-normalization happens (caml2html: knormal_g) *)
+  match exp with
   | Syntax.Unit -> Unit, Type.Unit
   | Syntax.Bool(b) -> Int(if b then 1 else 0), Type.Int (* true -> 1, false -> 0 (caml2html: knormal_bool) *)
   | Syntax.Int(i) -> Int(i), Type.Int
@@ -165,7 +207,7 @@ let rec g env = function (* where K-normalization happens (caml2html: knormal_g)
               ExtFunApp(l, [x; y]), Type.Array(t2)))
   | Syntax.Get(e1, e2, _) ->
     (match g env e1 with
-     |        _, Type.Array(t) as g_e1 ->
+     | _, Type.Array(t) as g_e1 ->
        insert_let g_e1
          (fun x -> insert_let (g env e2)
              (fun y -> Get(x, y), t))
@@ -176,42 +218,25 @@ let rec g env = function (* where K-normalization happens (caml2html: knormal_g)
           (fun y -> insert_let (g env e3)
               (fun z -> Put(x, y, z), Type.Unit)))
 
-let f e = fst (g M.empty e)
+(* [WEEK2 Q2] Eliminate common right-hand-side formula *)
+type letenv = (t * Id.t) list
 
-(* [WEEK1 Q1] output pretty string for KNormal.t *)
-let rec string_of_t ?(endline = "\n") (exp : t) (depth : int) : string =
-  let indent = (String.make (depth * 2) ' ') in
+let print_letenv (env : letenv) =
+  let string_of_letenv (env : letenv) =
+    String.concat "" (List.map (fun (e, x) -> x ^ " = " ^ string_of_t e) env)
+  in print_endline (string_of_letenv env)
+
+let delete_changed_fml (env : letenv) (x : Id.t) : letenv =
+  List.filter (fun (e, _) -> not (S.mem x (fv e))) env
+
+let rec elim_comm_fml (env : letenv) (exp : t) : t =
   match exp with
-  | Unit -> indent ^ "()" ^ endline
-  | Int n   -> indent ^ "INT " ^ (string_of_int n) ^ endline
-  | Float f -> indent ^ "FLOAT " ^ (string_of_float f) ^ endline
-  | Neg e   -> indent ^ "NEG " ^ e ^ endline
-  | Add (e1, e2)  -> indent ^ "ADD " ^ e1 ^ " " ^ e2 ^ endline
-  | Sub (e1, e2)  -> indent ^ "SUB " ^ e1 ^ " " ^ e2 ^ endline
-  | FNeg e        -> indent ^ "FNEG " ^ e ^ endline
-  | FAdd (e1, e2) -> indent ^ "FADD " ^ e1 ^ " " ^ e2 ^ endline
-  | FSub (e1, e2) -> indent ^ "FSUB " ^ e1 ^ " " ^ e2 ^ endline
-  | FMul (e1, e2) -> indent ^ "FMUL " ^ e1 ^ " " ^ e2 ^ endline
-  | FDiv (e1, e2) -> indent ^ "FDIV " ^ e1 ^ " " ^ e2 ^ endline
-  | IfEq (e1, e2, et, ef) -> indent ^ "IF ( " ^ e1 ^ " = " ^ e2 ^ " ) THEN\n" ^ (string_of_t et (depth + 1)) ^
-                             indent ^ "ELSE\n" ^ (string_of_t ef (depth + 1))
-  | IfLE (e1, e2, et, ef) -> indent ^ "IF ( " ^ e1 ^ " <= " ^ e2 ^ " ) THEN\n" ^ (string_of_t et (depth + 1)) ^
-                             indent ^ "ELSE\n" ^ (string_of_t ef (depth + 1))
-  | Let ((x, _), e1, e2) -> indent ^ "LET " ^ x ^ " =\n" ^ (string_of_t e1 (depth + 1)) ^ (indent ^ "IN\n") ^ (string_of_t e2 (depth + 1))
-  | Var x -> indent ^ "VAR " ^ x ^ endline
-  | LetRec (f, e) -> indent ^ "LET REC " ^ (string_of_fundef f (depth + 1)) ^ (indent ^ "IN\n") ^ (string_of_t e (depth + 1))
-  | App (e1, e2) -> indent ^ e1 ^ " " ^ String.concat " " e2 ^ endline
-  | Tuple e -> (indent ^ "( ") ^ String.concat ", " e ^ " )" ^ endline
-  | LetTuple (l, e1, e2) -> indent ^ "LET (" ^ (String.concat ", " (List.map fst l)) ^ ") = " ^ e1 ^ " IN\n" ^
-                            indent ^ (string_of_t e2 (depth + 1))
-  | Get (e1, e2) -> indent ^ e1 ^ "[ " ^ e2 ^ "]" ^ endline
-  | Put (e1, e2, e3) -> indent ^ e1 ^ "[ " ^ e2 ^ "] <- " ^ e3 ^ endline
-  | ExtArray e -> indent ^ e
-  | ExtFunApp (e, el) -> indent ^ e ^ " (" ^ (String.concat " " el) ^ ")\n"
-and
-  string_of_fundef (f : fundef) (depth : int) =
-  (fst f.name) ^ " (" ^ (String.concat ", " (List.map fst f.args)) ^ ") =\n" ^ (string_of_t f.body depth ~endline:"")
+  | Let((x, t), e1, e2) ->
+    (match List.find_opt (fun (e, _) -> e = e1) env with
+     | Some (e, y) ->
+       Let((x, t), Var y, elim_comm_fml (delete_changed_fml env x) e2)
+     | None ->
+       Let((x, t), e1, elim_comm_fml (delete_changed_fml ((e1, x) :: env) x) e2))
+  | _ -> exp
 
-(* [WEEK1 Q1] pretty print for KNormal.t *)
-let print_t (exp : t) =
-  print_string (string_of_t exp 0)
+let f e = elim_comm_fml [] (fst (g M.empty e))

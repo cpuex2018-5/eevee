@@ -11,3 +11,5 @@ parser.ml
 parser.mli
 *.s
 *.dSYM
+
+sandbox/
