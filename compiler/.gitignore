@@ -1,0 +1,15 @@
+*.cmi
+*.cmo
+._bcdi/
+._d/
+float.o
+min-caml
+min-caml.top
+.DS_Store
+lexer.ml
+parser.ml
+parser.mli
+*.s
+*.dSYM
+
+sandbox/

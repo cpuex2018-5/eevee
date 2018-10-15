@@ -26,6 +26,47 @@ type t = (* formula after K-normalization (caml2html: knormal_t) *)
   | ExtFunApp of Id.t * Id.t list
 and fundef = { name : Id.t * Type.t; args : (Id.t * Type.t) list; body : t }
 
+(* [WEEK1 Q1] output pretty string for KNormal.t *)
+let string_of_t (exp : t) =
+  let rec str_of_t ?(endline = "\n") (exp : t) (depth : int) : string =
+    let indent = (String.make (depth * 2) ' ') in
+    match exp with
+    | Unit -> indent ^ "()" ^ endline
+    | Int n   -> indent ^ "INT " ^ (string_of_int n) ^ endline
+    | Float f -> indent ^ "FLOAT " ^ (string_of_float f) ^ endline
+    | Neg e   -> indent ^ "NEG " ^ e ^ endline
+    | Add (e1, e2)  -> indent ^ "ADD " ^ e1 ^ " " ^ e2 ^ endline
+    | Sub (e1, e2)  -> indent ^ "SUB " ^ e1 ^ " " ^ e2 ^ endline
+    | FNeg e        -> indent ^ "FNEG " ^ e ^ endline
+    | FAdd (e1, e2) -> indent ^ "FADD " ^ e1 ^ " " ^ e2 ^ endline
+    | FSub (e1, e2) -> indent ^ "FSUB " ^ e1 ^ " " ^ e2 ^ endline
+    | FMul (e1, e2) -> indent ^ "FMUL " ^ e1 ^ " " ^ e2 ^ endline
+    | FDiv (e1, e2) -> indent ^ "FDIV " ^ e1 ^ " " ^ e2 ^ endline
+    | IfEq (e1, e2, et, ef) -> indent ^ "IF ( " ^ e1 ^ " = " ^ e2 ^ " ) THEN\n" ^ (str_of_t et (depth + 1)) ^
+                               indent ^ "ELSE\n" ^ (str_of_t ef (depth + 1))
+    | IfLE (e1, e2, et, ef) -> indent ^ "IF ( " ^ e1 ^ " <= " ^ e2 ^ " ) THEN\n" ^ (str_of_t et (depth + 1)) ^
+                               indent ^ "ELSE\n" ^ (str_of_t ef (depth + 1))
+    | Let ((x, _), e1, e2) -> indent ^ "LET " ^ x ^ " =\n" ^ (str_of_t e1 (depth + 1)) ^ (indent ^ "IN\n") ^ (str_of_t e2 depth)
+    | Var x -> indent ^ "VAR " ^ x ^ endline
+    | LetRec (f, e) -> indent ^ "LET REC " ^ (str_of_fundef f (depth + 1)) ^ (indent ^ "IN\n") ^ (str_of_t e depth)
+    | App (e1, e2) -> indent ^ e1 ^ " " ^ String.concat " " e2 ^ endline
+    | Tuple e -> (indent ^ "( ") ^ String.concat ", " e ^ " )" ^ endline
+    | LetTuple (l, e1, e2) -> indent ^ "LET (" ^ (String.concat ", " (List.map fst l)) ^ ") = " ^ e1 ^ " IN\n" ^
+                              indent ^ (str_of_t e2 depth)
+    | Get (e1, e2) -> indent ^ e1 ^ "[ " ^ e2 ^ "]" ^ endline
+    | Put (e1, e2, e3) -> indent ^ e1 ^ "[ " ^ e2 ^ "] <- " ^ e3 ^ endline
+    | ExtArray e -> indent ^ e
+    | ExtFunApp (e, el) -> indent ^ e ^ " (" ^ (String.concat " " el) ^ ")\n"
+  and
+    str_of_fundef (f : fundef) (depth : int) =
+    (fst f.name) ^ " (" ^ (String.concat ", " (List.map fst f.args)) ^ ") =\n" ^ (str_of_t f.body depth)
+  in str_of_t exp 0
+
+(* [WEEK1 Q1] pretty print for KNormal.t *)
+let print_t (exp : t) =
+  print_string (string_of_t exp)
+
+(* S.t = Id.t *)
 let rec fv = function (* free variable (caml2html: knormal_fv) *)
   | Unit | Int(_) | Float(_) | ExtArray(_) -> S.empty
   | Neg(x) | FNeg(x) -> S.singleton x
@@ -41,7 +82,7 @@ let rec fv = function (* free variable (caml2html: knormal_fv) *)
   | Put(x, y, z) -> S.of_list [x; y; z]
   | LetTuple(xs, y, e) -> S.add y (S.diff (fv e) (S.of_list (List.map fst xs)))
 
-let insert_let (e, t) k =
+let insert_let (e, t) k = (* k : continuation *)
   match e with
   | Var(x) -> k x
   | _ ->
@@ -49,7 +90,8 @@ let insert_let (e, t) k =
     let e', t' = k x in
     Let((x, t), e, e'), t'
 
-let rec g env = function (* where K-normalization happens (caml2html: knormal_g) *)
+let rec g (env : Type.t M.t) (exp : Syntax.t) : t * Type.t = (* where K-normalization happens (caml2html: knormal_g) *)
+  match exp with
   | Syntax.Unit -> Unit, Type.Unit
   | Syntax.Bool(b) -> Int(if b then 1 else 0), Type.Int (* true -> 1, false -> 0 (caml2html: knormal_bool) *)
   | Syntax.Int(i) -> Int(i), Type.Int
@@ -165,7 +207,7 @@ let rec g env = function (* where K-normalization happens (caml2html: knormal_g)
               ExtFunApp(l, [x; y]), Type.Array(t2)))
   | Syntax.Get(e1, e2, _) ->
     (match g env e1 with
-     |        _, Type.Array(t) as g_e1 ->
+     | _, Type.Array(t) as g_e1 ->
        insert_let g_e1
          (fun x -> insert_let (g env e2)
              (fun y -> Get(x, y), t))
@@ -176,42 +218,92 @@ let rec g env = function (* where K-normalization happens (caml2html: knormal_g)
           (fun y -> insert_let (g env e3)
               (fun z -> Put(x, y, z), Type.Unit)))
 
-let f e = fst (g M.empty e)
+(* [WEEK2 Q2] Eliminate common subexpression *)
+(* 置換可能な右辺式と、それが代入された変数(左辺)のリスト *)
+type letenv = (t * Id.t) list
 
-(* [WEEK1 Q1] output pretty string for KNormal.t *)
-let rec string_of_t ?(endline = "\n") (exp : t) (depth : int) : string =
-  let indent = (String.make (depth * 2) ' ') in
+let print_letenv (env : letenv) =
+  let string_of_letenv (env : letenv) =
+    String.concat "" (List.map (fun (e, x) -> x ^ " = " ^ string_of_t e) env)
+  in print_endline ("env:" ^ string_of_letenv env)
+
+let rec may_have_side_effect (exp : t) : bool =
   match exp with
-  | Unit -> indent ^ "()" ^ endline
-  | Int n   -> indent ^ "INT " ^ (string_of_int n) ^ endline
-  | Float f -> indent ^ "FLOAT " ^ (string_of_float f) ^ endline
-  | Neg e   -> indent ^ "NEG " ^ e ^ endline
-  | Add (e1, e2)  -> indent ^ "ADD " ^ e1 ^ " " ^ e2 ^ endline
-  | Sub (e1, e2)  -> indent ^ "SUB " ^ e1 ^ " " ^ e2 ^ endline
-  | FNeg e        -> indent ^ "FNEG " ^ e ^ endline
-  | FAdd (e1, e2) -> indent ^ "FADD " ^ e1 ^ " " ^ e2 ^ endline
-  | FSub (e1, e2) -> indent ^ "FSUB " ^ e1 ^ " " ^ e2 ^ endline
-  | FMul (e1, e2) -> indent ^ "FMUL " ^ e1 ^ " " ^ e2 ^ endline
-  | FDiv (e1, e2) -> indent ^ "FDIV " ^ e1 ^ " " ^ e2 ^ endline
-  | IfEq (e1, e2, et, ef) -> indent ^ "IF ( " ^ e1 ^ " = " ^ e2 ^ " ) THEN\n" ^ (string_of_t et (depth + 1)) ^
-                             indent ^ "ELSE\n" ^ (string_of_t ef (depth + 1))
-  | IfLE (e1, e2, et, ef) -> indent ^ "IF ( " ^ e1 ^ " <= " ^ e2 ^ " ) THEN\n" ^ (string_of_t et (depth + 1)) ^
-                             indent ^ "ELSE\n" ^ (string_of_t ef (depth + 1))
-  | Let ((x, _), e1, e2) -> indent ^ "LET " ^ x ^ " =\n" ^ (string_of_t e1 (depth + 1)) ^ (indent ^ "IN\n") ^ (string_of_t e2 (depth + 1))
-  | Var x -> indent ^ "VAR " ^ x ^ endline
-  | LetRec (f, e) -> indent ^ "LET REC " ^ (string_of_fundef f (depth + 1)) ^ (indent ^ "IN\n") ^ (string_of_t e (depth + 1))
-  | App (e1, e2) -> indent ^ e1 ^ " " ^ String.concat " " e2 ^ endline
-  | Tuple e -> (indent ^ "( ") ^ String.concat ", " e ^ " )" ^ endline
-  | LetTuple (l, e1, e2) -> indent ^ "LET (" ^ (String.concat ", " (List.map fst l)) ^ ") = " ^ e1 ^ " IN\n" ^
-                            indent ^ (string_of_t e2 (depth + 1))
-  | Get (e1, e2) -> indent ^ e1 ^ "[ " ^ e2 ^ "]" ^ endline
-  | Put (e1, e2, e3) -> indent ^ e1 ^ "[ " ^ e2 ^ "] <- " ^ e3 ^ endline
-  | ExtArray e -> indent ^ e
-  | ExtFunApp (e, el) -> indent ^ e ^ " (" ^ (String.concat " " el) ^ ")\n"
-and
-  string_of_fundef (f : fundef) (depth : int) =
-  (fst f.name) ^ " (" ^ (String.concat ", " (List.map fst f.args)) ^ ") =\n" ^ (string_of_t f.body depth ~endline:"")
+  | IfEq (_, _, et, ef) -> (may_have_side_effect et) || (may_have_side_effect ef)
+  | IfLE (_, _, et, ef) -> (may_have_side_effect et) || (may_have_side_effect ef)
+  | Let (_, e1, e2) -> (may_have_side_effect e1) || (may_have_side_effect e2)
+  | LetRec (_, e) -> may_have_side_effect e
+  | App _ -> true
+  | LetTuple (_, _, e2) -> (may_have_side_effect e2)
+  | Put _ -> true
+  | ExtFunApp _ -> true
+  | _ -> false
 
-(* [WEEK1 Q1] pretty print for KNormal.t *)
-let print_t (exp : t) =
-  print_string (string_of_t exp 0)
+(* substitute a free variable 'a' in 'e' with 'b' *)
+let rec fv_subst (e : t) (a : Id.t) (b : Id.t) : t =
+  let subst_ x = if x = a then b else x in
+  match e with
+  | Neg e   -> Neg (subst_ e)
+  | Add (e1, e2)  -> Add  (subst_ e1, subst_ e2)
+  | Sub (e1, e2)  -> Sub  (subst_ e1, subst_ e2)
+  | FNeg e        -> FNeg (subst_ e)
+  | FAdd (e1, e2) -> FAdd (subst_ e1, subst_ e2)
+  | FSub (e1, e2) -> FSub (subst_ e1, subst_ e2)
+  | FMul (e1, e2) -> FMul (subst_ e1, subst_ e2)
+  | FDiv (e1, e2) -> FDiv (subst_ e1, subst_ e2)
+  | IfEq (e1, e2, et, ef) -> IfEq (subst_ e1, subst_ e2, fv_subst et a b, fv_subst ef a b)
+  | IfLE (e1, e2, et, ef) -> IfLE (subst_ e1, subst_ e2, fv_subst et a b, fv_subst ef a b)
+  | Let ((x, t), e1, e2) -> Let ((x, t), fv_subst e1 a b, fv_subst e2 a b)
+  | Var x -> Var (subst_ x)
+  | LetRec (f, e) -> LetRec (fv_subst_fun f a b, fv_subst e a b)
+  | App (e1, e2) -> App (subst_ e1, List.map subst_ e2)
+  | Tuple e -> Tuple (List.map subst_ e)
+  | LetTuple (l, e1, e2) -> LetTuple (List.map (fun (x, t) -> (subst_ x, t)) l, subst_ e1, fv_subst e2 a b)
+  | Get (e1, e2) -> Get (subst_ e1, subst_ e2)
+  | Put (e1, e2, e3) -> Put (subst_ e1, subst_ e2, subst_ e3)
+  | ExtArray e -> ExtArray (subst_ e)
+  | ExtFunApp (e, el) -> ExtFunApp (subst_ e, List.map subst_ el)
+  | _ -> e
+and fv_subst_fun (f : fundef) (a : Id.t) (b : Id.t) : fundef =
+  let subst_ x = if x = a then b else x in
+  { name = ((subst_ (fst f.name)), snd f.name); args = (List.map (fun (x, t) -> (subst_ x, t)) f.args); body = fv_subst f.body a b }
+
+(* Equality of KNotmal.t *)
+let rec eq_t (e1 : t) (e2 : t) : bool =
+  match (e1, e2) with
+  | IfEq(e11, e12, e1t, e1f), IfEq(e21, e22, e2t, e2f) -> e11 = e21 && e12 = e22 && (eq_t e1t e2t) && (eq_t e1f e2f)
+  | IfLE(e11, e12, e1t, e1f), IfLE(e21, e22, e2t, e2f) -> e11 = e21 && e12 = e22 && (eq_t e1t e2t) && (eq_t e1f e2f)
+  | Let((x1, t1), e11, e12), Let((x2, t2), e21, e22)   -> (e11 = e21) && eq_t e12 (fv_subst e22 x2 x1)
+  | LetRec(f1, e1'), LetRec(f2, e2')                   -> f1 = f2 && (eq_t e1' e2')
+  | LetTuple(l1, e11, e12), LetTuple(l2, e21, e22)     -> l1 = l2 && e11 = e21 && eq_t e12 e22
+  | _ -> e1 = e2
+
+(* drop all KNormal.t expression from 'env' whose free variables contain 'x' *)
+let delete_changed_fml (env : letenv) (x : Id.t) : letenv =
+  List.filter (fun (e, _) -> not (S.mem x (fv e))) env
+
+(* essential part of the common subexpression elimination *)
+let rec elim_comm_subexp (env : letenv) (exp : t) : t =
+  match exp with
+  | IfEq(e1, e2, et, ef) -> IfEq(e1, e2, (elim_comm_subexp env et), (elim_comm_subexp env ef))
+  | IfLE(e1, e2, et, ef) -> IfLE(e1, e2, (elim_comm_subexp env et), (elim_comm_subexp env ef))
+  | Let((x, t), e1, e2) ->
+    let e1 = elim_comm_subexp env e1 in
+    (match List.find_opt (fun (e, _) -> eq_t e e1) env with
+     | Some (e, y) ->
+       (* before applying the elimination, make sure that the formula doesn't have any side effects *)
+       (match may_have_side_effect e1 with
+        | true  -> Let((x, t), e1, elim_comm_subexp (delete_changed_fml env x) e2)
+        | false -> Let((x, t), Var y, elim_comm_subexp (delete_changed_fml env x) e2))
+     | None ->
+       (* 'e1' is unknown -> register it to the 'env' *)
+       Let((x, t), e1, elim_comm_subexp (delete_changed_fml ((e1, x) :: env) x) e2))
+  | LetRec(f, e) ->
+    let newenv = delete_changed_fml env (fst f.name) in
+    LetRec(f, (elim_comm_subexp newenv e))
+  | LetTuple(l, e1, e2) ->
+    let newenv = List.fold_left delete_changed_fml env (List.map fst l) in
+    LetTuple(l, e1, (elim_comm_subexp newenv e2))
+  | _ -> exp
+
+let f e = elim_comm_subexp [] (fst (g M.empty e))
