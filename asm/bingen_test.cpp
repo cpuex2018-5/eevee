@@ -1,8 +1,8 @@
 #include <iostream>
 #include <fstream>
 #include <cassert>
+#include <assert.h>
 #include <map>
-#include <vector>
 #include <string>
 #include "bingen.h"
 
