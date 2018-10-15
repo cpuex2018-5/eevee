@@ -3,7 +3,6 @@
 #include <sstream>
 #include <string>
 #include <utility>
-#include <vector>
 
 std::map<std::string, int> regmap =
 {
