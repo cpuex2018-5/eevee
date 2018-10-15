@@ -2,6 +2,7 @@
 #include <fstream>
 #include <string>
 #include "bingen.h"
+#include <assert.h>
 
 // 01の列にする(4桁ごとに空白)
 std::string PrettyString(uint32_t inst) {

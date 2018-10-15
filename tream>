@@ -1,0 +1,25 @@
+[1mdiff --git a/asm/bingen.h b/asm/bingen.h[m
+[1mindex dfef167..4f32142 100644[m
+[1m--- a/asm/bingen.h[m
+[1m+++ b/asm/bingen.h[m
+[36m@@ -4,6 +4,7 @@[m
+ #include <iostream>[m
+ #include <fstream>[m
+ #include <map>[m
+[32m+[m[32m#include <vector>[m
+ [m
+ class BinGen {[m
+     public:[m
+[1mdiff --git a/asm/main.cpp b/asm/main.cpp[m
+[1mindex 0cb6ffe..9c71820 100644[m
+[1m--- a/asm/main.cpp[m
+[1m+++ b/asm/main.cpp[m
+[36m@@ -2,7 +2,7 @@[m
+ #include <fstream>[m
+ #include <string>[m
+ #include "bingen.h"[m
+[31m-[m
+[32m+[m[32m#include <assert.h>[m
+ // 01の列にする(4桁ごとに空白)[m
+ std::string PrettyString(uint32_t inst) {[m
+     std::string str;[m
