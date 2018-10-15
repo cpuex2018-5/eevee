@@ -239,44 +239,48 @@ let rec may_have_side_effect (exp : t) : bool =
   | ExtFunApp _ -> true
   | _ -> false
 
-(* substitute a free variable 'a' in 'e' with 'b' *)
-let rec fv_subst (e : t) (a : Id.t) (b : Id.t) : t =
-  let subst_ x = if x = a then b else x in
-  match e with
-  | Neg e   -> Neg (subst_ e)
-  | Add (e1, e2)  -> Add  (subst_ e1, subst_ e2)
-  | Sub (e1, e2)  -> Sub  (subst_ e1, subst_ e2)
-  | FNeg e        -> FNeg (subst_ e)
-  | FAdd (e1, e2) -> FAdd (subst_ e1, subst_ e2)
-  | FSub (e1, e2) -> FSub (subst_ e1, subst_ e2)
-  | FMul (e1, e2) -> FMul (subst_ e1, subst_ e2)
-  | FDiv (e1, e2) -> FDiv (subst_ e1, subst_ e2)
-  | IfEq (e1, e2, et, ef) -> IfEq (subst_ e1, subst_ e2, fv_subst et a b, fv_subst ef a b)
-  | IfLE (e1, e2, et, ef) -> IfLE (subst_ e1, subst_ e2, fv_subst et a b, fv_subst ef a b)
-  | Let ((x, t), e1, e2) -> Let ((x, t), fv_subst e1 a b, fv_subst e2 a b)
-  | Var x -> Var (subst_ x)
-  | LetRec (f, e) -> LetRec (fv_subst_fun f a b, fv_subst e a b)
-  | App (e1, e2) -> App (subst_ e1, List.map subst_ e2)
-  | Tuple e -> Tuple (List.map subst_ e)
-  | LetTuple (l, e1, e2) -> LetTuple (List.map (fun (x, t) -> (subst_ x, t)) l, subst_ e1, fv_subst e2 a b)
-  | Get (e1, e2) -> Get (subst_ e1, subst_ e2)
-  | Put (e1, e2, e3) -> Put (subst_ e1, subst_ e2, subst_ e3)
-  | ExtArray e -> ExtArray (subst_ e)
-  | ExtFunApp (e, el) -> ExtFunApp (subst_ e, List.map subst_ el)
-  | _ -> e
-and fv_subst_fun (f : fundef) (a : Id.t) (b : Id.t) : fundef =
-  let subst_ x = if x = a then b else x in
-  { name = ((subst_ (fst f.name)), snd f.name); args = (List.map (fun (x, t) -> (subst_ x, t)) f.args); body = fv_subst f.body a b }
-
 (* Equality of KNotmal.t *)
-let rec eq_t (e1 : t) (e2 : t) : bool =
+let rec eq_t (e1 : t) (e2 : t) (fvlist: (Id.t * Id.t) list) : bool =
+  let id e1 e2 =
+    match List.find_opt (fun (e, _) -> e = e1) fvlist with
+    | Some _ -> List.mem (e1, e2) fvlist
+    | None   -> match List.find_opt (fun (_, e) -> e = e2) fvlist with
+      | Some _ -> List.mem (e1, e2) fvlist
+      | None   -> e1 = e2 in
   match (e1, e2) with
-  | IfEq(e11, e12, e1t, e1f), IfEq(e21, e22, e2t, e2f) -> e11 = e21 && e12 = e22 && (eq_t e1t e2t) && (eq_t e1f e2f)
-  | IfLE(e11, e12, e1t, e1f), IfLE(e21, e22, e2t, e2f) -> e11 = e21 && e12 = e22 && (eq_t e1t e2t) && (eq_t e1f e2f)
-  | Let((x1, t1), e11, e12), Let((x2, t2), e21, e22)   -> (e11 = e21) && eq_t e12 (fv_subst e22 x2 x1)
-  | LetRec(f1, e1'), LetRec(f2, e2')                   -> f1 = f2 && (eq_t e1' e2')
-  | LetTuple(l1, e11, e12), LetTuple(l2, e21, e22)     -> l1 = l2 && e11 = e21 && eq_t e12 e22
-  | _ -> e1 = e2
+  | Unit, Unit -> true
+  | Int n, Int m -> n = m
+  | Float f, Float f' -> f = f'
+  | Neg e, Neg e' -> id e e'
+  | Add (e1, e2), Add (d1, d2)   -> (id e1 d1) && (id e2 d2)
+  | Sub (e1, e2), Sub (d1, d2)   -> (id e1 d1) && (id e2 d2)
+  | FNeg e, FNeg d               -> (id e d)
+  | FAdd (e1, e2), FAdd (d1, d2) -> (id e1 d1) && (id e2 d2)
+  | FSub (e1, e2), FSub (d1, d2) -> (id e1 d1) && (id e2 d2)
+  | FMul (e1, e2), FMul (d1, d2) -> (id e1 d1) && (id e2 d2)
+  | FDiv (e1, e2), FDiv (d1, d2) -> (id e1 d1) && (id e2 d2)
+  | IfEq (e1, e2, et, ef), IfEq (d1, d2, dt, df) ->
+    (id e1 d1) && (id d2 d2) && (eq_t et dt fvlist) && (eq_t ef df fvlist)
+  | IfLE (e1, e2, et, ef), IfLE (d1, d2, dt, df) ->
+    (id e1 d1) && (id d2 d2) && (eq_t et dt fvlist) && (eq_t ef df fvlist)
+  | Let ((x, t), e1, e2), Let ((y, s), d1, d2) ->
+    (match x = y with
+     | true  -> eq_t e1 d1 fvlist && eq_t e2 d2 fvlist
+     | false -> match List.mem (x, y) fvlist with
+       | true  -> eq_t e1 d1 fvlist && eq_t e2 d2 fvlist
+       | false -> eq_t (Let ((x, t), e1, e2)) (Let ((y, s), d1, d2)) ((x, y) :: fvlist))
+  | Var x, Var y -> id x y
+  | LetRec (f, e), LetRec (g, d) ->
+    f.name = g.name && f.args = g.args && eq_t f.body g.body fvlist && eq_t e d fvlist
+  | App (e1, e2), App (d1, d2) -> (id e1 d1) && List.for_all2 id e2 d2
+  | Tuple e, Tuple d -> List.for_all2 id e d
+  | LetTuple (l, e1, e2), LetTuple (k, d1, d2) ->
+    List.for_all2 id (List.map fst l) (List.map fst k) && id e1 d1 && eq_t e2 d2 fvlist
+  | Get (e1, e2), Get (d1, d2) -> id e1 d1 && id e2 d2
+  | Put (e1, e2, e3), Put (d1, d2, d3) -> id e1 d1 && id e2 d2 && id e3 d3
+  | ExtArray e, ExtArray d -> id e d
+  | ExtFunApp (e, el), ExtFunApp (d, dl) -> id e d && List.for_all2 id el dl
+  | _ -> false
 
 (* drop all KNormal.t expression from 'env' whose free variables contain 'x' *)
 let delete_changed_fml (env : letenv) (x : Id.t) : letenv =
@@ -285,11 +289,13 @@ let delete_changed_fml (env : letenv) (x : Id.t) : letenv =
 (* essential part of the common subexpression elimination *)
 let rec elim_comm_subexp (env : letenv) (exp : t) : t =
   match exp with
-  | IfEq(e1, e2, et, ef) -> IfEq(e1, e2, (elim_comm_subexp env et), (elim_comm_subexp env ef))
-  | IfLE(e1, e2, et, ef) -> IfLE(e1, e2, (elim_comm_subexp env et), (elim_comm_subexp env ef))
+  | IfEq(e1, e2, et, ef) ->
+    IfEq(e1, e2, (elim_comm_subexp env et), (elim_comm_subexp env ef))
+  | IfLE(e1, e2, et, ef) ->
+    IfLE(e1, e2, (elim_comm_subexp env et), (elim_comm_subexp env ef))
   | Let((x, t), e1, e2) ->
     let e1 = elim_comm_subexp env e1 in
-    (match List.find_opt (fun (e, _) -> eq_t e e1) env with
+    (match List.find_opt (fun (e, _) -> eq_t e e1 []) env with
      | Some (e, y) ->
        (* before applying the elimination, make sure that the formula doesn't have any side effects *)
        (match may_have_side_effect e1 with
