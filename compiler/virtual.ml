@@ -70,8 +70,8 @@ let rec g env = function (* generate VMcode for a formula (caml2html: virtual_g)
   | Closure.Var(x) ->
     (match M.find x env with
      | Type.Unit -> Ans(Nop)
-     | Type.Float -> Ans(FMr(x))
-     | _ -> Ans(Mr(x)))
+     | Type.Float -> Ans(FMv(x))
+     | _ -> Ans(Mv(x)))
   | Closure.MakeCls((x, t), { Closure.entry = l; Closure.actual_fv = ys }, e2) -> (* make closure (caml2html: virtual_makecls) *)
     (* set closure's address and then store the value of fvar *)
     let e2' = g (M.add x t env) e2 in
@@ -81,7 +81,7 @@ let rec g env = function (* generate VMcode for a formula (caml2html: virtual_g)
         (4, e2')
         (fun y offset store_fv -> seq(Stfd(y, x, C(offset)), store_fv))
         (fun y _ offset store_fv -> seq(Stw(y, x, C(offset)), store_fv)) in
-    Let((x, t), Mr(reg_hp),
+    Let((x, t), Mv(reg_hp),
         Let((reg_hp, Type.Int), Add(reg_hp, C(align offset)),
             let z = Id.genid "l" in
             Let((z, Type.Int), SetL(l),
@@ -98,10 +98,10 @@ let rec g env = function (* generate VMcode for a formula (caml2html: virtual_g)
     let (offset, store) =
       expand
         (List.map (fun x -> (x, M.find x env)) xs)
-        (0, Ans(Mr(y)))
+        (0, Ans(Mv(y)))
         (fun x offset store -> seq(Stfd(x, y, C(offset)), store))
         (fun x _ offset store -> seq(Stw(x, y, C(offset)), store))  in
-    Let((y, Type.Tuple(List.map (fun x -> M.find x env) xs)), Mr(reg_hp),
+    Let((y, Type.Tuple(List.map (fun x -> M.find x env) xs)), Mv(reg_hp),
         Let((reg_hp, Type.Int), Add(reg_hp, C(align offset)),
             store))
   | Closure.LetTuple(xts, y, e2) ->
