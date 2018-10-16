@@ -12,4 +12,4 @@ bingen.o: bingen.cpp
 	$(CC) $(CFLAGS) -c $^ -o $@
 
 clean:
-	rm -rf *.o main test core peda-session*
+	rm -rf *.o main test core peda-session* .gdb_history
