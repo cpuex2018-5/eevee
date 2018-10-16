@@ -16,11 +16,11 @@ Simulator *init(unsigned long m_size,unsigned long s_pos){
   }
 
   sim -> registers[3] = s_pos; //set stack pointer
-  
+
   for(i = 0;i<32;i++){
     sim -> f_registers[i] = 0.0;
   }
- 
+
   sim -> text_memory = malloc(sizeof(char)*m_size);
   memset(sim->text_memory,0,sizeof(char)*m_size);
   sim -> data_memory = malloc(sizeof(unsigned char)*m_size);
@@ -172,7 +172,6 @@ void exec(Simulator *sim){
         }
         break;
       case 0b0000011:
-
         //lb,lh,lw,lbu,lhu
         decode_i(inst,op);
         s_imm = (op->imm) | ((op->imm & 0x800) ? 0xFFFFF800:0); //sign extension
@@ -361,6 +360,7 @@ void exec(Simulator *sim){
     free(op);
     op=NULL;
   }
+
   print_regs(sim);
   fprintf(stdout,"simulation finished\n");
 }

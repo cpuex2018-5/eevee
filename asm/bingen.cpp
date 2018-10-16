@@ -1,9 +1,9 @@
 #include "bingen.h"
-
+#include <iostream>
 #include <sstream>
 #include <string>
 #include <utility>
-
+using namespace std;
 std::map<std::string, int> regmap =
 {
     { "zero", 0 },
@@ -233,29 +233,32 @@ void BinGen::Parse(std::string input, std::string &mnemo, std::vector<std::strin
     int curr_pos = 0;
     int start_pos = 0;
     while (input[curr_pos] == ' ' || input[curr_pos] == '\t') curr_pos++;
-
     // mnemonic (or label)
     start_pos = curr_pos;
     while (!(input[curr_pos] == ' ' || input[curr_pos] == '\t' || input[curr_pos] == '\0')) curr_pos++;
     mnemo = input.substr(start_pos, curr_pos - start_pos);
     while (input[curr_pos] == ' ' || input[curr_pos] == '\t') curr_pos++;
     if (input[curr_pos] == '\0') return;
-
     // arg[0]
     start_pos = curr_pos;
     while (!(input[curr_pos] == ' ' || input[curr_pos] == '\t' || input[curr_pos] == ',' || input[curr_pos] == '\0')) curr_pos++;
     arg.push_back(input.substr(start_pos, curr_pos - start_pos));
     while (input[curr_pos] == ' ' || input[curr_pos] == '\t') curr_pos++;
     if (input[curr_pos] == '\0') return;
-
     // arg[1]
+
+    if(input[curr_pos] == ','){
+      curr_pos++;
+    }
     start_pos = curr_pos;
     while (!(input[curr_pos] == ' ' || input[curr_pos] == '\t' || input[curr_pos] == ',' || input[curr_pos] == '\0')) curr_pos++;
     arg.push_back(input.substr(start_pos, curr_pos - start_pos));
     while (input[curr_pos] == ' ' || input[curr_pos] == '\t') curr_pos++;
     if (input[curr_pos] == '\0') return;
-
     // arg[2]
+    if(input[curr_pos] == ','){
+      curr_pos++;
+    }
     start_pos = curr_pos;
     while (!(input[curr_pos] == '\0')) curr_pos++;
     arg.push_back(input.substr(start_pos, curr_pos - start_pos));
@@ -270,7 +273,6 @@ void BinGen::Convert(std::string input) {
         // Skip the labels.
         return;
     }
-
     // Note: Lack of arguments will cause crash here
     if (mnemo == "lui")
         WriteData(lui(arg[0], std::stoi(arg[1], nullptr, 16)));
@@ -296,8 +298,9 @@ void BinGen::Convert(std::string input) {
         WriteData(store(mnemo, arg[0], rs1, offset));
     }
 
-    else if (mnemo == "addi" || mnemo == "slti" || mnemo == "sltiu" || mnemo == "xori" || mnemo == "ori" || mnemo == "andi")
+    else if (mnemo == "addi" || mnemo == "slti" || mnemo == "sltiu" || mnemo == "xori" || mnemo == "ori" || mnemo == "andi"){
         WriteData(op_imm(mnemo, arg[0], arg[1], std::stoi(arg[2], nullptr, 16)));
+    }
     else if (mnemo == "slli" || mnemo == "srli" || mnemo == "srai")
         WriteData(op_imm_shift(mnemo, arg[0], arg[1], std::stoi(arg[2], nullptr, 16)));
     else if (mnemo == "add" || mnemo == "sub" || mnemo == "sll" || mnemo == "slt" || mnemo == "sltu" || mnemo == "xor" ||
@@ -326,10 +329,11 @@ uint32_t BinGen::Pack(Fields fields) {
 }
 
 void BinGen::CheckImmediate(uint32_t imm, int range, std::string func_name) {
-    if (imm >= (1 << range)) {
+  if ((int)imm > 2047 || (int)imm < -2048) {
+        //符号付き12bit数の最大と最小に入っているか？
         std::cout << "ERROR(" << func_name << "): The immediate value should be smaller than 2 ^ " << range << std::endl;
         exit(1);
-    }
+  }
 }
 
 void BinGen::ParseOffset(std::string arg, std::string* reg, uint32_t* offset) {
