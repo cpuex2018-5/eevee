@@ -1,9 +1,12 @@
 #include "bingen.h"
+#include <stdio.h>
 #include <iostream>
 #include <sstream>
 #include <string>
 #include <utility>
 using namespace std;
+
+void print_binary(int);
 std::map<std::string, int> regmap =
 {
     { "zero", 0 },
@@ -201,9 +204,12 @@ uint32_t BinGen::op (std::string mnemo, std::string rd, std::string rs1, std::st
 }
 
 void BinGen::WriteData(uint32_t data) {
-    char d[4];
-    *d = data;
-    ofs_.write(d, 4);
+    unsigned char d[4];
+    d[0] = data>>24;
+    d[1] = data>>16;
+    d[2] = data>>8;
+    d[3] = data;
+    ofs_.write((char *)d, 4);
 }
 
 void BinGen::ReadLabels(std::string input) {
@@ -321,9 +327,16 @@ void BinGen::Convert(std::string input) {
 
 uint32_t BinGen::Pack(Fields fields) {
     uint32_t ret = 0;
-    for (const auto& field : fields) {
-        ret <<= field.first;
-        ret += field.second;
+    for (auto itr = fields.rbegin();itr != fields.rend();++itr) {
+        /*
+        cout << itr->first << "\n";
+        cout << itr->second << "\n";
+        cout << endl;
+        */
+        ret <<= itr->first;
+        //print_binary((int)itr->second);
+        ret += itr->second;
+        //print_binary(ret);
     }
     return ret;
 }
@@ -351,4 +364,13 @@ uint32_t BinGen::MyStoi(std::string imm) {
         // |imm| was a label.
         return label_map_[imm];
     }
+}
+
+
+void print_binary(int val){
+  //for debug
+  for(int i = 31;i>=0;i--){
+    printf("%d ",((val>>i)&0x1));
+  }
+  printf("\n");
 }
