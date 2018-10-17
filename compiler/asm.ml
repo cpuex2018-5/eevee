@@ -7,23 +7,23 @@ type t = (* 命令の列 (caml2html: sparcasm_t) *)
 and exp = (* 一つ一つの命令に対応する式 (caml2html: sparcasm_exp) *)
   | Nop
   | Li of int
-  | FLi of Id.l
-  | SetL of Id.l
-  | Mr of Id.t
+  | FLi of Id.l (* Load Floating-Point Double D-form *)
+  | SetL of Id.l (* Set Label(?) *)
+  | Mv of Id.t
   | Neg of Id.t
   | Add of Id.t * id_or_imm
   | Sub of Id.t * id_or_imm
-  | Slw of Id.t * id_or_imm
-  | Lwz of Id.t * id_or_imm
-  | Stw of Id.t * Id.t * id_or_imm
-  | FMr of Id.t
+  | Slw of Id.t * id_or_imm (* Shift Left Word *)
+  | Lwz of Id.t * id_or_imm (* Load Word and Zero *)
+  | Stw of Id.t * Id.t * id_or_imm (* Store Word *)
+  | FMv of Id.t
   | FNeg of Id.t
   | FAdd of Id.t * Id.t
   | FSub of Id.t * Id.t
   | FMul of Id.t * Id.t
   | FDiv of Id.t * Id.t
-  | Lfd of Id.t * id_or_imm
-  | Stfd of Id.t * Id.t * id_or_imm
+  | Lfd of Id.t * id_or_imm (* Load Floating-Point Double D-form *)
+  | Stfd of Id.t * Id.t * id_or_imm (* Store Floating-Point Double D-form *)
   | Comment of string
   (* virtual instructions *)
   | IfEq of Id.t * id_or_imm * t * t
@@ -69,7 +69,7 @@ let rec remove_and_uniq xs = function
 let fv_id_or_imm = function V(x) -> [x] | _ -> []
 let rec fv_exp = function
   | Nop | Li(_) | FLi(_) | SetL(_) | Comment(_) | Restore(_) -> []
-  | Mr(x) | Neg(x) | FMr(x) | FNeg(x) | Save(x, _) -> [x]
+  | Mv(x) | Neg(x) | FMv(x) | FNeg(x) | Save(x, _) -> [x]
   | Add(x, y') | Sub(x, y') | Slw(x, y') | Lfd(x, y') | Lwz(x, y') -> x :: fv_id_or_imm y'
   | Stw(x, y, z') | Stfd(x, y, z') -> x :: y :: fv_id_or_imm z'
   | FAdd(x, y) | FSub(x, y) | FMul(x, y) | FDiv(x, y) -> [x; y]

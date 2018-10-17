@@ -3,9 +3,15 @@ let limit = ref 1000
 let rec iter n e = (* optimization (caml2html: main_iter) *)
   Format.eprintf "iteration %d@." n;
   if n = 0 then e else
-    let e' = Elim.f (ConstFold.f (Inline.f (Assoc.f (Beta.f e)))) in
-    if e = e' then e else
-      iter (n - 1) e'
+    (* [WEEK2 Q2] Common subexpression elimination *)
+    (print_endline "-------------------------Before Common Subexpression Elimination-------------------------";
+     KNormal.print_t e;
+     let e' = Common.f e in
+     print_endline "-------------------------After Common Subexpression Elimination--------------------------";
+     KNormal.print_t e';
+     let e' = Elim.f (ConstFold.f (Inline.f (Assoc.f (Beta.f e')))) in
+     if e = e' then e else
+       iter (n - 1) e')
 
 let lexbuf outchan l = (* compile the buffer and put it to outchan (caml2html: main_lexbuf) *)
   Id.counter := 0;
@@ -22,9 +28,11 @@ let lexbuf outchan l = (* compile the buffer and put it to outchan (caml2html: m
                          (KNormal.f
                             (Typing.f
                                (let exp = (Parser.exp Lexer.token l) in
-                                Syntax.print_t exp; exp))) in
+                                (* Syntax.print_t exp; *) exp))) in
+                       (* print_endline "------------------------------------------------------------"; *)
+                       KNormal.print_t kexp;
                        print_endline "------------------------------------------------------------";
-                       KNormal.print_t kexp; kexp)))))))
+                       kexp)))))))
 
 let string s = lexbuf stdout (Lexing.from_string s) (* compile a string and put it to stdout (caml2html: main_string) *)
 
