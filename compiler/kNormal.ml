@@ -53,8 +53,8 @@ let string_of_t (exp : t) =
     | Tuple e -> (indent ^ "( ") ^ String.concat ", " e ^ " )" ^ endline
     | LetTuple (l, e1, e2) -> indent ^ "LET (" ^ (String.concat ", " (List.map fst l)) ^ ") = " ^ e1 ^ " IN\n" ^
                               indent ^ (str_of_t e2 depth)
-    | Get (e1, e2) -> indent ^ e1 ^ "[ " ^ e2 ^ "]" ^ endline
-    | Put (e1, e2, e3) -> indent ^ e1 ^ "[ " ^ e2 ^ "] <- " ^ e3 ^ endline
+    | Get (e1, e2) -> indent ^ e1 ^ "[ " ^ e2 ^ " ]" ^ endline
+    | Put (e1, e2, e3) -> indent ^ e1 ^ "[ " ^ e2 ^ " ] <- " ^ e3 ^ endline
     | ExtArray e -> indent ^ e
     | ExtFunApp (e, el) -> indent ^ e ^ " (" ^ (String.concat " " el) ^ ")\n"
   and

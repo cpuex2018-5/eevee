@@ -23,13 +23,10 @@ let lexbuf outchan l = (* compile the buffer and put it to outchan (caml2html: m
              (Closure.f
                 (iter !limit
                    (Alpha.f
-                      (* [WEEK1 Q1] add pretty-print for KNormal.t and Syntax.t *)
                       (let kexp =
                          (KNormal.f
                             (Typing.f
-                               (let exp = (Parser.exp Lexer.token l) in
-                                (* Syntax.print_t exp; *) exp))) in
-                       (* print_endline "------------------------------------------------------------"; *)
+                               (Parser.exp Lexer.token l))) in
                        KNormal.print_t kexp;
                        print_endline "------------------------------------------------------------";
                        kexp)))))))
