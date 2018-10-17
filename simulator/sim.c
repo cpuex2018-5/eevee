@@ -178,26 +178,26 @@ void exec(Simulator *sim){
         address = sim -> registers[op->rs1] + s_imm;
         if(op->funct3==0b000){
           //lb
-          sim -> registers[op->rd] = (char)sim -> data_memory[address]; //wrong?
+          sim -> registers[op->rd] = (char)sim -> data_memory[address];
           // cast to char for sign extension
         }
         else if(op->funct3==0b001){
           //lh
-          sim -> registers[op->rd] = (short)((sim->data_memory[address]<<8) + (sim->data_memory[address+1])); //wrong?
+          sim -> registers[op->rd] = (short)((sim->data_memory[address+1]<<8) + (sim->data_memory[address]));
           //cast to short for sign extension
         }
         else if(op->funct3==0b010){
           //lw
-          sim -> registers[op->rd] = (sim->data_memory[address]<<24) + (sim -> data_memory[address+1]<<16)
-                                      + (sim->data_memory[address+2]<<8) + (sim->data_memory[address+3]); //wrong?
+          sim -> registers[op->rd] = ((unsigned int)sim->data_memory[address+3]<<24) + ((unsigned int)sim -> data_memory[address+2]<<16)
+                                      + ((unsigned int)sim->data_memory[address+1]<<8) + ((unsigned int)sim->data_memory[address]);
         }
         else if(op->funct3==0b100){
           //lbu
-          sim -> registers[op->rd] = sim -> data_memory[address]; //wrong?
+          sim -> registers[op->rd] = sim -> data_memory[address];
         }
         else if(op->funct3==0b101){
           //lhu
-          sim -> registers[op->rd] = (sim -> data_memory[address]<<8) + sim -> data_memory[address+1]; //wrong??
+          sim -> registers[op->rd] = (sim -> data_memory[address+1]<<8) + sim -> data_memory[address]; //wrong??
         }
         else{
           fprintf(stderr,"Unknown instruction\n");
@@ -211,12 +211,12 @@ void exec(Simulator *sim){
         address = sim -> registers[op->rs1]+s_imm;
         if(op->funct3 == 0b000){
           //sb
-          sim -> data_memory[address] = get_binary(sim->registers[op->rs2],24,32);
+          sim -> data_memory[address] = get_binary(sim->registers[op->rs2],0,8);
         }
         else if(op->funct3 == 0b001){
           //sh
-          sim -> data_memory[address] = get_binary(sim->registers[op->rs2],16,24);
-          sim -> data_memory[address+1] = get_binary(sim->registers[op->rs2],24,32);
+          sim -> data_memory[address] = get_binary(sim->registers[op->rs2],0,8);
+          sim -> data_memory[address+1] = get_binary(sim->registers[op->rs2],8,16);
         }
         else if(op->funct3 == 0b010){
           //sw

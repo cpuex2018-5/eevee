@@ -4,7 +4,7 @@
 #include <sstream>
 #include <string>
 #include <utility>
-using namespace std;
+#include <cmath>
 
 void print_binary(int);
 std::map<std::string, int> regmap =
@@ -121,7 +121,7 @@ uint32_t BinGen::load (std::string mnemo, std::string rd, std::string rs1, uint3
     Fields fields;
     fields.emplace_back(7, 0b0000011);
     fields.emplace_back(5, regmap[rd]);
-    fields.emplace_back(3, 0);
+    fields.emplace_back(3, funct3);
     fields.emplace_back(5, regmap[rs1]);
     fields.emplace_back(12, offset);
     return Pack(fields);
@@ -327,22 +327,16 @@ void BinGen::Convert(std::string input) {
 uint32_t BinGen::Pack(Fields fields) {
     uint32_t ret = 0;
     for (auto itr = fields.rbegin();itr != fields.rend();++itr) {
-        /*
-        cout << itr->first << "\n";
-        cout << itr->second << "\n";
-        cout << endl;
-        */
         ret <<= itr->first;
-        //print_binary((int)itr->second);
         ret += itr->second;
-        //print_binary(ret);
     }
     return ret;
 }
 
 void BinGen::CheckImmediate(uint32_t imm, int range, std::string func_name) {
-  if ((int)imm > 2047 || (int)imm < -2048) {
-        //符号付き12bit数の最大と最小に入っているか？
+  int v = std::pow(2,(range-1));
+  if ((int)imm > (v-1) || (int)imm < (-v)) {
+        //符号付 range bit数の最大と最小に入っているか？
         std::cout << "ERROR(" << func_name << "): The immediate value should be smaller than 2 ^ " << range << std::endl;
         exit(1);
   }
