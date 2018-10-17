@@ -1,5 +1,6 @@
 #include "bingen.h"
 #include <stdio.h>
+#include <cctype>
 #include <iostream>
 #include <sstream>
 #include <string>
@@ -7,6 +8,7 @@
 #include <cmath>
 
 void print_binary(int);
+int is_imm(std::string);
 std::map<std::string, int> regmap =
 {
     { "zero", 0 },
@@ -283,12 +285,30 @@ void BinGen::Convert(std::string input) {
         WriteData(lui(arg[0], std::stoi(arg[1], nullptr, 16)));
     else if (mnemo == "auipc")
         WriteData(auipc(arg[0], std::stoi(arg[1], nullptr, 16)));
-    else if (mnemo == "jal")
-        WriteData(jal(arg[0], std::stoi(arg[1], nullptr, 16)));
-    else if (mnemo == "jalr")
-        WriteData(jalr(arg[0], arg[1], std::stoi(arg[2], nullptr, 16)));
-    else if (mnemo == "beq" || mnemo == "bne" || mnemo == "blt" || mnemo == "bge" || mnemo == "bltu") {
-        WriteData(branch(mnemo, arg[0], arg[1], MyStoi(arg[2])));
+    else if (mnemo == "jal"){
+        if(is_imm(arg[1]) == 1){
+          WriteData(jal(arg[0],4*label_map_[arg[1]]));
+        }
+        else{
+          WriteData(jal(arg[0], std::stoi(arg[1], nullptr, 16)));
+        }
+    }
+    else if (mnemo == "jalr"){
+        if(is_imm(arg[2]) == 1){
+          WriteData(jalr(arg[0],arg[1],4*label_map_[arg[2]]));
+        }
+        else{
+          WriteData(jalr(arg[0], arg[1], std::stoi(arg[2], nullptr, 16)));
+        }
+    }
+        else if (mnemo == "beq" || mnemo == "bne" || mnemo == "blt" || mnemo == "bge" || mnemo == "bltu") {
+          if(is_imm(arg[2]) == 1){
+                WriteData(branch(mnemo,arg[0],arg[1],4*label_map_[arg[2]]));
+          }
+          else{
+                WriteData(branch(mnemo,arg[0],arg[1],std::stoi(arg[2],nullptr,16)));
+          }
+          //WriteData(branch(mnemo, arg[0], arg[1], MyStoi(arg[2])));
     }
 
     else if (mnemo == "lb" || mnemo == "lh" || mnemo == "lw" || mnemo == "lbu" || mnemo == "lhu") {
@@ -359,6 +379,14 @@ uint32_t BinGen::MyStoi(std::string imm) {
     }
 }
 
+int is_imm(std::string str){
+  for(char& c :str){
+    if(!isdigit(c)){
+      return 1;
+    }
+  }
+  return 0;
+}
 
 void print_binary(int val){
   //for debug

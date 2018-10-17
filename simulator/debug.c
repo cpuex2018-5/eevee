@@ -42,6 +42,14 @@ int debug_exec(Simulator *sim,char *buffer){
     print_fregs(sim);
     return 0;
   }
+  else if(strncmp(buffer,"d sp",4)==0){
+    int sp = sim->registers[3];
+    int start = sp - 100;
+    if(start < 0) start = 0;
+    int end = sp + 100;
+    if(end>0xfffff) end = 0xfffff;
+    dump_memory(sim,start,end);
+  }
   else if(strncmp(buffer,"d",1)==0){
     char *start;
     char *end;

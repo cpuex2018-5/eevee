@@ -85,12 +85,14 @@ void exec(Simulator *sim){
     unsigned int address;
     switch(opcode){
       case 0b0110111:
+        //検証済み
         //lui
         decode_u(inst,op);
         sim->registers[op->rd] =(op->imm << 12);
         sim -> pc = sim -> pc + 4;
         break;
       case 0b0010111:
+        //検証済み
         //auipc
         decode_u(inst,op);
         sim->registers[op->rd]=(op->imm << 12)+ sim -> pc;
@@ -172,6 +174,7 @@ void exec(Simulator *sim){
         }
         break;
       case 0b0000011:
+        //検証済み
         //lb,lh,lw,lbu,lhu
         decode_i(inst,op);
         s_imm = (op->imm) | ((op->imm & 0x800) ? 0xFFFFF800:0); //sign extension
@@ -205,6 +208,7 @@ void exec(Simulator *sim){
         sim -> pc = sim -> pc + 4;
         break;
       case 0b0100011:
+        //検証済み
         //sb,sh,sw
         decode_s(inst,op);
         s_imm = (op->imm) | ((op->imm & 0x800) ? 0xFFFFF800:0); //sign extension
