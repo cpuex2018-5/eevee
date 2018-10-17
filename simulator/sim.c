@@ -57,7 +57,6 @@ void exec(Simulator *sim){
 
     if(debug_mode == 1){
       //for debug
-      int debug_command;
       fprintf(stdout,"current pc: %ld\n",sim->pc);
       fprintf(stdout,"next instruction: ");
       print_instr(sim);
@@ -69,9 +68,10 @@ void exec(Simulator *sim){
           exit(1);
         }
         scanf("%*c");
-        debug_command = debug_parser(buffer);
-        int ret = debug_exec(sim,debug_command);
-        if(ret==0) break;
+        int i = debug_exec(sim,buffer);
+        if(i==1){
+          break;
+        }
       }
     }
 
