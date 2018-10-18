@@ -13,3 +13,21 @@ parser.mli
 *.dSYM
 
 sandbox/
+shootout/x86/
+test/x86/
+to_ppc
+to_x86
+x86/
+
+asm.mli
+test/toomanyargs.ml
+test/manyargs.ml
+asm.ml
+shootout/Makefile
+simm.ml
+emit.ml
+regAlloc.ml
+virtual.ml
+libmincaml.S
+min-rt/globals.s
+bytemark/Makefile
