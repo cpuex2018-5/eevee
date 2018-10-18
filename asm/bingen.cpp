@@ -1,9 +1,14 @@
 #include "bingen.h"
+#include <stdio.h>
+#include <cctype>
 #include <iostream>
 #include <sstream>
 #include <string>
 #include <utility>
-using namespace std;
+#include <cmath>
+
+void print_binary(int);
+int is_imm(std::string);
 std::map<std::string, int> regmap =
 {
     { "zero", 0 },
@@ -15,30 +20,29 @@ std::map<std::string, int> regmap =
     { "t1", 6 },
     { "t2", 7 },
     { "s0", 8 },
-    { "fp", 8 },
-    { "s1", 9 },
-    { "a0", 10 },
-    { "a1", 11 },
-    { "a2", 12 },
-    { "a3", 13 },
-    { "a4", 14 },
-    { "a5", 15 },
-    { "a6", 16 },
-    { "a7", 17 },
-    { "s2", 18 },
-    { "s3", 19 },
-    { "s4", 20 },
-    { "s5", 21 },
-    { "s6", 22 },
-    { "s7", 23 },
-    { "s8", 24 },
-    { "s9", 25 },
-    { "s10", 26 },
-    { "s11", 27 },
-    { "t3", 28 },
-    { "t4", 29 },
-    { "t5", 30 },
-    { "t6", 31 }
+    { "fp", 9 },
+    { "s1", 10 },
+    { "a0", 11 },
+    { "a1", 12 },
+    { "a2", 13 },
+    { "a3", 14 },
+    { "a4", 15 },
+    { "a5", 16 },
+    { "a6", 17 },
+    { "a7", 18 },
+    { "s2", 19 },
+    { "s3", 20 },
+    { "s4", 21 },
+    { "s5", 22 },
+    { "s6", 23 },
+    { "s7", 24 },
+    { "s8", 25 },
+    { "s9", 26 },
+    { "s10", 27 },
+    { "s11", 28 },
+    { "t3", 29 },
+    { "t4", 30 },
+    { "t5", 31 },
 };
 
 BinGen::BinGen(std::ofstream ofs)
@@ -119,7 +123,7 @@ uint32_t BinGen::load (std::string mnemo, std::string rd, std::string rs1, uint3
     Fields fields;
     fields.emplace_back(7, 0b0000011);
     fields.emplace_back(5, regmap[rd]);
-    fields.emplace_back(3, 0);
+    fields.emplace_back(3, funct3);
     fields.emplace_back(5, regmap[rs1]);
     fields.emplace_back(12, offset);
     return Pack(fields);
@@ -201,9 +205,12 @@ uint32_t BinGen::op (std::string mnemo, std::string rd, std::string rs1, std::st
 }
 
 void BinGen::WriteData(uint32_t data) {
-    char d[4];
-    *d = data;
-    ofs_.write(d, 4);
+    unsigned char d[4];
+    d[0] = data>>24;
+    d[1] = data>>16;
+    d[2] = data>>8;
+    d[3] = data;
+    ofs_.write((char *)d, 4);
 }
 
 void BinGen::ReadLabels(std::string input) {
@@ -278,12 +285,30 @@ void BinGen::Convert(std::string input) {
         WriteData(lui(arg[0], std::stoi(arg[1], nullptr, 16)));
     else if (mnemo == "auipc")
         WriteData(auipc(arg[0], std::stoi(arg[1], nullptr, 16)));
-    else if (mnemo == "jal")
-        WriteData(jal(arg[0], std::stoi(arg[1], nullptr, 16)));
-    else if (mnemo == "jalr")
-        WriteData(jalr(arg[0], arg[1], std::stoi(arg[2], nullptr, 16)));
-    else if (mnemo == "beq" || mnemo == "bne" || mnemo == "blt" || mnemo == "bge" || mnemo == "bltu") {
-        WriteData(branch(mnemo, arg[0], arg[1], MyStoi(arg[2])));
+    else if (mnemo == "jal"){
+        if(is_imm(arg[1]) == 1){
+          WriteData(jal(arg[0],4*label_map_[arg[1]]));
+        }
+        else{
+          WriteData(jal(arg[0], std::stoi(arg[1], nullptr, 16)));
+        }
+    }
+    else if (mnemo == "jalr"){
+        if(is_imm(arg[2]) == 1){
+          WriteData(jalr(arg[0],arg[1],4*label_map_[arg[2]]));
+        }
+        else{
+          WriteData(jalr(arg[0], arg[1], std::stoi(arg[2], nullptr, 16)));
+        }
+    }
+        else if (mnemo == "beq" || mnemo == "bne" || mnemo == "blt" || mnemo == "bge" || mnemo == "bltu") {
+          if(is_imm(arg[2]) == 1){
+                WriteData(branch(mnemo,arg[0],arg[1],4*label_map_[arg[2]]));
+          }
+          else{
+                WriteData(branch(mnemo,arg[0],arg[1],std::stoi(arg[2],nullptr,16)));
+          }
+          //WriteData(branch(mnemo, arg[0], arg[1], MyStoi(arg[2])));
     }
 
     else if (mnemo == "lb" || mnemo == "lh" || mnemo == "lw" || mnemo == "lbu" || mnemo == "lhu") {
@@ -321,16 +346,17 @@ void BinGen::Convert(std::string input) {
 
 uint32_t BinGen::Pack(Fields fields) {
     uint32_t ret = 0;
-    for (const auto& field : fields) {
-        ret <<= field.first;
-        ret += field.second;
+    for (auto itr = fields.rbegin();itr != fields.rend();++itr) {
+        ret <<= itr->first;
+        ret += itr->second;
     }
     return ret;
 }
 
 void BinGen::CheckImmediate(uint32_t imm, int range, std::string func_name) {
-  if ((int)imm > 2047 || (int)imm < -2048) {
-        //符号付き12bit数の最大と最小に入っているか？
+  int v = std::pow(2,(range-1));
+  if ((int)imm > (v-1) || (int)imm < (-v)) {
+        //符号付 range bit数の最大と最小に入っているか？
         std::cout << "ERROR(" << func_name << "): The immediate value should be smaller than 2 ^ " << range << std::endl;
         exit(1);
   }
@@ -351,4 +377,21 @@ uint32_t BinGen::MyStoi(std::string imm) {
         // |imm| was a label.
         return label_map_[imm];
     }
+}
+
+int is_imm(std::string str){
+  for(char& c :str){
+    if(!isdigit(c)){
+      return 1;
+    }
+  }
+  return 0;
+}
+
+void print_binary(int val){
+  //for debug
+  for(int i = 31;i>=0;i--){
+    printf("%d ",((val>>i)&0x1));
+  }
+  printf("\n");
 }

@@ -1,15 +1,17 @@
 #include "simulator.h"
 #include <string.h>
+#include <stdlib.h>
 
+extern const char *Regs[];
 void print_regs(Simulator *sim){
-  for(int i=0;i<31;i++){
-    fprintf(stdout,"Reg %02d:   D:%8d   H:%8x\n",i,sim->registers[i],sim->registers[i]);
+  for(int i=0;i<32;i++){
+    fprintf(stdout,"Reg %02d(%4s):   D:%8d   H:%8x\n",i,Regs[i],sim->registers[i],sim->registers[i]);
   }
 }
 
 void print_fregs(Simulator *sim){
-  for(int i=0;i<31;i++){
-    fprintf(stdout,"fReg %d:  D:%f\n",i,sim->f_registers[i]);
+  for(int i=0;i<32;i++){
+    fprintf(stdout,"fReg %02d:  D:%f\n",i,sim->f_registers[i]);
   }
 }
 
@@ -28,47 +30,38 @@ void dump_memory(Simulator *sim,int start,int end){
   fflush(stdout);
 }
 
-int debug_parser(char *buffer){
+int debug_exec(Simulator *sim,char *buffer){
   if(strcmp(buffer,"")==0){
-    return 0;
-  }
-  else if(strncmp(buffer,"p r",3)==0){
     return 1;
   }
-  else if(strncmp(buffer,"p fr",4)==0){
-    return 2;
+  else if(strncmp(buffer,"p r",3)==0){
+    print_regs(sim);
+    return 0;
   }
-  else if(strncmp(buffer,"p sp",4)==0){
-    return 3;
+  else if(strncmp(buffer,"p fr",4)==0){
+    print_fregs(sim);
+    return 0;
+  }
+  else if(strncmp(buffer,"d sp",4)==0){
+    int sp = sim->registers[3];
+    int start = sp - 100;
+    if(start < 0) start = 0;
+    int end = sp + 100;
+    if(end>0xfffff) end = 0xfffff;
+    dump_memory(sim,start,end);
   }
   else if(strncmp(buffer,"d",1)==0){
-    return 4;
+    char *start;
+    char *end;
+    strtok(buffer," ");
+    start = strtok(NULL," ");
+    end =strtok(NULL," ");
+    dump_memory(sim,atoi(start),atoi(end));
+    return 0;
   }
   else{
+    fprintf(stderr,"Unknown debugger command\n");
     return -1;
   }
 }
 
-int debug_exec(Simulator *sim,int command){
-  if(command==1){
-    print_regs(sim);
-    return 1;
-  }
-  else if(command==2){
-    print_fregs(sim);
-    return 1;
-  }
-  else if(command==3){
-    fprintf(stdout,"Stack pointer (registers[3]) at %x\n",sim->registers[3]);
-    return 1;
-  }
-  else if(command==4){
-    dump_memory(sim,0,100);
-    return 1;
-  }
-  else if(command==-1){
-    fprintf(stderr,"Unknown debugger command\n");
-    return 1;
-  }
-  return 0;
-}
