@@ -350,7 +350,6 @@ void BinGen::Convert(std::string input) {
         WriteData(auipc("x6", MyStoi(arg[0]) >> 12));
         WriteData(jalr("x1", "x6", MyStoi(arg[0]) & 0xfff));
     }
-    std::cout << "mnemo" << mnemo << "nline_" << nline_ << std::endl;
     nline_ = nline_ + 1;
 }
 

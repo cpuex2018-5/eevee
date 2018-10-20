@@ -337,12 +337,13 @@ void exec(Simulator *sim){
           sim -> registers[op->rd] = sim -> registers[op->rs1] ^ sim -> registers[op->rs2];
         }
         else if(op->funct3 == 0b101 && op->funct7 == 0b0000000){
-          //srl,sra
-          unsigned int shamt = get_binary(sim -> registers[op->rs2],0,5);
+          //srl
+          unsigned int shamt = get_binary(sim -> registers[op->rs2],27,32);
           sim -> registers[op->rd] = ((unsigned int)(sim -> registers[op->rs1])) >> shamt;
         }
         else if(op->funct3 == 0b101 && op->funct7 == 0b0100000){
-          unsigned int shamt = get_binary(sim -> registers[op->rs2],0,5);
+          //sra
+          unsigned int shamt = get_binary(sim -> registers[op->rs2],27,32);
           sim -> registers[op->rd] = sim -> registers[op->rs1] >> shamt;
         }
         else if(op->funct3 == 0b110 && op->funct7 == 0b0000000){
