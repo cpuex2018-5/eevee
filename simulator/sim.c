@@ -51,7 +51,7 @@ void load(Simulator *sim,FILE *fp){
 
 void exec(Simulator *sim){
   while(1){
-    if(sim->pc>=sim->text_size){
+    if(sim->pc>=sim->text_size || sim->pc<0){
       break;
     }
     if(debug_mode == 1){
@@ -110,7 +110,7 @@ void exec(Simulator *sim){
         sim->registers[op->rd]=sim->pc + 4;
         s_imm = ( op -> imm ) | ((op->imm & 0x800) ? 0xFFFFF800:0); //sign extend
         sim -> pc = (sim->registers[op->rs1] + s_imm);
-        sim -> pc = (sim -> pc) &~ (1); //clear LSB
+        sim -> pc = (sim -> pc) &~ (0b1); //clear LSB
         break;
       case 0b1100011:
         //beq,bne,blt,bge,bltu,bgeu

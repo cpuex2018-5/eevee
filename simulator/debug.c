@@ -5,7 +5,7 @@
 extern const char *Regs[];
 void print_regs(Simulator *sim){
   for(int i=0;i<32;i++){
-    fprintf(stdout,"Reg %02d(%4s):   D:%8d   H:%8x\n",i,Regs[i],sim->registers[i],sim->registers[i]);
+    fprintf(stdout,"Reg %02d(%7s):   D:%8d   H:%8x\n",i,Regs[i],sim->registers[i],sim->registers[i]);
   }
 }
 
