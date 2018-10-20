@@ -71,10 +71,10 @@ uint32_t BinGen::jal (std::string rd, uint32_t imm) {
     Fields fields;
     fields.emplace_back(7, 0b1101111);
     fields.emplace_back(5, regmap[rd]);
-    fields.emplace_back(8, imm & 0x7f800);
-    fields.emplace_back(1, imm & 0x400);
-    fields.emplace_back(10, imm & 0x3ff);
-    fields.emplace_back(1, imm & 0x80000);
+    fields.emplace_back(8, (imm & 0xff000) >> 12);
+    fields.emplace_back(1, (imm & 0x800) >> 11);
+    fields.emplace_back(10,(imm & 0x7fe) >> 1);
+    fields.emplace_back(1, (imm & 0x100000) >> 20);
     return Pack(fields);
 }
 
@@ -101,13 +101,13 @@ uint32_t BinGen::branch (std::string mnemo, std::string rs1, std::string rs2, ui
     if (mnemo == "bgeu") funct3 = 0b111;
     Fields fields;
     fields.emplace_back(7, 0b1100011);
-    fields.emplace_back(1, offset & 0x400);
-    fields.emplace_back(4, offset & 0xf);
+    fields.emplace_back(1, (offset & 0x800) >> 11);
+    fields.emplace_back(4, (offset & 0x1e) >> 1);
     fields.emplace_back(3, funct3);
     fields.emplace_back(5, regmap[rs1]);
     fields.emplace_back(5, regmap[rs2]);
-    fields.emplace_back(6, offset & 0x3f0);
-    fields.emplace_back(1, offset & 0x800);
+    fields.emplace_back(6, (offset & 0x7e0) >> 5);
+    fields.emplace_back(1, (offset & 0x1000) >> 12);
     return Pack(fields);
 }
 
@@ -142,7 +142,7 @@ uint32_t BinGen::store (std::string mnemo, std::string rs2, std::string rs1, uin
     fields.emplace_back(3, funct3);
     fields.emplace_back(5, regmap[rs1]);
     fields.emplace_back(5, regmap[rs2]);
-    fields.emplace_back(7, offset & 0xfe);
+    fields.emplace_back(7, (offset & 0xfe0) >> 5);
     return Pack(fields);
 }
 
@@ -381,7 +381,7 @@ uint32_t BinGen::MyStoi(std::string imm) {
 
 int is_imm(std::string str){
   for(char& c :str){
-    if(!isdigit(c)){
+    if(!isdigit(c) && c!='-'){
       return 1;
     }
   }

@@ -59,9 +59,6 @@ int debug_exec(Simulator *sim,char *buffer){
     dump_memory(sim,atoi(start),atoi(end));
     return 0;
   }
-  else{
-    fprintf(stderr,"Unknown debugger command\n");
-    return -1;
-  }
+  fprintf(stderr,"Unknown debugger command\n");
+  return -1;
 }
-

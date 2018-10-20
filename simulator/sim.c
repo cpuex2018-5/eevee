@@ -54,7 +54,7 @@ void exec(Simulator *sim){
     if(sim->pc>=sim->text_size){
       break;
     }
-
+    fprintf(stdout,"executing\n");
     if(debug_mode == 1){
       //for debug
       fprintf(stdout,"current pc: %ld\n",sim->pc);
@@ -73,6 +73,7 @@ void exec(Simulator *sim){
           break;
         }
       }
+
     }
 
 
