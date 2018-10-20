@@ -54,7 +54,6 @@ void exec(Simulator *sim){
     if(sim->pc>=sim->text_size){
       break;
     }
-    fprintf(stdout,"executing\n");
     if(debug_mode == 1){
       //for debug
       fprintf(stdout,"current pc: %ld\n",sim->pc);
@@ -73,7 +72,6 @@ void exec(Simulator *sim){
           break;
         }
       }
-
     }
 
 
@@ -201,7 +199,7 @@ void exec(Simulator *sim){
         }
         else if(op->funct3==0b101){
           //lhu
-          sim -> registers[op->rd] = (sim -> data_memory[address+1]<<8) + sim -> data_memory[address]; //wrong??
+          sim -> registers[op->rd] = (sim -> data_memory[address+1]<<8) + sim -> data_memory[address];
         }
         else{
           fprintf(stderr,"Unknown instruction\n");
@@ -278,7 +276,9 @@ void exec(Simulator *sim){
         }
         else if(op->funct3 == 0b001 && get_binary(op->imm,5,12) == 0b0000000){
           //slli
+          printf("slli\n");
           unsigned int shamt = get_binary(op->imm,0,5);
+          printf("shamt:%u\n",shamt);
           sim -> registers[op->rd] = ((unsigned int)(sim -> registers[op->rs1]))<< shamt;
         }
         else if(op->funct3 == 0b101 && get_binary(op->imm,5,12) == 0b0000000){

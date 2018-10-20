@@ -43,10 +43,10 @@ int main(int argc, char* argv[])
         // Parse the input.
         bingen.ReadLabels(str);
     }
-
+    bingen.ClearNline_();
     ifs.clear();
     ifs.seekg(0, std::ios::beg);
-
+    
     // Round 2: Replace the instructions with bytecodes
     while (getline(ifs, str)) {
         bingen.Convert(str);

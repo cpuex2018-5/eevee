@@ -167,7 +167,8 @@ uint32_t BinGen::op_imm (std::string mnemo, std::string rd, std::string rs1, uin
 
 // slli, srli, srai
 uint32_t BinGen::op_imm_shift (std::string mnemo, std::string rd, std::string rs1, uint32_t shamt) {
-    CheckImmediate(shamt, 5, "op_imm_shift");
+    
+    CheckImmediateUnsigned(shamt, 5, "op_imm_shift");
     uint32_t funct3 = (mnemo == "slli") ? 0b001 : 0b101;
     uint32_t funct7 = (mnemo == "srai") ? 0b0100000 : 0b0000000;
     Fields fields;
@@ -212,6 +213,11 @@ void BinGen::WriteData(uint32_t data) {
     d[3] = data;
     ofs_.write((char *)d, 4);
 }
+
+void BinGen::ClearNline_(){
+  this->nline_ = 0;
+}
+
 
 void BinGen::ReadLabels(std::string input) {
     if (input.back() != ':') {
@@ -273,6 +279,7 @@ void BinGen::Parse(std::string input, std::string &mnemo, std::vector<std::strin
 
 void BinGen::Convert(std::string input) {
     // Parse the input.
+  
     std::string mnemo;
     std::vector<std::string> arg;
     Parse(input, mnemo, arg);
@@ -287,23 +294,24 @@ void BinGen::Convert(std::string input) {
         WriteData(auipc(arg[0], std::stoi(arg[1], nullptr, 16)));
     else if (mnemo == "jal"){
         if(is_imm(arg[1]) == 1){
-          WriteData(jal(arg[0],4*label_map_[arg[1]]));
+          WriteData(jal(arg[0],(4*label_map_[arg[1]]-4*nline_)));
         }
         else{
           WriteData(jal(arg[0], std::stoi(arg[1], nullptr, 16)));
         }
+        std::cout << "jal" << mnemo <<std::endl;
     }
     else if (mnemo == "jalr"){
         if(is_imm(arg[2]) == 1){
-          WriteData(jalr(arg[0],arg[1],4*label_map_[arg[2]]));
+          WriteData(jalr(arg[0],arg[1],(4*label_map_[arg[2]]-4*nline_)));
         }
         else{
           WriteData(jalr(arg[0], arg[1], std::stoi(arg[2], nullptr, 16)));
         }
     }
-        else if (mnemo == "beq" || mnemo == "bne" || mnemo == "blt" || mnemo == "bge" || mnemo == "bltu") {
+    else if (mnemo == "beq" || mnemo == "bne" || mnemo == "blt" || mnemo == "bge" || mnemo == "bltu") {
           if(is_imm(arg[2]) == 1){
-                WriteData(branch(mnemo,arg[0],arg[1],4*label_map_[arg[2]]));
+                WriteData(branch(mnemo,arg[0],arg[1],(4*label_map_[arg[2]]-4*nline_)));
           }
           else{
                 WriteData(branch(mnemo,arg[0],arg[1],std::stoi(arg[2],nullptr,16)));
@@ -342,6 +350,8 @@ void BinGen::Convert(std::string input) {
         WriteData(auipc("x6", MyStoi(arg[0]) >> 12));
         WriteData(jalr("x1", "x6", MyStoi(arg[0]) & 0xfff));
     }
+    std::cout << "mnemo" << mnemo << "nline_" << nline_ << std::endl;
+    nline_ = nline_ + 1;
 }
 
 uint32_t BinGen::Pack(Fields fields) {
@@ -357,6 +367,14 @@ void BinGen::CheckImmediate(uint32_t imm, int range, std::string func_name) {
   int v = std::pow(2,(range-1));
   if ((int)imm > (v-1) || (int)imm < (-v)) {
         //符号付 range bit数の最大と最小に入っているか？
+        std::cout << "ERROR(" << func_name << "): The immediate value should be smaller than 2 ^ " << range << std::endl;
+        exit(1);
+  }
+}
+void BinGen::CheckImmediateUnsigned(uint32_t imm,int range, std::string func_name){
+  //shiftするときの即値検査には符号なしのものを使う
+  int v = std::pow(2,range);
+  if((int) imm > (v-1) || (int) imm < 0){
         std::cout << "ERROR(" << func_name << "): The immediate value should be smaller than 2 ^ " << range << std::endl;
         exit(1);
   }

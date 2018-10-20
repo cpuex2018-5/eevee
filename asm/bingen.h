@@ -45,10 +45,12 @@ class BinGen {
 
         void ParseOffset(std::string arg, std::string* reg, uint32_t* offset);
 
+        void ClearNline_();
     private:
         typedef std::vector<std::pair<int, uint32_t> > Fields;
         uint32_t Pack(Fields fields);
         void CheckImmediate(uint32_t imm, int range, std::string func_name);
+        void CheckImmediateUnsigned(uint32_t imm, int range, std::string func_name);
         void WriteData(uint32_t data);
 
         // |imm| might be a number or a label.
