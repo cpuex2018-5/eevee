@@ -10,6 +10,7 @@ let save x =
   if not (List.mem x !stackmap) then
     stackmap := !stackmap @ [x]
 let savef x =
+  (* TODO: change double-word floating point to single-word floating point *)
   stackset := S.add x !stackset;
   if not (List.mem x !stackmap) then
     (let pad =
@@ -35,14 +36,15 @@ let load_label r label =
     "\tlis\t%s, ha16(%s)\n\taddi\t%s, %s, lo16(%s)\n"
     r' label r' r' label
 
-(* 関数呼び出しのために引数を並べ替える(register shuffling) (caml2html: emit_shuffle) *)
+(* Shuffle registers so that the old content will not be lost *)
 let rec shuffle sw xys =
   (* remove identical moves *)
-  let _, xys = List.partition (fun (x, y) -> x = y) xys in
+  let xys = List.filter (fun (x, y) -> x <> y) xys in
   (* find acyclic moves *)
   match List.partition (fun (_, y) -> List.mem_assoc y xys) xys with
   | [], [] -> []
   | (x, y) :: xys, [] -> (* no acyclic moves; resolve a cyclic move *)
+    (* there are a tuple (y, b) in old xys *)
     (y, sw) :: (x, y) :: shuffle sw (List.map
                                        (function
                                          | (y', z) when y = y' -> (sw, z)
@@ -78,7 +80,7 @@ and g' oc = function (* 各命令のアセンブリ生成 (caml2html: emit_gprime) *)
   | NonTail(x), Add(y, V(z)) -> Printf.fprintf oc "\tadd\t%s, %s, %s\n" (reg x) (reg y) (reg z)     (* ok *)
   | NonTail(x), Add(y, C(z)) -> Printf.fprintf oc "\taddi\t%s, %s, %d\n" (reg x) (reg y) z          (* ok *)
   | NonTail(x), Sub(y, V(z)) -> Printf.fprintf oc "\tsub\t%s, %s, %s\n" (reg x) (reg y) (reg z)     (* ok *)
-  | NonTail(x), Sub(y, C(z)) -> Printf.fprintf oc "\tsubi\t%s, %s, %d\n" (reg x) (reg y) z          (* ok *)
+  | NonTail(x), Sub(y, C(z)) -> Printf.fprintf oc "\taddi\t%s, %s, %d\n" (reg x) (reg y) (-1 * z)   (* ok *)
   | NonTail(x), Slw(y, V(z)) -> Printf.fprintf oc "\tsll\t%s, %s, %s\n" (reg x) (reg y) (reg z)     (* ok *)
   | NonTail(x), Slw(y, C(z)) -> Printf.fprintf oc "\tslli\t%s, %s, %d\n" (reg x) (reg y) z          (* ok *)
   | NonTail(x), Lwz(y, V(z)) ->
@@ -186,43 +188,45 @@ and g' oc = function (* 各命令のアセンブリ生成 (caml2html: emit_gprime) *)
     g'_non_tail_if oc (NonTail(z)) reg_tmp "zero" e1 e2 "bne" "beq"
 
   (* 関数呼び出しの仮想命令の実装 (caml2html: emit_call) *)
-  | Tail, CallCls(x, ys, zs) -> (* 末尾呼び出し (caml2html: emit_tailcall) *)
-    g'_args oc [(x, reg_cl)] ys zs;
+  | Tail, CallCls(f, iargs, fargs) -> (* 末尾呼び出し (caml2html: emit_tailcall) *)
+    (* TODO: tレジスタから使うようにする(?) *)
+    g'_args oc [(f, reg_cl)] iargs fargs;
     Printf.fprintf oc "\tlw\t%s, 0(%s)\n" (reg reg_sw) (reg reg_cl);
-    Printf.fprintf oc "\tmtctr\t%s\n\tbctr\n" (reg reg_sw);
-  | Tail, CallDir(Id.L(x), ys, zs) -> (* 末尾呼び出し *)
-    g'_args oc [] ys zs;
-    Printf.fprintf oc "\tb\t%s\n" x
-  | NonTail(a), CallCls(x, ys, zs) ->
-    Printf.fprintf oc "\tmflr\t%s\n" (reg reg_tmp);
-    g'_args oc [(x, reg_cl)] ys zs;
+    Printf.fprintf oc "\tmv\tra, %s\n" (reg reg_sw);
+    Printf.fprintf oc "\tjr\tra\n"
+  | Tail, CallDir(Id.L(f), iargs, fargs) -> (* 末尾呼び出し *)
+    g'_args oc [] iargs fargs;
+    Printf.fprintf oc "\tj\t%s\n" f
+  | NonTail(a), CallCls(f, iargs, fargs) ->
+    Printf.fprintf oc "\tmv\t%s, %s\n" (reg reg_tmp) (reg reg_link);
+    g'_args oc [(f, reg_cl)] iargs fargs;
     let ss = stacksize () in
-    Printf.fprintf oc "\tstw\t%s, %d(%s)\n" (reg reg_tmp) (ss - 4) (reg reg_sp);
-    Printf.fprintf oc "\taddi\t%s, %s, %d\n" (reg reg_sp) (reg reg_sp) ss;
-    Printf.fprintf oc "\tlwz\t%s, 0(%s)\n" (reg reg_tmp) (reg reg_cl);
-    Printf.fprintf oc "\tmtctr\t%s\n" (reg reg_tmp);
-    Printf.fprintf oc "\tbctrl\n";
-    Printf.fprintf oc "\tsubi\t%s, %s, %d\n" (reg reg_sp) (reg reg_sp) ss;
-    Printf.fprintf oc "\tlwz\t%s, %d(%s)\n" (reg reg_tmp) (ss - 4) (reg reg_sp);
+    Printf.fprintf oc "\tsw\t%s, %d(%s)\n" (reg reg_tmp) (ss - 4) (reg reg_sp); (* evacuate link register *)
+    Printf.fprintf oc "\taddi\t%s, %s, %d\n" (reg reg_fp) (reg reg_sp) ss;
+    Printf.fprintf oc "\tlw\t%s, 0(%s)\n" (reg reg_tmp) (reg reg_cl);
+    Printf.fprintf oc "\tmv\t%s, %s\n" (reg reg_link) (reg reg_tmp); (* set closure address to %ra *)
+    Printf.fprintf oc "\tjr\tra\n";
+    Printf.fprintf oc "\taddi\t%s, %s, %d\n" (reg reg_fp) (reg reg_sp) (-1 * ss);
+    Printf.fprintf oc "\tlw\t%s, %d(%s)\n" (reg reg_tmp) (ss - 4) (reg reg_sp);
     if List.mem a allregs && a <> regs.(0) then
-      Printf.fprintf oc "\tmr\t%s, %s\n" (reg a) (reg regs.(0))
+      Printf.fprintf oc "\tmv\t%s, %s\n" (reg a) (reg regs.(0))
     else if List.mem a allfregs && a <> fregs.(0) then
-      Printf.fprintf oc "\tfmr\t%s, %s\n" (reg a) (reg fregs.(0));
-    Printf.fprintf oc "\tmtlr\t%s\n" (reg reg_tmp)
-  | (NonTail(a), CallDir(Id.L(x), ys, zs)) ->
-    Printf.fprintf oc "\tmflr\t%s\n" (reg reg_tmp);
-    g'_args oc [] ys zs;
+      Printf.fprintf oc "\tfmv.s\t%s, %s\n" (reg a) (reg fregs.(0));
+    Printf.fprintf oc "\tmv\t%s, %s\n" (reg reg_link) (reg reg_tmp)
+  | (NonTail(a), CallDir(Id.L(f), iargs, fargs)) ->
+    Printf.fprintf oc "\tmv\t%s, %s\n" (reg reg_tmp) (reg reg_link);
+    g'_args oc [] iargs fargs;
     let ss = stacksize () in
-    Printf.fprintf oc "\tstw\t%s, %d(%s)\n" (reg reg_tmp) (ss - 4) (reg reg_sp);
-    Printf.fprintf oc "\taddi\t%s, %s, %d\n" (reg reg_sp) (reg reg_sp) ss;
-    Printf.fprintf oc "\tbl\t%s\n" x;
-    Printf.fprintf oc "\tsubi\t%s, %s, %d\n" (reg reg_sp) (reg reg_sp) ss;
-    Printf.fprintf oc "\tlwz\t%s, %d(%s)\n" (reg reg_tmp) (ss - 4) (reg reg_sp);
+    Printf.fprintf oc "\tsw\t%s, %d(%s)\n" (reg reg_tmp) (ss - 4) (reg reg_sp);
+    Printf.fprintf oc "\taddi\t%s, %s, %d\n" (reg reg_fp) (reg reg_sp) ss;
+    Printf.fprintf oc "\tcall\t%s\n" f;
+    Printf.fprintf oc "\taddi\t%s, %s, %d\n" (reg reg_fp) (reg reg_sp) (-1 * ss);
+    Printf.fprintf oc "\tlw\t%s, %d(%s)\n" (reg reg_tmp) (ss - 4) (reg reg_sp);
     if List.mem a allregs && a <> regs.(0) then
-      Printf.fprintf oc "\tmr\t%s, %s\n" (reg a) (reg regs.(0))
+      Printf.fprintf oc "\tmv\t%s, %s\n" (reg a) (reg regs.(0))
     else if List.mem a allfregs && a <> fregs.(0) then
-      Printf.fprintf oc "\tfmr\t%s, %s\n" (reg a) (reg fregs.(0));
-    Printf.fprintf oc "\tmtlr\t%s\n" (reg reg_tmp)
+      Printf.fprintf oc "\tfmv.s\t%s, %s\n" (reg a) (reg fregs.(0));
+    Printf.fprintf oc "\tmv\t%s, %s\n" (reg reg_link) (reg reg_tmp)
 and g'_tail_if oc rs1 rs2 e1 e2 b bn =
   let b_else = Id.genid (b ^ "_else") in
   Printf.fprintf oc "\t%s\t%s, %s, %s\n" bn (reg rs1) (reg rs2) b_else;
@@ -245,22 +249,22 @@ and g'_non_tail_if oc dest rs1 rs2 e1 e2 b bn =
   Printf.fprintf oc "%s:\n" b_cont;
   let stackset2 = !stackset in
   stackset := S.inter stackset1 stackset2
-and g'_args oc x_reg_cl ys zs =
-  let (i, yrs) =
+and g'_args oc x_reg_cl int_args float_args =
+  let (_, yrs) =
     List.fold_left
       (fun (i, yrs) y -> (i + 1, (y, regs.(i)) :: yrs))
-      (0, x_reg_cl)
-      ys in
+      (0, x_reg_cl) (* <- initial value *)
+      int_args in
   List.iter
-    (fun (y, r) -> Printf.fprintf oc "\tmr\t%s, %s\n" (reg r) (reg y))
+    (fun (y, r) -> Printf.fprintf oc "\tmv\t%s, %s\n" (reg r) (reg y))
     (shuffle reg_sw yrs);
-  let (d, zfrs) =
+  let (_, zfrs) =
     List.fold_left
       (fun (d, zfrs) z -> (d + 1, (z, fregs.(d)) :: zfrs))
       (0, [])
-      zs in
+      float_args in
   List.iter
-    (fun (z, fr) -> Printf.fprintf oc "\tfmr\t%s, %s\n" (reg fr) (reg z))
+    (fun (z, fr) -> Printf.fprintf oc "\tfmv.s\t%s, %s\n" (reg fr) (reg z))
     (shuffle reg_fsw zfrs)
 
 let h oc { name = Id.L(x); args = _; fargs = _; body = e; ret = _ } =
@@ -272,6 +276,7 @@ let h oc { name = Id.L(x); args = _; fargs = _; body = e; ret = _ } =
 let f oc (Prog(data, fundefs, e)) =
   Format.eprintf "generating assembly...@.";
   if data <> [] then
+    (* TODO: ここらへんのアセンブラ対応 *)
     (Printf.fprintf oc "\t.data\n\t.literal8\n";
      List.iter
        (fun (Id.L(x), d) ->
@@ -294,9 +299,9 @@ let f oc (Prog(data, fundefs, e)) =
   stackmap := [];
   g oc (NonTail("_R_0"), e);
   Printf.fprintf oc "#\tmain program ends\n";
-  Printf.fprintf oc "\tli\ta5,0";
-  Printf.fprintf oc "\tmv\ta0,a5";
-  Printf.fprintf oc "\tld\tra,8(sp)";
-  Printf.fprintf oc "\tld\tfp,0(sp)";
-  Printf.fprintf oc "\taddi\tsp,sp,16";
-  Printf.fprintf oc "\tjr\tra";
+  Printf.fprintf oc "\tli\ta5, 0\n";
+  Printf.fprintf oc "\tmv\ta0, a5\n";
+  Printf.fprintf oc "\tlw\tra, 8(sp)\n";
+  Printf.fprintf oc "\tlw\tfp, 0(sp)\n";
+  Printf.fprintf oc "\taddi\tsp, sp, 16\n";
+  Printf.fprintf oc "\tjr\tra\n";

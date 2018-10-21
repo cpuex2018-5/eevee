@@ -14,6 +14,7 @@ let classify xts ini addf addi =
     ini
     xts
 
+(* separate int arguments and float arguments *)
 let separate xts =
   classify
     xts
