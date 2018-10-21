@@ -184,10 +184,11 @@ and g' oc = function (* 各命令のアセンブリ生成 (caml2html: emit_gprime) *)
   | NonTail(z), IfFLE(x, y, e1, e2) ->
     Printf.fprintf oc "\tfle.s\t%s, %s, %s\n" reg_tmp x y;
     g'_non_tail_if oc (NonTail(z)) reg_tmp "zero" e1 e2 "bne" "beq"
+
   (* 関数呼び出しの仮想命令の実装 (caml2html: emit_call) *)
   | Tail, CallCls(x, ys, zs) -> (* 末尾呼び出し (caml2html: emit_tailcall) *)
     g'_args oc [(x, reg_cl)] ys zs;
-    Printf.fprintf oc "\tlwz\t%s, 0(%s)\n" (reg reg_sw) (reg reg_cl);
+    Printf.fprintf oc "\tlw\t%s, 0(%s)\n" (reg reg_sw) (reg reg_cl);
     Printf.fprintf oc "\tmtctr\t%s\n\tbctr\n" (reg reg_sw);
   | Tail, CallDir(Id.L(x), ys, zs) -> (* 末尾呼び出し *)
     g'_args oc [] ys zs;
@@ -284,9 +285,9 @@ let f oc (Prog(data, fundefs, e)) =
   Printf.fprintf oc "\t.align 2\n";
   List.iter (fun fundef -> h oc fundef) fundefs;
   Printf.fprintf oc "_min_caml_start: # main entry point\n";
-  Printf.fprintf oc "\tmflr\tr0\n";
+  Printf.fprintf oc "\tmv\tt0, %s\n" reg_link; (* move the value %ra to stack *)
   Printf.fprintf oc "\tstmw\tr30, -8(r1)\n";
-  Printf.fprintf oc "\tstw\tr0, 8(r1)\n";
+  Printf.fprintf oc "\tsw\tr0, 8(r1)\n";
   Printf.fprintf oc "\tstwu\tr1, -96(r1)\n";
   Printf.fprintf oc "#\tmain program starts\n";
   stackset := S.empty;

@@ -8,7 +8,7 @@ int fib (int n) {
     return fib(n - 1) + fib(n - 2);
 }
 
-int main (int argc, char *argv[])
+int main (void)
 {
     fib(10);
     return 0;
