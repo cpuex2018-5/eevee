@@ -276,10 +276,7 @@ void exec(Simulator *sim){
         }
         else if(op->funct3 == 0b001 && get_binary(op->imm,5,12) == 0b0000000){
           //slli
-          printf("slli\n");
           unsigned int shamt = get_binary(op->imm,0,5);
-          printf("shamt:%u\n",shamt);
-          sim -> registers[op->rd] = ((unsigned int)(sim -> registers[op->rs1]))<< shamt;
         }
         else if(op->funct3 == 0b101 && get_binary(op->imm,5,12) == 0b0000000){
           //srli,srai
@@ -309,7 +306,8 @@ void exec(Simulator *sim){
         }
         else if(op->funct3 == 0b001 && op->funct7 == 0b0000000){
           //sll
-          unsigned int shamt = get_binary(sim -> registers[op->rs2],27,32);
+          unsigned int shamt = get_binary(sim -> registers[op->rs2],0,5);
+          printf("shamt %d\n",shamt);
           sim -> registers[op->rd] = ((unsigned int)(sim -> registers[op->rs1])) << shamt;
         }
         else if(op->funct3 == 0b010 && op->funct7 == 0b0000000){
@@ -338,12 +336,12 @@ void exec(Simulator *sim){
         }
         else if(op->funct3 == 0b101 && op->funct7 == 0b0000000){
           //srl
-          unsigned int shamt = get_binary(sim -> registers[op->rs2],27,32);
+          unsigned int shamt = get_binary(sim -> registers[op->rs2],0,5);
           sim -> registers[op->rd] = ((unsigned int)(sim -> registers[op->rs1])) >> shamt;
         }
         else if(op->funct3 == 0b101 && op->funct7 == 0b0100000){
           //sra
-          unsigned int shamt = get_binary(sim -> registers[op->rs2],27,32);
+          unsigned int shamt = get_binary(sim -> registers[op->rs2],0,5);
           sim -> registers[op->rd] = sim -> registers[op->rs1] >> shamt;
         }
         else if(op->funct3 == 0b110 && op->funct7 == 0b0000000){
@@ -353,6 +351,9 @@ void exec(Simulator *sim){
         else if(op->funct3 == 0b111 && op->funct7 == 0b0000000){
           //and
           sim -> registers[op->rd] = sim -> registers[op -> rs1] & sim -> registers[op -> rs2];
+        }
+        else if(op->funct3 == 0b000 && op->funct7 == 0b0000001){
+          sim -> registers[op->rd] = sim -> registers[op->rs1] * sim -> registers[op->rs2];
         }
         else{
           fprintf(stderr,"Unknown instruction\n");
