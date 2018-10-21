@@ -216,7 +216,7 @@ void BinGen::WriteData(uint32_t data) {
 }
 
 void BinGen::ClearNline_(){
-  this->nline_ = 0;
+    nline_ = 0;
 }
 
 
@@ -233,6 +233,11 @@ void BinGen::ReadLabels(std::string input) {
             nline_ += 2;
             return;
         }
+
+        // Don't count these markers
+        if (mnemo == ".file" || mnemo == ".option" || mnemo == ".text" || mnemo == ".align" ||
+            mnemo == ".globl" || mnemo == ".type" || mnemo == ".size" || mnemo == ".ident")
+            return;
 
         nline_++;
         return;
@@ -343,15 +348,32 @@ void BinGen::Convert(std::string input) {
 
 
     // Pseudo-instructions
-    else if (mnemo == "ret") {
+    // TODO: test pseudo-insturctions
+    else if (mnemo == "ret")
         WriteData(jalr("x0", "x1", 0u));
-    }
 
     else if (mnemo == "call") {
         WriteData(auipc("x6", MyStoi(arg[0]) >> 12));
         WriteData(jalr("x1", "x6", MyStoi(arg[0]) & 0xfff));
     }
-    nline_ = nline_ + 1;
+
+    else if (mnemo == "la") {
+        WriteData(auipc(arg[0], MyStoi(arg[1]) >> 12));
+        WriteData(op_imm("addi", arg[0], arg[0], MyStoi(arg[1]) & 0xfff));
+    }
+
+    else if (mnemo == "li")
+        WriteData(op_imm("addi", arg[0], "zero", MyStoi(arg[1])));
+
+    else if (mnemo == "mv")
+        WriteData(op_imm("addi", arg[0], arg[1], 0));
+
+    else if (mnemo == "neg")
+        WriteData(op("sub", arg[0], "zero", arg[1]));
+
+    if (mnemo != ".file" && mnemo != ".option" && mnemo != ".text" && mnemo != ".align" &&
+        mnemo != ".globl" && mnemo != ".type" && mnemo != ".size" && mnemo != ".ident")
+        nline_ = nline_ + 1;
 }
 
 uint32_t BinGen::Pack(Fields fields) {
