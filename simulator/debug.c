@@ -1,7 +1,5 @@
 #include "simulator.h"
-#include <string.h>
-#include <stdlib.h>
-
+extern int debug_mode;
 extern const char *Regs[];
 void print_regs(Simulator *sim){
   for(int i=0;i<32;i++){
@@ -45,9 +43,9 @@ int debug_exec(Simulator *sim,char *buffer){
   else if(strncmp(buffer,"d sp",4)==0){
     int sp = sim->registers[3];
     int start = sp - 100;
-    if(start < 0) start = 0;
+    if(start<0) start = 0;
     int end = sp + 100;
-    if(end>0xfffff) end = 0xfffff;
+    if(end>0x100010) end = 0x100011;
     dump_memory(sim,start,end);
   }
   else if(strncmp(buffer,"d",1)==0){
@@ -59,6 +57,13 @@ int debug_exec(Simulator *sim,char *buffer){
     dump_memory(sim,atoi(start),atoi(end));
     return 0;
   }
-  fprintf(stderr,"Unknown debugger command\n");
+  else if(strncmp(buffer,"c",1)==0){
+    debug_mode = 0;
+    printf("continue...\n");
+    return 1;
+  }
+  else{
+    fprintf(stderr,"Unknown debugger command\n");
+  }
   return -1;
 }

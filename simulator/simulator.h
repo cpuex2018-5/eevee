@@ -1,12 +1,14 @@
 #include<stdio.h>
-#define REG_NUMBER 32
-#define MEM_SIZE 0x100000
-#define STACK_POS 0xfffff
+#include<stdlib.h>
+#include<unistd.h>
+#include<string.h>
+extern const int MEM_SIZE;
+extern const int STACK_POS;
 
 typedef struct {
   unsigned long pc;
-  int registers[REG_NUMBER];
-  float f_registers[REG_NUMBER];
+  int registers[32];
+  float f_registers[32];
   unsigned char *text_memory;
   unsigned char *data_memory;
   unsigned int text_size;

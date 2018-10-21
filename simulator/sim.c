@@ -1,9 +1,4 @@
-#include<stdlib.h>
 #include"./simulator.h"
-#include<string.h>
-#include<unistd.h>
-#include<stdio.h>
-
 extern int debug_mode;
 Simulator *init(unsigned long m_size,unsigned long s_pos){
   int i = 0;
@@ -15,7 +10,7 @@ Simulator *init(unsigned long m_size,unsigned long s_pos){
     sim -> registers[i] = 0;
   }
 
-  sim -> registers[3] = s_pos; //set stack pointer
+  sim -> registers[2] = s_pos; //set stack pointer
 
   for(i = 0;i<32;i++){
     sim -> f_registers[i] = 0.0;
@@ -277,6 +272,7 @@ void exec(Simulator *sim){
         else if(op->funct3 == 0b001 && get_binary(op->imm,5,12) == 0b0000000){
           //slli
           unsigned int shamt = get_binary(op->imm,0,5);
+          sim -> registers[op->rd] = ((unsigned int)(sim -> registers[op->rs1]))<< shamt;
         }
         else if(op->funct3 == 0b101 && get_binary(op->imm,5,12) == 0b0000000){
           //srli,srai
@@ -307,7 +303,6 @@ void exec(Simulator *sim){
         else if(op->funct3 == 0b001 && op->funct7 == 0b0000000){
           //sll
           unsigned int shamt = get_binary(sim -> registers[op->rs2],0,5);
-          printf("shamt %d\n",shamt);
           sim -> registers[op->rd] = ((unsigned int)(sim -> registers[op->rs1])) << shamt;
         }
         else if(op->funct3 == 0b010 && op->funct7 == 0b0000000){
@@ -353,7 +348,58 @@ void exec(Simulator *sim){
           sim -> registers[op->rd] = sim -> registers[op -> rs1] & sim -> registers[op -> rs2];
         }
         else if(op->funct3 == 0b000 && op->funct7 == 0b0000001){
+          //mul
           sim -> registers[op->rd] = sim -> registers[op->rs1] * sim -> registers[op->rs2];
+        }
+        else if(op->funct3 == 0b100 && op->funct7 == 0b0000001){
+          //div
+          if(sim->registers[op->rs2]==0){
+            //0除算
+            fprintf(stderr,"You tried to divide by 0\n");
+            sim->registers[op->rd]=-1;
+          }
+          else if(sim->registers[op->rs1]==(-2147483648) && sim->registers[op->rs2]==-1){
+            fprintf(stderr,"Overflow in division\n");
+            sim->registers[op->rd]=-2147483648;
+          }
+          else{
+            sim->registers[op->rd] = sim->registers[op->rs1] / sim->registers[op->rs2];
+          }
+        }
+        else if(op->funct3 == 0b101 && op->funct7 == 0b0000001){
+          //divu
+          if(sim->registers[op->rs2]==0){
+            fprintf(stderr,"You tried to divide by 0\n");
+            sim->registers[op->rd]=2147483647;
+          }
+          else{
+            sim->registers[op->rd] = sim->registers[op->rs1] / sim->registers[op->rs2];
+          }
+        }
+        else if(op->funct3 == 0b110 && op->funct7 == 0b0000001){
+          //rem
+          if(sim->registers[op->rs2]==0){
+            //0除算
+            fprintf(stderr,"You tried to divide by 0\n");
+            sim->registers[op->rd]=sim->registers[op->rs1];
+          }
+          else if(sim->registers[op->rs1]==(-2147483648) && sim->registers[op->rs2]==-1){
+            fprintf(stderr,"Overflow in division\n");
+            sim->registers[op->rd]=0;
+          }
+          else{
+            sim->registers[op->rd] = sim->registers[op->rs1] % sim->registers[op->rs2];
+          }
+        }
+        else if(op->funct3 == 0b111 && op->funct7 == 0b0000001){
+          //remu
+          if(sim->registers[op->rs2]==0){
+            fprintf(stderr,"You tried to divide by 0\n");
+            sim->registers[op->rd]=sim->registers[op->rs1];
+          }
+          else{
+            sim->registers[op->rd] = sim->registers[op->rs1] % sim->registers[op->rs2];
+          }
         }
         else{
           fprintf(stderr,"Unknown instruction\n");
