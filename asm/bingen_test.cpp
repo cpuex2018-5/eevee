@@ -68,9 +68,7 @@ class BinGenTest{
 
     void Test_lui() {
         // Note: immediate values are interpreted as hexadecimals.
-        // TODO: Is this 0000 0000 0000 0010 0000 0000 1011 0111 ???
-        std::cout << PrettyString(bingen_.lui("ra", 0x20)) << std::endl;
-        // assert("0110 1110 0001 0000 0000 0000 0010 0000 " == PrettyString(bingen_.lui("ra", 0x20)));
+        assert("0000 0000 0000 0010 0000 0000 1011 0111 " == PrettyString(bingen_.lui("ra", 0x20)));
     }
 
     void Test_auipc() {
@@ -98,8 +96,8 @@ class BinGenTest{
     }
 
     void Test_op () {
-        assert("0110 0110 0110 0000 0111 1110 0000 0000 " == PrettyString(bingen_.op("add", "t1", "t2", "t3")));
-        assert("0110 0110 0110 0000 0111 1110 0010 0000 " == PrettyString(bingen_.op("sub", "t1", "t2", "t3")));
+        assert("0000 0001 1100 0011 1000 0011 0011 0011 "  == PrettyString(bingen_.op("add", "t1", "t2", "t3")));
+        assert("0100 0001 1100 0011 1000 0011 0011 0011 "  == PrettyString(bingen_.op("sub", "t1", "t2", "t3")));
     }
 
   private:
@@ -112,7 +110,7 @@ int main (void) {
 
     std::ofstream ofs;
     BinGenTest test(std::move(ofs));
-    test.Test_Parse();
+    // test.Test_Parse();
     test.Test_lui();
     test.Test_auipc();
     test.Test_jal();
@@ -120,6 +118,7 @@ int main (void) {
     test.Test_branch();
     test.Test_load();
     test.Test_store();
+    test.Test_op();
     test.Test_op_imm();
     std::cout << "Tests are all finished!" << std::endl;
     return 0;
