@@ -13,18 +13,12 @@ fib:
 	mv	a5,a0
 	sw	a5,-36(s0)
 	lw	a5,-36(s0)
-	sext.w	a5,a5
-	bnez	a5,.L2
-	li	a5,0
-	j	.L3
-.L2:
-	lw	a5,-36(s0)
 	sext.w	a4,a5
 	li	a5,1
-	bne	a4,a5,.L4
-	li	a5,1
+	bgt	a4,a5,.L2
+	lw	a5,-36(s0)
 	j	.L3
-.L4:
+.L2:
 	lw	a5,-36(s0)
 	addiw	a5,a5,-1
 	sext.w	a5,a5
@@ -48,6 +42,11 @@ fib:
 	addi	sp,sp,48
 	jr	ra
 	.size	fib, .-fib
+	.section	.rodata
+	.align	3
+.LC0:
+	.string	"%d\n"
+	.text
 	.align	1
 	.globl	main
 	.type	main, @function
@@ -58,6 +57,11 @@ main:
 	addi	s0,sp,16
 	li	a0,10
 	call	fib
+	mv	a5,a0
+	mv	a1,a5
+	lui	a5,%hi(.LC0)
+	addi	a0,a5,%lo(.LC0)
+	call	printf
 	li	a5,0
 	mv	a0,a5
 	ld	ra,8(sp)
