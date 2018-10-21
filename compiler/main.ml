@@ -3,13 +3,7 @@ let limit = ref 1000
 let rec iter n e = (* optimization (caml2html: main_iter) *)
   Format.eprintf "iteration %d@." n;
   if n = 0 then e else
-    (* [WEEK2 Q2] Common subexpression elimination *)
-    (print_endline "-------------------------Before Common Subexpression Elimination-------------------------";
-     KNormal.print_t e;
-     let e' = Common.f e in
-     print_endline "-------------------------After Common Subexpression Elimination--------------------------";
-     KNormal.print_t e';
-     let e' = Elim.f (ConstFold.f (Inline.f (Assoc.f (Beta.f e')))) in
+    (let e' = Elim.f (ConstFold.f (Inline.f (Assoc.f (Beta.f (Common.f e))))) in
      if e = e' then e else
        iter (n - 1) e')
 

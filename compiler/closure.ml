@@ -44,7 +44,11 @@ let rec fv = function
 
 let toplevel : fundef list ref = ref []
 
-let rec g env known = function (* クロージャ変換ルーチン本体 (caml2html: closure_g) *)
+let rec g env known e = (* クロージャ変換ルーチン本体 (caml2html: closure_g) *)
+  (* known: 自由変数のない関数の集合 *)
+  KNormal.print_t e;
+  print_endline "---------------------";
+  match e with
   | KNormal.Unit -> Unit
   | KNormal.Int(i) -> Int(i)
   | KNormal.Float(d) -> Float(d)
@@ -69,11 +73,12 @@ let rec g env known = function (* クロージャ変換ルーチン本体 (caml2html: closure
     let known' = S.add x known in
     let e1' = g (M.add_list yts env') known' e1 in
     (* 本当に自由変数がなかったか、変換結果e1'を確認する *)
-    (* 注意: e1'にx自身が変数として出現する場合はclosureが必要!
-       (thanks to nuevo-namasute and azounoman; test/cls-bug2.ml参照) *)
+    (* 注意: e1'にx自身が変数として出現する場合はclosureが必要!  (test/cls-bug2.ml参照) *)
     let zs = S.diff (fv e1') (S.of_list (List.map fst yts)) in
     let known', e1' =
-      if S.is_empty zs then known', e1' else
+      if S.is_empty zs then
+        known', e1'
+      else
         (* 駄目だったら状態(toplevelの値)を戻して、クロージャ変換をやり直す *)
         (Format.eprintf "free variable(s) %s found in function %s@." (Id.pp_list (S.elements zs)) x;
          Format.eprintf "function %s cannot be directly applied in fact@." x;
