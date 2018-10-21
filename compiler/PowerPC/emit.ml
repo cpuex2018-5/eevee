@@ -285,18 +285,18 @@ let f oc (Prog(data, fundefs, e)) =
   Printf.fprintf oc "\t.align 2\n";
   List.iter (fun fundef -> h oc fundef) fundefs;
   Printf.fprintf oc "_min_caml_start: # main entry point\n";
-  Printf.fprintf oc "\tmv\tt0, %s\n" reg_link; (* move the value %ra to stack *)
-  Printf.fprintf oc "\tstmw\tr30, -8(r1)\n";
-  Printf.fprintf oc "\tsw\tr0, 8(r1)\n";
-  Printf.fprintf oc "\tstwu\tr1, -96(r1)\n";
+  Printf.fprintf oc "\taddi\tsp, sp, -16\n";
+  Printf.fprintf oc "\tsw\tra, 8(sp)\n";
+  Printf.fprintf oc "\tsw\tfp, 0(sp)\n";
+  Printf.fprintf oc "\taddi\tfp, sp, 16\n";
   Printf.fprintf oc "#\tmain program starts\n";
   stackset := S.empty;
   stackmap := [];
   g oc (NonTail("_R_0"), e);
   Printf.fprintf oc "#\tmain program ends\n";
-  (* Printf.fprintf oc "\tmr\tr3, %s\n" regs.(0); *)
-  Printf.fprintf oc "\tlwz\tr1, 0(r1)\n";
-  Printf.fprintf oc "\tlwz\tr0, 8(r1)\n";
-  Printf.fprintf oc "\tmtlr\tr0\n";
-  Printf.fprintf oc "\tlmw\tr30, -8(r1)\n";
-  Printf.fprintf oc "\tblr\n"
+  Printf.fprintf oc "\tli\ta5,0";
+  Printf.fprintf oc "\tmv\ta0,a5";
+  Printf.fprintf oc "\tld\tra,8(sp)";
+  Printf.fprintf oc "\tld\tfp,0(sp)";
+  Printf.fprintf oc "\taddi\tsp,sp,16";
+  Printf.fprintf oc "\tjr\tra";
