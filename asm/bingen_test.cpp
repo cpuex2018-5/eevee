@@ -12,25 +12,14 @@ class BinGenTest{
         : bingen_(BinGen(std::move(ofs))) {}
     ~BinGenTest() = default;
 
-    // 01の列にする(4桁ごとに空白)
-    std::string PrettyString(uint32_t inst) {
-        std::string str;
-        for (int i = 0; i < 32; i++) {
-            str.push_back(((inst >> (31 - i)) & 0x1)? '1' : '0');
-            if (i % 4 == 3) str.push_back(' ');
-        }
-        assert(str.size() == 40);
-        return str;
-    }
-
-    void TestPrettyString() {
+    void TestToString() {
         std::map<uint32_t, std::string> examples;
         examples[0x00000000] = "0000 0000 0000 0000 0000 0000 0000 0000 ";
         examples[0xfffff0f0] = "1111 1111 1111 1111 1111 0000 1111 0000 ";
         examples[0xfffffff0] = "1111 1111 1111 1111 1111 1111 1111 0000 ";
         examples[0xffffffff] = "1111 1111 1111 1111 1111 1111 1111 1111 ";
         for (auto example : examples) {
-            std::string ans = PrettyString(example.first);
+            std::string ans = bingen_.ToString(example.first);
             std::printf("%08x : %s\n", example.first, ans.c_str());
             assert(example.second == ans);
         }
@@ -68,7 +57,7 @@ class BinGenTest{
 
     void Test_lui() {
         // Note: immediate values are interpreted as hexadecimals.
-        assert("0000 0000 0000 0010 0000 0000 1011 0111 " == PrettyString(bingen_.lui("ra", 0x20)));
+        assert("0000 0000 0000 0010 0000 0000 1011 0111 " == bingen_.ToString(bingen_.lui("ra", 0x20)));
     }
 
     void Test_auipc() {
@@ -96,8 +85,8 @@ class BinGenTest{
     }
 
     void Test_op () {
-        assert("0000 0001 1100 0011 1000 0011 0011 0011 "  == PrettyString(bingen_.op("add", "t1", "t2", "t3")));
-        assert("0100 0001 1100 0011 1000 0011 0011 0011 "  == PrettyString(bingen_.op("sub", "t1", "t2", "t3")));
+        assert("0000 0001 1100 0011 1000 0011 0011 0011 "  == bingen_.ToString(bingen_.op("add", "t1", "t2", "t3")));
+        assert("0100 0001 1100 0011 1000 0011 0011 0011 "  == bingen_.ToString(bingen_.op("sub", "t1", "t2", "t3")));
     }
 
   private:
@@ -106,7 +95,7 @@ class BinGenTest{
 
 int main (void) {
     // TestParseOffset();
-    // TestPrettyString();
+    // TestToString();
 
     std::ofstream ofs;
     BinGenTest test(std::move(ofs));

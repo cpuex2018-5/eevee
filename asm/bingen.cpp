@@ -168,7 +168,6 @@ uint32_t BinGen::op_imm (std::string mnemo, std::string rd, std::string rs1, uin
 
 // slli, srli, srai
 uint32_t BinGen::op_imm_shift (std::string mnemo, std::string rd, std::string rs1, uint32_t shamt) {
-    
     CheckImmediateUnsigned(shamt, 5, "op_imm_shift");
     uint32_t funct3 = (mnemo == "slli") ? 0b001 : 0b101;
     uint32_t funct7 = (mnemo == "srai") ? 0b0100000 : 0b0000000;
@@ -219,7 +218,6 @@ void BinGen::ClearNline_(){
     nline_ = 0;
 }
 
-
 void BinGen::ReadLabels(std::string input) {
     if (input.back() != ':') {
         // The input wasn't a label.
@@ -237,6 +235,10 @@ void BinGen::ReadLabels(std::string input) {
         // Don't count these markers
         if (mnemo == ".file" || mnemo == ".option" || mnemo == ".text" || mnemo == ".align" ||
             mnemo == ".globl" || mnemo == ".type" || mnemo == ".size" || mnemo == ".ident")
+            return;
+
+        // Don't count comments
+        if (mnemo[0] == '#')
             return;
 
         nline_++;
@@ -349,14 +351,6 @@ void BinGen::Convert(std::string input) {
 
     // Pseudo-instructions
     // TODO: test pseudo-insturctions
-    else if (mnemo == "ret")
-        WriteData(jalr("x0", "x1", 0u));
-
-    else if (mnemo == "call") {
-        WriteData(auipc("x6", MyStoi(arg[0]) >> 12));
-        WriteData(jalr("x1", "x6", MyStoi(arg[0]) & 0xfff));
-    }
-
     else if (mnemo == "la") {
         WriteData(auipc(arg[0], MyStoi(arg[1]) >> 12));
         WriteData(op_imm("addi", arg[0], arg[0], MyStoi(arg[1]) & 0xfff));
@@ -371,9 +365,26 @@ void BinGen::Convert(std::string input) {
     else if (mnemo == "neg")
         WriteData(op("sub", arg[0], "zero", arg[1]));
 
-    if (mnemo != ".file" && mnemo != ".option" && mnemo != ".text" && mnemo != ".align" &&
-        mnemo != ".globl" && mnemo != ".type" && mnemo != ".size" && mnemo != ".ident")
-        nline_ = nline_ + 1;
+    else if (mnemo == "jr")
+        WriteData(jalr("zero", arg[0], 0));
+
+    else if (mnemo == "ret")
+        WriteData(jalr("x0", "x1", 0u));
+
+    else if (mnemo == "call") {
+        WriteData(auipc("x6", MyStoi(arg[0]) >> 12));
+        WriteData(jalr("x1", "x6", MyStoi(arg[0]) & 0xfff));
+    }
+
+    if (mnemo == ".file" || mnemo == ".option" || mnemo == ".text" || mnemo == ".align" ||
+        mnemo == ".globl" || mnemo == ".type" || mnemo == ".size" || mnemo == ".ident")
+        return;
+
+    // A line starting with # is a comment.
+    if (mnemo[0] == '#')
+        return;
+
+    nline_ = nline_ + 1;
 }
 
 uint32_t BinGen::Pack(Fields fields) {
@@ -417,6 +428,21 @@ uint32_t BinGen::MyStoi(std::string imm) {
         // |imm| was a label.
         return label_map_[imm];
     }
+}
+
+// 01の列にする(4桁ごとに空白)
+std::string BinGen::ToString(uint32_t inst) {
+    std::string str;
+    for (int i = 0; i < 32; i++) {
+        str.push_back(((inst >> (31 - i)) & 0x1)? '1' : '0');
+        if (i % 4 == 3) str.push_back(' ');
+    }
+    assert(str.size() == 40);
+    return str;
+}
+
+void BinGen::Print(uint32_t inst) {
+    std::cout << ToString(inst) << std::endl;
 }
 
 int is_imm(std::string str){
