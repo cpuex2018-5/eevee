@@ -13,18 +13,20 @@ tests:
     $ ./test
 
 ## Notes
-* `sample/` : RISC_-V Toolchainのgccを使って生成した実際のRISC-Vのアセンブリと元のCプログラム(64bit命令がある・・・)
+* `sample` : RISC-V Toolchainのgccを使って生成した実際のRISC-Vのアセンブリと元のCプログラム(64bit命令がある・・・)
+* `target` : min-camlで生成したアセンブリ(今後変わる可能性あり)
 
 ## Available pseudoinstructions(順次増やす予定)
-* `jr`, `ret`, `call`, `la`
+* `la`
 * `li`, `mv`, `neg`
+* `j`, `jr`, `ret`, `call`
 
 ## TODOs
 - [ ] テストを増やす(?)
 - [ ] 浮動小数点用の命令への対応(?)
 - [ ] RISC-V pseudoinstructionへの対応(`call`など)
 
-## Memo
+## 備忘録
 * ファイルの先頭の
 
     .file	"fib.c"
@@ -35,3 +37,5 @@ tests:
     .type	fib, @function
 
   ここらへんの情報はとりあえず全部読み飛ばしている(コンパイラの実装次第では対処が必要になりそう)
+
+* immediate valueは10進数と解釈することにした

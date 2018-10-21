@@ -99,7 +99,7 @@ int main (void) {
 
     std::ofstream ofs;
     BinGenTest test(std::move(ofs));
-    // test.Test_Parse();
+    test.Test_Parse();
     test.Test_lui();
     test.Test_auipc();
     test.Test_jal();

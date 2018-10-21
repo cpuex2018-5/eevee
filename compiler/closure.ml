@@ -46,8 +46,8 @@ let toplevel : fundef list ref = ref []
 
 let rec g env known e = (* クロージャ変換ルーチン本体 (caml2html: closure_g) *)
   (* known: 自由変数のない関数の集合 *)
-  KNormal.print_t e;
-  print_endline "---------------------";
+  (* KNormal.print_t e;
+     print_endline "---------------------"; *)
   match e with
   | KNormal.Unit -> Unit
   | KNormal.Int(i) -> Int(i)

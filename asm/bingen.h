@@ -57,7 +57,7 @@ class BinGen {
         void CheckImmediateUnsigned(uint32_t imm, int range, std::string func_name);
         void WriteData(uint32_t data);
 
-        // |imm| might be a number or a label.
+        // |imm|がラベルの場合は対応する値を返し、即値ならstoiして返す　
         uint32_t MyStoi(std::string imm);
 
         // Number of instructions read so far.

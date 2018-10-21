@@ -1,8 +1,8 @@
 #include <iostream>
 #include <fstream>
 #include <string>
-#include "bingen.h"
 #include <assert.h>
+#include "bingen.h"
 
 // 01の列にする(4桁ごとに空白)
 std::string PrettyString(uint32_t inst) {
@@ -46,11 +46,15 @@ int main(int argc, char* argv[])
     bingen.ClearNline_();
     ifs.clear();
     ifs.seekg(0, std::ios::beg);
-    
+
     // Round 2: Replace the instructions with bytecodes
     while (getline(ifs, str)) {
         bingen.Convert(str);
     }
+
+    ifs.close();
+    ofs.close();
+
     return 0;
 }
 

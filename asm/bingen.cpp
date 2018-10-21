@@ -8,7 +8,7 @@
 #include <cmath>
 
 void print_binary(int);
-int is_imm(std::string);
+
 std::map<std::string, int> regmap =
 {
     { "zero", 0 },
@@ -207,9 +207,9 @@ uint32_t BinGen::op (std::string mnemo, std::string rd, std::string rs1, std::st
 
 void BinGen::WriteData(uint32_t data) {
     unsigned char d[4];
-    d[0] = data>>24;
-    d[1] = data>>16;
-    d[2] = data>>8;
+    d[0] = data >> 24;
+    d[1] = data >> 16;
+    d[2] = data >> 8;
     d[3] = data;
     ofs_.write((char *)d, 4);
 }
@@ -245,7 +245,7 @@ void BinGen::ReadLabels(std::string input) {
         return;
     }
     input.pop_back();
-    std::cout << input << std::endl;
+    std::cout << "new label " << input << " registered at " << nline_ << std::endl;
     label_map_[input] = nline_;
 }
 
@@ -264,23 +264,17 @@ void BinGen::Parse(std::string input, std::string &mnemo, std::vector<std::strin
     start_pos = curr_pos;
     while (!(input[curr_pos] == ' ' || input[curr_pos] == '\t' || input[curr_pos] == ',' || input[curr_pos] == '\0')) curr_pos++;
     arg.push_back(input.substr(start_pos, curr_pos - start_pos));
-    while (input[curr_pos] == ' ' || input[curr_pos] == '\t') curr_pos++;
+    while (input[curr_pos] == ' ' || input[curr_pos] == '\t' || input[curr_pos] == ',') curr_pos++;
     if (input[curr_pos] == '\0') return;
-    // arg[1]
 
-    if(input[curr_pos] == ','){
-      curr_pos++;
-    }
+    // arg[1]
     start_pos = curr_pos;
     while (!(input[curr_pos] == ' ' || input[curr_pos] == '\t' || input[curr_pos] == ',' || input[curr_pos] == '\0')) curr_pos++;
     arg.push_back(input.substr(start_pos, curr_pos - start_pos));
-    while (input[curr_pos] == ' ' || input[curr_pos] == '\t') curr_pos++;
+    while (input[curr_pos] == ' ' || input[curr_pos] == '\t' || input[curr_pos] == ',') curr_pos++;
     if (input[curr_pos] == '\0') return;
-    // arg[2]
 
-    if(input[curr_pos] == ','){
-      curr_pos++;
-    }
+    // arg[2]
     start_pos = curr_pos;
     while (!(input[curr_pos] == '\0')) curr_pos++;
     arg.push_back(input.substr(start_pos, curr_pos - start_pos));
@@ -288,44 +282,33 @@ void BinGen::Parse(std::string input, std::string &mnemo, std::vector<std::strin
 
 void BinGen::Convert(std::string input) {
     // Parse the input.
-  
     std::string mnemo;
     std::vector<std::string> arg;
     Parse(input, mnemo, arg);
-    if (mnemo.back() == ':') {
-        // Skip the labels.
+
+    // Skip the labels.
+    if (mnemo.back() == ':')
         return;
-    }
+
+    if (mnemo == ".file" || mnemo == ".option" || mnemo == ".text" || mnemo == ".align" ||
+        mnemo == ".globl" || mnemo == ".type" || mnemo == ".size" || mnemo == ".ident")
+        return;
+
+    // A line starting with # is a comment.
+    if (mnemo[0] == '#')
+        return;
+
     // Note: Lack of arguments will cause crash here
     if (mnemo == "lui")
-        WriteData(lui(arg[0], std::stoi(arg[1], nullptr, 16)));
+        WriteData(lui(arg[0], MyStoi(arg[1])));
     else if (mnemo == "auipc")
-        WriteData(auipc(arg[0], std::stoi(arg[1], nullptr, 16)));
-    else if (mnemo == "jal"){
-        if(is_imm(arg[1]) == 1){
-          WriteData(jal(arg[0],(4*label_map_[arg[1]]-4*nline_)));
-        }
-        else{
-          WriteData(jal(arg[0], std::stoi(arg[1], nullptr, 16)));
-        }
-    }
-    else if (mnemo == "jalr"){
-        if(is_imm(arg[2]) == 1){
-          WriteData(jalr(arg[0],arg[1],(4*label_map_[arg[2]]-4*nline_)));
-        }
-        else{
-          WriteData(jalr(arg[0], arg[1], std::stoi(arg[2], nullptr, 16)));
-        }
-    }
-    else if (mnemo == "beq" || mnemo == "bne" || mnemo == "blt" || mnemo == "bge" || mnemo == "bltu") {
-          if(is_imm(arg[2]) == 1){
-                WriteData(branch(mnemo,arg[0],arg[1],(4*label_map_[arg[2]]-4*nline_)));
-          }
-          else{
-                WriteData(branch(mnemo,arg[0],arg[1],std::stoi(arg[2],nullptr,16)));
-          }
-          //WriteData(branch(mnemo, arg[0], arg[1], MyStoi(arg[2])));
-    }
+        WriteData(auipc(arg[0], MyStoi(arg[1])));
+    else if (mnemo == "jal")
+        WriteData(jal(arg[0], MyStoi(arg[1])));
+    else if (mnemo == "jalr")
+        WriteData(jalr(arg[0], arg[1], MyStoi(arg[2])));
+    else if (mnemo == "beq" || mnemo == "bne" || mnemo == "blt" || mnemo == "bge" || mnemo == "bltu")
+        WriteData(branch(mnemo,arg[0],arg[1], MyStoi(arg[2])));
 
     else if (mnemo == "lb" || mnemo == "lh" || mnemo == "lw" || mnemo == "lbu" || mnemo == "lhu") {
         std::string rs1; uint32_t offset;
@@ -340,10 +323,10 @@ void BinGen::Convert(std::string input) {
     }
 
     else if (mnemo == "addi" || mnemo == "slti" || mnemo == "sltiu" || mnemo == "xori" || mnemo == "ori" || mnemo == "andi"){
-        WriteData(op_imm(mnemo, arg[0], arg[1], std::stoi(arg[2], nullptr, 16)));
+        WriteData(op_imm(mnemo, arg[0], arg[1], MyStoi(arg[2])));
     }
     else if (mnemo == "slli" || mnemo == "srli" || mnemo == "srai")
-        WriteData(op_imm_shift(mnemo, arg[0], arg[1], std::stoi(arg[2], nullptr, 16)));
+        WriteData(op_imm_shift(mnemo, arg[0], arg[1], MyStoi(arg[2])));
     else if (mnemo == "add" || mnemo == "sub" || mnemo == "sll" || mnemo == "slt" || mnemo == "sltu" || mnemo == "xor" ||
         mnemo == "srl" || mnemo == "sra" || mnemo == "or" || mnemo == "and")
         WriteData(op(mnemo, arg[0], arg[1], arg[2]));
@@ -365,6 +348,12 @@ void BinGen::Convert(std::string input) {
     else if (mnemo == "neg")
         WriteData(op("sub", arg[0], "zero", arg[1]));
 
+    else if (mnemo == "bgt")
+        WriteData(branch("blt", arg[1], arg[0], MyStoi(arg[2])));
+
+    else if (mnemo == "j")
+        WriteData(jal("x0", MyStoi(arg[0])));
+
     else if (mnemo == "jr")
         WriteData(jalr("zero", arg[0], 0));
 
@@ -376,13 +365,10 @@ void BinGen::Convert(std::string input) {
         WriteData(jalr("x1", "x6", MyStoi(arg[0]) & 0xfff));
     }
 
-    if (mnemo == ".file" || mnemo == ".option" || mnemo == ".text" || mnemo == ".align" ||
-        mnemo == ".globl" || mnemo == ".type" || mnemo == ".size" || mnemo == ".ident")
+    else {
+        std::cout << "No such instructions: " << input << std::endl;
         return;
-
-    // A line starting with # is a comment.
-    if (mnemo[0] == '#')
-        return;
+    }
 
     nline_ = nline_ + 1;
 }
@@ -422,11 +408,11 @@ void BinGen::ParseOffset(std::string arg, std::string* reg, uint32_t* offset) {
 
 uint32_t BinGen::MyStoi(std::string imm) {
     try {
-        return std::stoi(imm, nullptr, 16);
+        return std::stoi(imm, nullptr, 10);
     }
     catch (...) {
-        // |imm| was a label.
-        return label_map_[imm];
+        // stoi() failed. |imm| was a label.
+        return (label_map_[imm] - nline_) * 4;
     }
 }
 
@@ -443,15 +429,6 @@ std::string BinGen::ToString(uint32_t inst) {
 
 void BinGen::Print(uint32_t inst) {
     std::cout << ToString(inst) << std::endl;
-}
-
-int is_imm(std::string str){
-  for(char& c :str){
-    if(!isdigit(c) && c!='-'){
-      return 1;
-    }
-  }
-  return 0;
 }
 
 void print_binary(int val){
