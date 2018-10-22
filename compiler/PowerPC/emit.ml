@@ -5,6 +5,10 @@ external getlo : float -> int32 = "getlo"
 
 let stackset = ref S.empty (* Set of variables already 'Saved' (caml2html: emit_stackset) *)
 let stackmap = ref [] (* Positions of variables in the stack which are already 'Saved' (caml2html: emit_stackmap) *)
+
+let print_stackmap () =
+  print_endline ("stack: " ^ (String.concat " " !stackmap))
+
 let save x =
   stackset := S.add x !stackset;
   if not (List.mem x !stackmap) then
@@ -125,18 +129,26 @@ and g' oc = function (* 各命令のアセンブリ生成 (caml2html: emit_gprime) *)
   (* 末尾だったら計算結果を%a0か%fa0にセットしてリターン (caml2html: emit_tailret) *)
   | Tail, (Nop | Stw _ | Stfd _ | Comment _ | Save _ as exp) ->
     g' oc (NonTail(Id.gentmp Type.Unit), exp);
+    let ss = stacksize () in
+    Printf.fprintf oc "\tld\t%s, %d(%s)\n" (reg reg_link) (ss - 4) (reg reg_sp);
     Printf.fprintf oc "\tjr\tra\n";
   | Tail, (Li _ | SetL _ | Mv _ | Neg _ | Add _ | Sub _ | Slw _ | Lwz _ as exp) ->
     g' oc (NonTail(regs.(0)), exp);
+    let ss = stacksize () in
+    Printf.fprintf oc "\tld\t%s, %d(%s)\n" (reg reg_link) (ss - 4) (reg reg_sp);
     Printf.fprintf oc "\tjr\tra\n";
   | Tail, (FLi _ | FMv _ | FNeg _ | FAdd _ | FSub _ | FMul _ | FDiv _ | Lfd _ as exp) ->
     g' oc (NonTail(fregs.(0)), exp);
+    let ss = stacksize () in
+    Printf.fprintf oc "\tld\t%s, %d(%s)\n" (reg reg_link) (ss - 4) (reg reg_sp);
     Printf.fprintf oc "\tjr\tra\n";
   | Tail, (Restore(x) as exp) ->
     (match locate x with
      | [i] -> g' oc (NonTail(regs.(0)), exp)
      | [i; j] when i + 1 = j -> g' oc (NonTail(fregs.(0)), exp)
      | _ -> assert false);
+    let ss = stacksize () in
+    Printf.fprintf oc "\tld\t%s, %d(%s)\n" (reg reg_link) (ss - 4) (reg reg_sp);
     Printf.fprintf oc "\tjr\tra\n";
 
     (* IF内がfalseの場合にjump *)
@@ -188,20 +200,20 @@ and g' oc = function (* 各命令のアセンブリ生成 (caml2html: emit_gprime) *)
     g'_non_tail_if oc (NonTail(z)) reg_tmp "zero" e1 e2 "bne" "beq"
 
   (* 関数呼び出しの仮想命令の実装 (caml2html: emit_call) *)
-  | Tail, CallCls(f, iargs, fargs) -> (* 末尾呼び出し (caml2html: emit_tailcall) *)
+  | Tail, CallCls(f, iargs, fargs) ->
     (* TODO: tレジスタから使うようにする(?) *)
     g'_args oc [(f, reg_cl)] iargs fargs;
     Printf.fprintf oc "\tlw\t%s, 0(%s)\n" (reg reg_sw) (reg reg_cl);
-    Printf.fprintf oc "\tmv\tra, %s\n" (reg reg_sw);
+    Printf.fprintf oc "\tmv\t%s, %s\n" (reg reg_link) (reg reg_sw);
     Printf.fprintf oc "\tjr\tra\n"
-  | Tail, CallDir(Id.L(f), iargs, fargs) -> (* 末尾呼び出し *)
+  | Tail, CallDir(Id.L(f), iargs, fargs) ->
+    print_stackmap ();
     g'_args oc [] iargs fargs;
     Printf.fprintf oc "\tj\t%s\n" f
   | NonTail(a), CallCls(f, iargs, fargs) ->
-    Printf.fprintf oc "\tmv\t%s, %s\n" (reg reg_tmp) (reg reg_link);
     g'_args oc [(f, reg_cl)] iargs fargs;
     let ss = stacksize () in
-    Printf.fprintf oc "\tsw\t%s, %d(%s)\n" (reg reg_tmp) (ss - 4) (reg reg_sp); (* evacuate link register *)
+    Printf.fprintf oc "\tsw\t%s, %d(%s)\n" (reg reg_link) (ss - 4) (reg reg_sp); (* evacuate link register *)
     Printf.fprintf oc "\taddi\t%s, %s, %d\n" (reg reg_fp) (reg reg_sp) ss;
     Printf.fprintf oc "\tlw\t%s, 0(%s)\n" (reg reg_tmp) (reg reg_cl);
     Printf.fprintf oc "\tmv\t%s, %s\n" (reg reg_link) (reg reg_tmp); (* set closure address to %ra *)
@@ -214,10 +226,11 @@ and g' oc = function (* 各命令のアセンブリ生成 (caml2html: emit_gprime) *)
       Printf.fprintf oc "\tfmv.s\t%s, %s\n" (reg a) (reg fregs.(0));
     Printf.fprintf oc "\tmv\t%s, %s\n" (reg reg_link) (reg reg_tmp)
   | (NonTail(a), CallDir(Id.L(f), iargs, fargs)) ->
+    print_stackmap ();
     Printf.fprintf oc "\tmv\t%s, %s\n" (reg reg_tmp) (reg reg_link);
     g'_args oc [] iargs fargs;
     let ss = stacksize () in
-    Printf.fprintf oc "\tsw\t%s, %d(%s)\n" (reg reg_tmp) (ss - 4) (reg reg_sp);
+    Printf.fprintf oc "\tsw\t%s, %d(%s)\n" (reg reg_link) (ss - 4) (reg reg_sp);
     Printf.fprintf oc "\taddi\t%s, %s, %d\n" (reg reg_fp) (reg reg_sp) ss;
     Printf.fprintf oc "\tcall\t%s\n" f;
     Printf.fprintf oc "\taddi\t%s, %s, %d\n" (reg reg_fp) (reg reg_sp) (-1 * ss);
@@ -226,7 +239,7 @@ and g' oc = function (* 各命令のアセンブリ生成 (caml2html: emit_gprime) *)
       Printf.fprintf oc "\tmv\t%s, %s\n" (reg a) (reg regs.(0))
     else if List.mem a allfregs && a <> fregs.(0) then
       Printf.fprintf oc "\tfmv.s\t%s, %s\n" (reg a) (reg fregs.(0));
-    Printf.fprintf oc "\tmv\t%s, %s\n" (reg reg_link) (reg reg_tmp)
+    (* Printf.fprintf oc "\tmv\t%s, %s\n" (reg reg_link) (reg reg_tmp) *)
 and g'_tail_if oc rs1 rs2 e1 e2 b bn =
   let b_else = Id.genid (b ^ "_else") in
   Printf.fprintf oc "\t%s\t%s, %s, %s\n" bn (reg rs1) (reg rs2) b_else;
@@ -290,10 +303,10 @@ let f oc (Prog(data, fundefs, e)) =
   Printf.fprintf oc "\t.align 2\n";
   List.iter (fun fundef -> h oc fundef) fundefs;
   Printf.fprintf oc "_min_caml_start: # main entry point\n";
-  Printf.fprintf oc "\taddi\tsp, sp, -16\n";
-  Printf.fprintf oc "\tsw\tra, 8(sp)\n";
+  Printf.fprintf oc "\taddi\tsp, sp, -8\n";
+  Printf.fprintf oc "\tsw\tra, 4(sp)\n";
   Printf.fprintf oc "\tsw\tfp, 0(sp)\n";
-  Printf.fprintf oc "\taddi\tfp, sp, 16\n";
+  Printf.fprintf oc "\taddi\tfp, sp, 8\n";
   Printf.fprintf oc "#\tmain program starts\n";
   stackset := S.empty;
   stackmap := [];
@@ -301,7 +314,7 @@ let f oc (Prog(data, fundefs, e)) =
   Printf.fprintf oc "#\tmain program ends\n";
   Printf.fprintf oc "\tli\ta5, 0\n";
   Printf.fprintf oc "\tmv\ta0, a5\n";
-  Printf.fprintf oc "\tlw\tra, 8(sp)\n";
+  Printf.fprintf oc "\tlw\tra, 4(sp)\n";
   Printf.fprintf oc "\tlw\tfp, 0(sp)\n";
-  Printf.fprintf oc "\taddi\tsp, sp, 16\n";
+  Printf.fprintf oc "\taddi\tsp, sp, 8\n";
   Printf.fprintf oc "\tjr\tra\n";
