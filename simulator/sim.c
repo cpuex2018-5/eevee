@@ -49,6 +49,7 @@ void exec(Simulator *sim){
     if(sim->pc>=sim->text_size || sim->pc<0){
       break;
     }
+    sim->registers[0] = 0; //always set zero register to zero
     if(debug_mode == 1){
       //for debug
       fprintf(stdout,"current pc: %ld\n",sim->pc);
