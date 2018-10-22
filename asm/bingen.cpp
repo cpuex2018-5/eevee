@@ -50,7 +50,6 @@ BinGen::BinGen(std::ofstream ofs)
   : ofs_(std::move(ofs)) {}
 
 uint32_t BinGen::lui (std::string rd, uint32_t imm) {
-    imm &= 0xfffff;
     CheckImmediate(imm, 20, "lui");
     Fields fields;
     fields.emplace_back(7, 0b0110111);
@@ -60,7 +59,6 @@ uint32_t BinGen::lui (std::string rd, uint32_t imm) {
 }
 
 uint32_t BinGen::auipc (std::string rd, uint32_t imm) {
-    imm &= 0xfffff;
     CheckImmediate(imm, 20, "auipc");
     Fields fields;
     fields.emplace_back(7, 0b0010111);
@@ -70,7 +68,6 @@ uint32_t BinGen::auipc (std::string rd, uint32_t imm) {
 }
 
 uint32_t BinGen::jal (std::string rd, uint32_t imm) {
-    imm &= 0xfffff;
     CheckImmediate(imm, 20, "jal");
     Fields fields;
     fields.emplace_back(7, 0b1101111);
@@ -83,7 +80,6 @@ uint32_t BinGen::jal (std::string rd, uint32_t imm) {
 }
 
 uint32_t BinGen::jalr (std::string rd, std::string rs1, uint32_t imm) {
-    imm &= 0xfff;
     CheckImmediate(imm, 12, "jalr");
     Fields fields;
     fields.emplace_back(7, 0b1100111);
@@ -96,7 +92,6 @@ uint32_t BinGen::jalr (std::string rd, std::string rs1, uint32_t imm) {
 
 // beq, bne, blt, bge, bltu, bgeu
 uint32_t BinGen::branch (std::string mnemo, std::string rs1, std::string rs2, uint32_t offset) {
-    offset &= 0xfff;
     CheckImmediate(offset, 12, "branch");
     uint32_t funct3;
     if (mnemo == "beq") funct3 = 0b000;
@@ -119,7 +114,6 @@ uint32_t BinGen::branch (std::string mnemo, std::string rs1, std::string rs2, ui
 
 // lb, lh, lw, lbu, lhu
 uint32_t BinGen::load (std::string mnemo, std::string rd, std::string rs1, uint32_t offset) {
-    offset &= 0xfff;
     CheckImmediate(offset, 12, "load");
     uint32_t funct3;
     if (mnemo == "lb") funct3 = 0b000;
@@ -138,7 +132,6 @@ uint32_t BinGen::load (std::string mnemo, std::string rd, std::string rs1, uint3
 
 // sb, sh, sw
 uint32_t BinGen::store (std::string mnemo, std::string rs2, std::string rs1, uint32_t offset) {
-    offset &= 0xfff;
     CheckImmediate(offset, 12, "store");
     uint32_t funct3;
     if (mnemo == "sb") funct3 = 0b000;
@@ -156,7 +149,6 @@ uint32_t BinGen::store (std::string mnemo, std::string rs2, std::string rs1, uin
 
 // addi, slti, sltiu, xori, ori, andi
 uint32_t BinGen::op_imm (std::string mnemo, std::string rd, std::string rs1, uint32_t imm) {
-    imm &= 0xfff;
     CheckImmediate(imm, 12, "op_imm");
     uint32_t funct3;
     if (mnemo == "addi")  funct3 = 0b000;
@@ -176,7 +168,6 @@ uint32_t BinGen::op_imm (std::string mnemo, std::string rd, std::string rs1, uin
 
 // slli, srli, srai
 uint32_t BinGen::op_imm_shift (std::string mnemo, std::string rd, std::string rs1, uint32_t shamt) {
-    shamt &= 0x1f;
     CheckImmediate(shamt, 5, "op_imm_shift");
     uint32_t funct3 = (mnemo == "slli") ? 0b001 : 0b101;
     uint32_t funct7 = (mnemo == "srai") ? 0b0100000 : 0b0000000;
@@ -395,16 +386,14 @@ uint32_t BinGen::Pack(Fields fields) {
     return ret;
 }
 
-// immの上位(32 - range)bitが全部0でなければダメ
+// immの上位(32 - range)bitが全部0(imm >= 0の場合)、もしくは全部1(imm < 0の場合)でなければダメ
 void BinGen::CheckImmediate(uint32_t imm, int range, std::string func_name) {
     uint32_t mask = -1 << range;
-  //int v = std::pow(2, range - 1);
-  // if ((int)imm > (v-1) || (int)imm < (-v)) {
-  if (mask & imm) {
+    if (mask & imm && mask & (!imm)) {
         //$BId9fIU(B range bit$B?t$N:GBg$H:G>.$KF~$C$F$$$k$+!)(B
         std::cout << "ERROR(" << func_name << "): The immediate value " << imm << " should be smaller than 2 ^ " << range << std::endl;
         exit(1);
-  }
+    }
 }
 
 // void BinGen::CheckImmediateUnsigned(uint32_t imm,int range, std::string func_name){
