@@ -383,10 +383,10 @@ uint32_t BinGen::Pack(Fields fields) {
 }
 
 void BinGen::CheckImmediate(uint32_t imm, int range, std::string func_name) {
-  int v = std::pow(2,(range-1));
+  int v = std::pow(2, range-1);
   if ((int)imm > (v-1) || (int)imm < (-v)) {
         //符号付 range bit数の最大と最小に入っているか？
-        std::cout << "ERROR(" << func_name << "): The immediate value should be smaller than 2 ^ " << range << std::endl;
+        std::cout << "ERROR(" << func_name << "): The immediate value " << imm << " should be smaller than 2 ^ " << range << std::endl;
         exit(1);
   }
 }
@@ -394,7 +394,7 @@ void BinGen::CheckImmediateUnsigned(uint32_t imm,int range, std::string func_nam
   //shiftするときの即値検査には符号なしのものを使う
   int v = std::pow(2,range);
   if((int) imm > (v-1) || (int) imm < 0){
-        std::cout << "ERROR(" << func_name << "): The immediate value should be smaller than 2 ^ " << range << std::endl;
+        std::cout << "ERROR(" << func_name << "): The immediate value " << imm << " should be smaller than 2 ^ " << range << std::endl;
         exit(1);
   }
 }

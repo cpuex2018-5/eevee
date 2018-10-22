@@ -14,7 +14,8 @@ tests:
 
 ## Notes
 * `sample` : RISC-V Toolchainのgccを使って生成した実際のRISC-Vのアセンブリと元のCプログラム(64bit命令がある・・・)
-* `target` : min-camlで生成したアセンブリ(今後変わる可能性あり)
+
+* `target` : eevee用のアセンブリ(`sample`のコードを元に手動で少し変えたりしたもの)
 
 ## Available pseudoinstructions(順次増やす予定)
 * `la`

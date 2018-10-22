@@ -1,39 +1,55 @@
-	.file	"fib.c"
+	.file	"ack.c"
 	.option nopic
 	.text
 	.align	1
-	.globl	fib
-	.type	fib, @function
-fib:
+	.globl	ack
+	.type	ack, @function
+ack:
 	addi	sp,sp,-48
 	sd	ra,40(sp)
 	sd	s0,32(sp)
 	sd	s1,24(sp)
 	addi	s0,sp,48
 	mv	a5,a0
+	mv	a4,a1
 	sw	a5,-36(s0)
+	mv	a5,a4
+	sw	a5,-40(s0)
 	lw	a5,-36(s0)
-	sext.w	a4,a5
-	li	a5,1
-	bgt	a4,a5,.L2
-	lw	a5,-36(s0)
+	sext.w	a5,a5
+	bgtz	a5,.L2
+	lw	a5,-40(s0)
+	addiw	a5,a5,1
+	sext.w	a5,a5
 	j	.L3
 .L2:
+	lw	a5,-40(s0)
+	sext.w	a5,a5
+	bgtz	a5,.L4
 	lw	a5,-36(s0)
 	addiw	a5,a5,-1
 	sext.w	a5,a5
+	li	a1,1
 	mv	a0,a5
-	call	fib
+	call	ack
 	mv	a5,a0
-	mv	s1,a5
+	j	.L3
+.L4:
 	lw	a5,-36(s0)
-	addiw	a5,a5,-2
-	sext.w	a5,a5
+	addiw	a5,a5,-1
+	sext.w	s1,a5
+	lw	a5,-40(s0)
+	addiw	a5,a5,-1
+	sext.w	a4,a5
+	lw	a5,-36(s0)
+	mv	a1,a4
 	mv	a0,a5
-	call	fib
+	call	ack
 	mv	a5,a0
-	addw	a5,s1,a5
-	sext.w	a5,a5
+	mv	a1,a5
+	mv	a0,s1
+	call	ack
+	mv	a5,a0
 .L3:
 	mv	a0,a5
 	ld	ra,40(sp)
@@ -41,7 +57,12 @@ fib:
 	ld	s1,24(sp)
 	addi	sp,sp,48
 	jr	ra
-	.size	fib, .-fib
+	.size	ack, .-ack
+	.section	.rodata
+	.align	3
+.LC0:
+	.string	"%d\n"
+	.text
 	.align	1
 	.globl	main
 	.type	main, @function
@@ -50,9 +71,15 @@ main:
 	sd	ra,8(sp)
 	sd	s0,0(sp)
 	addi	s0,sp,16
-	li	a0,10
-	call	fib
+	li	a1,10
+	li	a0,3
+	call	ack
 	mv	a5,a0
+	mv	a1,a5
+	lui	a5,%hi(.LC0)
+	addi	a0,a5,%lo(.LC0)
+	call	printf
+	li	a5,0
 	mv	a0,a5
 	ld	ra,8(sp)
 	ld	s0,0(sp)

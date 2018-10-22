@@ -11,7 +11,6 @@ int gcd (int m, int n) {
 
 int main (void)
 {
-    printf("%d\n", gcd(21600, 335700));
-    return 0;
+    return gcd(10, 35);
 }
 
