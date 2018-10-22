@@ -248,9 +248,9 @@ void BinGen::ReadLabels(std::string input) {
         nline_++;
         return;
     }
-    input.pop_back();
+    mnemo.pop_back();
     std::cout << "new label " << mnemo << " registered at " << nline_ << std::endl;
-    label_map_[input] = nline_;
+    label_map_[mnemo] = nline_;
 }
 
 // dirty...
@@ -418,6 +418,7 @@ uint32_t BinGen::MyStoi(std::string imm) {
     }
     catch (...) {
         // stoi() failed. |imm| was a label.
+        // std::cout << imm << label_map_[imm] << std::endl;
         return (label_map_[imm] - nline_) * 4;
     }
 }

@@ -64,6 +64,7 @@ class BinGenTest{
     }
 
     void Test_jal() {
+        assert("1111 1101 0101 1111 1111 0000 0110 1111 " == bingen_.ToString(bingen_.jal("x0", -44)));
     }
 
     void Test_jalr() {
