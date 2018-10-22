@@ -4,6 +4,21 @@
 	.align	1
 	.globl	fib
 	.type	fib, @function
+main:
+	addi	sp,sp,-8
+	sw	ra,4(sp)
+	sw	fp,0(sp)
+	addi	fp,sp,8        # fp: old stack pointer
+#	main program starts
+	li	a0,10
+	call	fib
+#	main program ends
+	mv	a5,a0
+	mv	a0,a5
+	lw	ra,4(sp)
+	lw	s0,0(sp)
+	addi	sp,sp,8
+#	jr	ra
 fib:
 	addi	sp,sp,-24   # callee-save
 	sw	ra,20(sp)
@@ -41,20 +56,5 @@ fib:
 	.align	1
 	.globl	main
 	.type	main, @function
-main:
-	addi	sp,sp,-8
-	sw	ra,4(sp)
-	sw	fp,0(sp)
-	addi	fp,sp,8        # fp: old stack pointer
-#	main program starts
-	li	a0,10
-	call	fib
-#	main program ends
-	mv	a5,a0
-	mv	a0,a5
-	lw	ra,4(sp)
-	lw	s0,0(sp)
-	addi	sp,sp,8
-	jr	ra
 	.size	main, .-main
 	.ident	"GCC: (GNU) 8.2.0"
