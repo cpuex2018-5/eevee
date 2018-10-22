@@ -5,56 +5,56 @@
 	.globl	fib
 	.type	fib, @function
 fib:
-	addi	sp,sp,-48       # callee-save
-	sw	ra,40(sp)
-	sw	fp,32(sp)
-	sw	s1,24(sp)
-	addi	fp,sp,48        # set new fp
+	addi	sp,sp,-24       # callee-save
+	sw	ra,20(sp)
+	sw	fp,16(sp)
+	sw	s1,12(sp)
+	addi	fp,sp,24        # set new fp
 	mv	a5,a0
-	sw	a5,-36(fp)          # -36(fp) <- n
+	sw	a5,8(sp)          # 8(sp) <- n
 	mv	a4,a5
 	li	a5,1
 	bgt	a4,a5,.L2
-	lw	a5,-36(fp)
+	lw	a5,8(sp)
 	j	.L3
 .L2:                        # case of n > 1
-	lw	a5,-36(fp)          # a5 <- n
+	lw	a5,8(sp)          # a5 <- n
 	addi	a5,a5,-1        # a5 <- n - 1
 	mv	a0,a5
 	call	fib
 	mv	a5,a0
 	mv	s1,a5               # s1 <- fib(n - 1)
-	lw	a5,-36(fp)
+	lw	a5,8(sp)
 	addi	a5,a5,-2        # a5 <- n - 2
 	mv	a0,a5
 	call	fib
 	mv	a5,a0               # a5 <- fib(n - 2)
-	addi	a5,s1,a5        # a5 <- fib(n - 1) + fib(n - 2)
+	add	a5,s1,a5        # a5 <- fib(n - 1) + fib(n - 2)
 .L3:                        # case of n <= 1 (return from fib)
 	mv	a0,a5
-	lw	ra,40(sp)           # restore registers
-	lw	fp,32(sp)
-	lw	s1,24(sp)
-	addi	sp,sp,48
+	lw	ra,20(sp)           # restore registers
+	lw	fp,16(sp)
+	lw	s1,12(sp)
+	addi	sp,sp,24
 	jr	ra
 	.size	fib, .-fib
 	.align	1
 	.globl	main
 	.type	main, @function
 main:
-	addi	sp,sp,-16
-	sw	ra,8(sp)
+	addi	sp,sp,-8
+	sw	ra,4(sp)
 	sw	fp,0(sp)
-	addi	fp,sp,16        # fp: old stack pointer
+	addi	fp,sp,8        # fp: old stack pointer
 #	main program starts
 	li	a0,10
 	call	fib
 #	main program ends
 	mv	a5,a0
 	mv	a0,a5
-	lw	ra,8(sp)
+	lw	ra,4(sp)
 	lw	s0,0(sp)
-	addi	sp,sp,16
+	addi	sp,sp,8
 	jr	ra
 	.size	main, .-main
 	.ident	"GCC: (GNU) 8.2.0"
