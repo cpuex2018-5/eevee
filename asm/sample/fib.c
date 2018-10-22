@@ -8,7 +8,6 @@ int fib (int n) {
 
 int main (void)
 {
-    printf("%d\n", fib(10));
-    return 0;
+    return fib(10);
 }
 

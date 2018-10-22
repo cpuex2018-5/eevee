@@ -52,11 +52,6 @@ gcd:
 	addi	sp,sp,32
 	jr	ra
 	.size	gcd, .-gcd
-	.section	.rodata
-	.align	3
-.LC0:
-	.string	"%d\n"
-	.text
 	.align	1
 	.globl	main
 	.type	main, @function
@@ -65,17 +60,10 @@ main:
 	sd	ra,8(sp)
 	sd	s0,0(sp)
 	addi	s0,sp,16
-	li	a5,335872
-	addi	a1,a5,-172
-	li	a5,20480
-	addi	a0,a5,1120
+	li	a1,35
+	li	a0,10
 	call	gcd
 	mv	a5,a0
-	mv	a1,a5
-	lui	a5,%hi(.LC0)
-	addi	a0,a5,%lo(.LC0)
-	call	printf
-	li	a5,0
 	mv	a0,a5
 	ld	ra,8(sp)
 	ld	s0,0(sp)
