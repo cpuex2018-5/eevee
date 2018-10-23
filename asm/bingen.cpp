@@ -374,10 +374,12 @@ void BinGen::Convert(std::string input) {
     else if (mnemo == "la") {
         WriteData(auipc(arg[0], MyStoi(arg[1]) >> 12));
         WriteData(op_imm("addi", arg[0], arg[0], MyStoi(arg[1]) & 0xfff));
+        nline_++;
     }
 
-    else if (mnemo == "li")
+    else if (mnemo == "li") {
         WriteData(op_imm("addi", arg[0], "zero", MyStoi(arg[1])));
+    }
 
     else if (mnemo == "mv")
         WriteData(op_imm("addi", arg[0], arg[1], 0));
@@ -401,14 +403,15 @@ void BinGen::Convert(std::string input) {
         uint32_t imm = MyStoi(arg[0]);
         WriteData(auipc("x6", (imm >> 12) + ((imm >> 11) & 1)));
         WriteData(jalr("x1", "x6", imm &  0xfff));
-    }
+        nline_++;
+   }
 
     else {
         std::cout << "No such instructions: " << input << std::endl;
         return;
     }
 
-    nline_ = nline_ + 1;
+    nline_++;
 }
 
 uint32_t BinGen::Pack(Fields fields) {
