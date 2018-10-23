@@ -67,24 +67,6 @@ class BinGenTest{
         assert("1111 1101 0101 1111 1111 0000 0110 1111 " == bingen_.ToString(bingen_.jal("x0", -44)));
     }
 
-    void Test_jalr() {
-    }
-
-    void Test_branch() {
-    }
-
-    void Test_load() {
-    }
-
-    void Test_store() {
-    }
-
-    void Test_op_imm() {
-    }
-
-    void Test_op_imm_shift() {
-    }
-
     void Test_op () {
         assert("0000 0001 1100 0011 1000 0011 0011 0011 "  == bingen_.ToString(bingen_.op("add", "t1", "t2", "t3")));
         assert("0100 0001 1100 0011 1000 0011 0011 0011 "  == bingen_.ToString(bingen_.op("sub", "t1", "t2", "t3")));
@@ -104,12 +86,6 @@ int main (void) {
     test.Test_lui();
     test.Test_auipc();
     test.Test_jal();
-    test.Test_jalr();
-    test.Test_branch();
-    test.Test_load();
-    test.Test_store();
-    test.Test_op();
-    test.Test_op_imm();
     std::cout << "Tests are all finished!" << std::endl;
     return 0;
 }

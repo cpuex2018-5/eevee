@@ -317,7 +317,7 @@ void BinGen::Parse(std::string input, std::string &mnemo, std::vector<std::strin
     arg.push_back(input.substr(start_pos, curr_pos - start_pos));
 }
 
-void BinGen::Convert(std::string input) {
+uint32_t BinGen::Convert(std::string input) {
     // Parse the input.
     std::string mnemo;
     std::vector<std::string> arg;
@@ -325,15 +325,15 @@ void BinGen::Convert(std::string input) {
 
     // Skip the labels.
     if (mnemo.back() == ':')
-        return;
+        return 0;
 
     if (mnemo == ".file" || mnemo == ".option" || mnemo == ".text" || mnemo == ".align" ||
         mnemo == ".globl" || mnemo == ".type" || mnemo == ".size" || mnemo == ".ident")
-        return;
+        return 0;
 
     // A line starting with # is a comment.
     if (mnemo[0] == '#')
-        return;
+        return 0;
 
     // Note: Lack of arguments will cause crash here
     if (mnemo == "lui")
@@ -408,10 +408,20 @@ void BinGen::Convert(std::string input) {
 
     else {
         std::cout << "No such instructions: " << input << std::endl;
-        return;
+        return 0;
     }
 
     nline_++;
+}
+
+void BinGen::Main(std::string input) {
+    uint32_t inst = Convert(input);
+
+    // error
+    if (inst == 0) {
+        return;
+    }
+    WriteData(inst);
 }
 
 uint32_t BinGen::Pack(Fields fields) {

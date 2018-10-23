@@ -37,7 +37,9 @@ class BinGen {
         uint32_t op(std::string mnemo, std::string rd, std::string rs1, std::string rs2);
 
         // Parses and evaluates the input. Writes to the ofs.
-        void Convert(std::string input);
+        uint32_t Convert(std::string input);
+
+        void Main(std::string input);
 
         void ReadLabels(std::string input);
 
