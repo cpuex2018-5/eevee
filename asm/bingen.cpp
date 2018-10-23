@@ -6,7 +6,7 @@
 #include <string>
 #include <utility>
 #include <cmath>
-#include <memory>
+#include <assert.h>
 
 void print_binary(int);
 
