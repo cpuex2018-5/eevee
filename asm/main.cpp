@@ -22,7 +22,13 @@ int main(int argc, char* argv[])
         std::cout << "ERROR: No input files specified" << std::endl;
         return 0;
     }
-    std::string infile = argv[1];
+
+    bool is_verbose = false;
+
+    if (strcmp(argv[1], "-v") == 0)
+        is_verbose = true;
+
+    std::string infile = is_verbose ? argv[2] : argv[1];
     if (!(infile[infile.size() - 2] == '.' && infile[infile.size() - 1] == 's')) {
         std::cout << "ERROR: The input file should have suffix '.s'" << std::endl;
         return 0;
@@ -36,7 +42,7 @@ int main(int argc, char* argv[])
     std::string outfile(infile.begin(), infile.end() - 2);
     std::ofstream ofs(outfile);
     std::string str;
-    BinGen bingen(std::move(ofs));
+    BinGen bingen(std::move(ofs), is_verbose);
 
     // Round 1: Skim through the assembly code and get the position of each label
     while (getline(ifs, str)) {

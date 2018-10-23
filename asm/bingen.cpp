@@ -45,43 +45,16 @@ std::map<std::string, int> regmap =
     { "t4", 29 },
     { "t5", 30 },
     { "t6", 31 },
-    // dirty
-    { "x0", 0 },
-    { "x1", 1 },
-    { "x2", 2 },
-    { "x3", 3 },
-    { "x4", 4 },
-    { "x5", 5 },
-    { "x6", 6 },
-    { "x7", 7 },
-    { "x8", 8 },
-    { "x9", 9 },
-    { "x10", 10 },
-    { "x11", 11 },
-    { "x12", 12 },
-    { "x13", 13 },
-    { "x14", 14 },
-    { "x15", 15 },
-    { "x16", 16 },
-    { "x17", 17 },
-    { "x18", 18 },
-    { "x19", 19 },
-    { "x20", 20 },
-    { "x21", 21 },
-    { "x22", 22 },
-    { "x23", 23 },
-    { "x24", 24 },
-    { "x25", 25 },
-    { "x26", 26 },
-    { "x27", 27 },
-    { "x28", 28 },
-    { "x29", 29 },
-    { "x30", 30 },
-    { "x31", 31 },
 };
 
-BinGen::BinGen(std::ofstream ofs)
-  : ofs_(std::move(ofs)) {}
+BinGen::BinGen(std::ofstream ofs, bool is_verbose)
+  : is_verbose_(is_verbose),
+    ofs_(std::move(ofs)) {
+    for (int i = 0; i < 32; i++) {
+        std::string regname = "x" + std::to_string(i);
+        regmap[regname] = i;
+    }
+}
 
 uint32_t BinGen::lui (std::string rd, uint32_t imm) {
     CheckImmediate(imm, 20, "lui");
@@ -272,8 +245,10 @@ void BinGen::ReadLabels(std::string input) {
 
         // Don't count these markers
         if (mnemo == ".file" || mnemo == ".option" || mnemo == ".text" || mnemo == ".align" ||
-            mnemo == ".globl" || mnemo == ".type" || mnemo == ".size" || mnemo == ".ident")
+            mnemo == ".globl" || mnemo == ".type" || mnemo == ".size" || mnemo == ".ident") {
+            std::printf("Note: |%s| was ignored\n", input.c_str());
             return;
+        }
 
         // Don't count comments
         if (mnemo[0] == '#')
@@ -420,10 +395,18 @@ BinGen::Inst BinGen::Convert(std::string input) {
 }
 
 void BinGen::Main(std::string input) {
+    int old_nline = nline_;
     BinGen::Inst inst(Convert(input));
 
     // error
     if (inst.first == 0) return;
+
+    if (is_verbose_) {
+        std::cout << "(pc " << old_nline << "): " << input << std::endl << "    ";
+        PrintInst(inst);
+        std::cout << std::endl;
+    }
+
     WriteData(inst.first);
     if (inst.second == 0) return;
     WriteData(inst.second);
@@ -483,7 +466,7 @@ std::string BinGen::InstToString(Inst inst) {
     else if (inst.second == 0)
         return ToString(inst.first);
     else
-        return ToString(inst.first) + "\n" + ToString(inst.second);
+        return ToString(inst.first) + "    " + ToString(inst.second);
 }
 
 void BinGen::PrintInt(uint32_t inst) {
