@@ -10,7 +10,7 @@ main:
 	sw	fp,0(sp)
 	addi	fp,sp,8        # fp: old stack pointer
 #	main program starts
-	li	a0,4
+	li	a0,3
 	call	fib
 #	main program ends
 	mv	a5,a0
@@ -18,7 +18,7 @@ main:
 	lw	ra,4(sp)
 	lw	s0,0(sp)
 	addi	sp,sp,8
-#	jr	ra
+  jal zero,end
 fib:
 	addi	sp,sp,-24   # callee-save
 	sw	ra,20(sp)
@@ -52,6 +52,8 @@ fib:
 	lw	s1,12(sp)
 	addi	sp,sp,24
 	jr	ra
+end:
+  jal zero,end
 	.size	fib, .-fib
 	.align	1
 	.globl	main

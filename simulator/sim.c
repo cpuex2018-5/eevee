@@ -45,11 +45,20 @@ void load(Simulator *sim,FILE *fp){
 
 
 void exec(Simulator *sim){
+  int prev_pc = -1; //local variable to detect loop
+
   while(1){
     if(sim->pc>=sim->text_size || sim->pc<0){
       break;
     }
+    if(prev_pc==sim->pc){
+      break;
+    }
+
+    prev_pc = sim->pc;
     sim->registers[0] = 0; //always set zero register to zero
+
+
     if(debug_mode == 1){
       //for debug
       fprintf(stdout,"current pc: %ld\n",sim->pc);
