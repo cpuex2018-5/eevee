@@ -43,7 +43,40 @@ std::map<std::string, int> regmap =
     { "t3", 28 },
     { "t4", 29 },
     { "t5", 30 },
-    { "t6", 31}
+    { "t6", 31 },
+    // dirty
+    { "x0", 0 },
+    { "x1", 1 },
+    { "x2", 2 },
+    { "x3", 3 },
+    { "x4", 4 },
+    { "x5", 5 },
+    { "x6", 6 },
+    { "x7", 7 },
+    { "x8", 8 },
+    { "x9", 9 },
+    { "x10", 10 },
+    { "x11", 11 },
+    { "x12", 12 },
+    { "x13", 13 },
+    { "x14", 14 },
+    { "x15", 15 },
+    { "x16", 16 },
+    { "x17", 17 },
+    { "x18", 18 },
+    { "x19", 19 },
+    { "x20", 20 },
+    { "x21", 21 },
+    { "x22", 22 },
+    { "x23", 23 },
+    { "x24", 24 },
+    { "x25", 25 },
+    { "x26", 26 },
+    { "x27", 27 },
+    { "x28", 28 },
+    { "x29", 29 },
+    { "x30", 30 },
+    { "x31", 31 },
 };
 
 BinGen::BinGen(std::ofstream ofs)
@@ -365,8 +398,9 @@ void BinGen::Convert(std::string input) {
         WriteData(jalr("x0", "x1", 0u));
 
     else if (mnemo == "call") {
-        WriteData(auipc("x6", MyStoi(arg[0]) >> 12));
-        WriteData(jalr("x1", "x6", MyStoi(arg[0]) & 0xfff));
+        uint32_t imm = MyStoi(arg[0]);
+        WriteData(auipc("x6", (imm >> 12) + ((imm >> 11) & 1)));
+        WriteData(jalr("x1", "x6", imm &  0xfff));
     }
 
     else {
