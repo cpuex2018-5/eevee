@@ -8,14 +8,34 @@
 
 class BinGen {
     public:
+        typedef std::pair<uint32_t, uint32_t> Inst;
+
         BinGen(std::ofstream ofs);
 
+        // 1周目
+        void ReadLabels(std::string input);
+
+        // 2周目
+        void Main(std::string input);
+
+        void Parse(std::string input, std::string &mnemo, std::vector<std::string> &arg);
+        void ParseOffset(std::string arg, std::string* reg, uint32_t* offset);
+
+        // Parses and evaluates the input. Returns the converted instructions (zero, one or two)
+        Inst Convert(std::string input);
+        void ClearNline_();
+
+        std::string ToString(uint32_t inst);
+        std::string InstToString(Inst inst);
+        void PrintInt(uint32_t inst);
+        void PrintInst(Inst inst);
+
+    private:
+        typedef std::vector<std::pair<int, uint32_t> > Fields;
+
         uint32_t lui(std::string rd, uint32_t imm);
-
         uint32_t auipc(std::string rd, uint32_t imm);
-
         uint32_t jal(std::string rd, uint32_t imm);
-
         uint32_t jalr(std::string rd, std::string rs1, uint32_t imm);
 
         // beq, bne, blt, bge, bltu, bgeu
@@ -36,24 +56,6 @@ class BinGen {
         // add, sub, sll, slt, sltu, xor, srl, sra, or, and
         uint32_t op(std::string mnemo, std::string rd, std::string rs1, std::string rs2);
 
-        // Parses and evaluates the input. Writes to the ofs.
-        uint32_t Convert(std::string input);
-
-        void Main(std::string input);
-
-        void ReadLabels(std::string input);
-
-        void Parse(std::string input, std::string &mnemo, std::vector<std::string> &arg);
-
-        void ParseOffset(std::string arg, std::string* reg, uint32_t* offset);
-
-        void ClearNline_();
-
-        std::string ToString(uint32_t inst);
-        void Print(uint32_t inst);
-
-    private:
-        typedef std::vector<std::pair<int, uint32_t> > Fields;
         uint32_t Pack(Fields fields);
         void CheckImmediate(uint32_t imm, int range, std::string func_name);
         void CheckImmediateUnsigned(uint32_t imm, int range, std::string func_name);
@@ -63,7 +65,6 @@ class BinGen {
         uint32_t MyStoi(std::string imm);
 
         // Number of instructions read so far.
-        // Used when reading the input for the first time
         int nline_ = 0;
 
         std::ofstream ofs_;

@@ -23,6 +23,7 @@ class BinGenTest{
             std::printf("%08x : %s\n", example.first, ans.c_str());
             assert(example.second == ans);
         }
+        std::printf("Passed: TestToString()\n");
     }
 
     void TestParseOffset() {
@@ -32,9 +33,10 @@ class BinGenTest{
         bingen_.ParseOffset(in, &reg, &offset);
         assert(reg == "a0");
         assert(offset == 123);
+        std::printf("Passed: TestParseOffset()\n");
     }
 
-    void Test_Parse() {
+    void TestParse() {
         std::vector<std::string> test_strs = {
             ".L4:",
             "	lw	a5,-36(s0)",
@@ -55,21 +57,12 @@ class BinGenTest{
         }
     }
 
-    void Test_lui() {
-        // Note: immediate values are interpreted as hexadecimals.
-        assert("0000 0000 0000 0010 0000 0000 1011 0111 " == bingen_.ToString(bingen_.lui("ra", 0x20)));
-    }
+    void TestConvert() {
+        // jalrが符号拡張するのでauipcに渡す即値は0になる
+        assert("0000 0000 0000 0000 0000 0011 0001 0111 \n1111 1100 0100 0011 0000 0000 1110 0111 " ==
+                bingen_.InstToString(bingen_.Convert("    call -60")));
 
-    void Test_auipc() {
-    }
-
-    void Test_jal() {
-        assert("1111 1101 0101 1111 1111 0000 0110 1111 " == bingen_.ToString(bingen_.jal("x0", -44)));
-    }
-
-    void Test_op () {
-        assert("0000 0001 1100 0011 1000 0011 0011 0011 "  == bingen_.ToString(bingen_.op("add", "t1", "t2", "t3")));
-        assert("0100 0001 1100 0011 1000 0011 0011 0011 "  == bingen_.ToString(bingen_.op("sub", "t1", "t2", "t3")));
+        std::printf("Passed: TestConvert()\n");
     }
 
   private:
@@ -82,10 +75,8 @@ int main (void) {
 
     std::ofstream ofs;
     BinGenTest test(std::move(ofs));
-    test.Test_Parse();
-    test.Test_lui();
-    test.Test_auipc();
-    test.Test_jal();
+    test.TestParse();
+    test.TestConvert();
     std::cout << "Tests are all finished!" << std::endl;
     return 0;
 }

@@ -6,6 +6,7 @@
 #include <string>
 #include <utility>
 #include <cmath>
+#include <memory>
 
 void print_binary(int);
 
@@ -317,111 +318,115 @@ void BinGen::Parse(std::string input, std::string &mnemo, std::vector<std::strin
     arg.push_back(input.substr(start_pos, curr_pos - start_pos));
 }
 
-uint32_t BinGen::Convert(std::string input) {
+BinGen::Inst BinGen::Convert(std::string input) {
     // Parse the input.
     std::string mnemo;
     std::vector<std::string> arg;
     Parse(input, mnemo, arg);
+    uint32_t ret1, ret2;
+    ret1 = ret2 = 0;
 
     // Skip the labels.
     if (mnemo.back() == ':')
-        return 0;
+        return Inst(0, 0);
 
     if (mnemo == ".file" || mnemo == ".option" || mnemo == ".text" || mnemo == ".align" ||
         mnemo == ".globl" || mnemo == ".type" || mnemo == ".size" || mnemo == ".ident")
-        return 0;
+        return Inst(0, 0);
 
     // A line starting with # is a comment.
     if (mnemo[0] == '#')
-        return 0;
+        return Inst(0, 0);
 
     // Note: Lack of arguments will cause crash here
     if (mnemo == "lui")
-        WriteData(lui(arg[0], MyStoi(arg[1])));
+        ret1 = lui(arg[0], MyStoi(arg[1]));
     else if (mnemo == "auipc")
-        WriteData(auipc(arg[0], MyStoi(arg[1])));
+        ret1 = auipc(arg[0], MyStoi(arg[1]));
     else if (mnemo == "jal")
-        WriteData(jal(arg[0], MyStoi(arg[1])));
+        ret1 = jal(arg[0], MyStoi(arg[1]));
     else if (mnemo == "jalr")
-        WriteData(jalr(arg[0], arg[1], MyStoi(arg[2])));
+        ret1 = jalr(arg[0], arg[1], MyStoi(arg[2]));
     else if (mnemo == "beq" || mnemo == "bne" || mnemo == "blt" || mnemo == "bge" || mnemo == "bltu")
-        WriteData(branch(mnemo,arg[0],arg[1], MyStoi(arg[2])));
+        ret1 = branch(mnemo,arg[0],arg[1], MyStoi(arg[2]));
 
     else if (mnemo == "lb" || mnemo == "lh" || mnemo == "lw" || mnemo == "lbu" || mnemo == "lhu") {
         std::string rs1; uint32_t offset;
         ParseOffset(arg[1], &rs1, &offset);
-        WriteData(load(mnemo, arg[0], rs1, offset));
+        ret1 = load(mnemo, arg[0], rs1, offset);
     }
 
     else if (mnemo == "sb" || mnemo == "sh" || mnemo == "sw") {
         std::string rs1; uint32_t offset;
         ParseOffset(arg[1], &rs1, &offset);
-        WriteData(store(mnemo, arg[0], rs1, offset));
+        ret1 = store(mnemo, arg[0], rs1, offset);
     }
 
     else if (mnemo == "addi" || mnemo == "slti" || mnemo == "sltiu" || mnemo == "xori" || mnemo == "ori" || mnemo == "andi"){
-        WriteData(op_imm(mnemo, arg[0], arg[1], MyStoi(arg[2])));
+        ret1 = (op_imm(mnemo, arg[0], arg[1], MyStoi(arg[2])));
     }
     else if (mnemo == "slli" || mnemo == "srli" || mnemo == "srai")
-        WriteData(op_imm_shift(mnemo, arg[0], arg[1], MyStoi(arg[2])));
+        ret1 = (op_imm_shift(mnemo, arg[0], arg[1], MyStoi(arg[2])));
     else if (mnemo == "add" || mnemo == "sub" || mnemo == "sll" || mnemo == "slt" || mnemo == "sltu" || mnemo == "xor" ||
         mnemo == "srl" || mnemo == "sra" || mnemo == "or" || mnemo == "and")
-        WriteData(op(mnemo, arg[0], arg[1], arg[2]));
+        ret1 = (op(mnemo, arg[0], arg[1], arg[2]));
 
 
     // Pseudo-instructions
     // TODO: test pseudo-insturctions
     else if (mnemo == "la") {
-        WriteData(auipc(arg[0], MyStoi(arg[1]) >> 12));
-        WriteData(op_imm("addi", arg[0], arg[0], MyStoi(arg[1]) & 0xfff));
+        ret1 = (auipc(arg[0], MyStoi(arg[1]) >> 12));
         nline_++;
+        ret2 = (op_imm("addi", arg[0], arg[0], MyStoi(arg[1]) & 0xfff));
     }
 
     else if (mnemo == "li") {
-        WriteData(op_imm("addi", arg[0], "zero", MyStoi(arg[1])));
+        ret1 = (op_imm("addi", arg[0], "zero", MyStoi(arg[1])));
     }
 
     else if (mnemo == "mv")
-        WriteData(op_imm("addi", arg[0], arg[1], 0));
+        ret1 =(op_imm("addi", arg[0], arg[1], 0));
 
     else if (mnemo == "neg")
-        WriteData(op("sub", arg[0], "zero", arg[1]));
+        ret1 = (op("sub", arg[0], "zero", arg[1]));
 
     else if (mnemo == "bgt")
-        WriteData(branch("blt", arg[1], arg[0], MyStoi(arg[2])));
+        ret1 = (branch("blt", arg[1], arg[0], MyStoi(arg[2])));
 
     else if (mnemo == "j")
-        WriteData(jal("x0", MyStoi(arg[0])));
+        ret1 = (jal("x0", MyStoi(arg[0])));
 
     else if (mnemo == "jr")
-        WriteData(jalr("zero", arg[0], 0));
+        ret1 = (jalr("zero", arg[0], 0));
 
     else if (mnemo == "ret")
-        WriteData(jalr("x0", "x1", 0u));
+        ret1 = (jalr("x0", "x1", 0u));
 
     else if (mnemo == "call") {
         uint32_t imm = MyStoi(arg[0]);
-        WriteData(auipc("x6", (imm >> 12) + ((imm >> 11) & 1)));
-        WriteData(jalr("x1", "x6", imm &  0xfff));
+        ret1 = (auipc("x6", (imm >> 12) + ((imm >> 11) & 1)));
         nline_++;
+        ret2 = (jalr("x1", "x6", imm &  0xfff));
    }
 
     else {
         std::cout << "No such instructions: " << input << std::endl;
-        return 0;
+        return Inst(0, 0);
     }
 
+    BinGen::Inst ret(ret1, ret2);
     nline_++;
+    return ret;
 }
 
 void BinGen::Main(std::string input) {
-    uint32_t inst = Convert(input);
+    BinGen::Inst inst(Convert(input));
 
     // error
-    if (inst == 0) {
-        return;
-    }
-    WriteData(inst);
+    if (inst.first == 0) return;
+    WriteData(inst.first);
+    if (inst.second == 0) return;
+    WriteData(inst.second);
 }
 
 uint32_t BinGen::Pack(Fields fields) {
@@ -442,15 +447,6 @@ void BinGen::CheckImmediate(uint32_t imm, int range, std::string func_name) {
         exit(1);
     }
 }
-
-// void BinGen::CheckImmediateUnsigned(uint32_t imm,int range, std::string func_name){
-//   //shiftするときの即値検査には符号なしのものを使う
-//   int v = std::pow(2,range);
-//   if((int) imm > (v-1) || (int) imm < 0){
-//         std::cout << "ERROR(" << func_name << "): The immediate value " << imm << " should be smaller than 2 ^ " << range << std::endl;
-//         exit(1);
-//   }
-// }
 
 void BinGen::ParseOffset(std::string arg, std::string* reg, uint32_t* offset) {
     size_t pos_lpar = arg.find("(");
@@ -481,8 +477,21 @@ std::string BinGen::ToString(uint32_t inst) {
     return str;
 }
 
-void BinGen::Print(uint32_t inst) {
+std::string BinGen::InstToString(Inst inst) {
+    if (inst.first == 0)
+        return "";
+    else if (inst.second == 0)
+        return ToString(inst.first);
+    else
+        return ToString(inst.first) + "\n" + ToString(inst.second);
+}
+
+void BinGen::PrintInt(uint32_t inst) {
     std::cout << ToString(inst) << std::endl;
+}
+
+void BinGen::PrintInst(Inst inst) {
+    std::cout << InstToString(inst) << std::endl;
 }
 
 void print_binary(int val){
