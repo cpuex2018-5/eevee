@@ -85,6 +85,37 @@ let rec fv = function (* free variable (caml2html: knormal_fv) *)
   | Put(x, y, z) -> S.of_list [x; y; z]
   | LetTuple(xs, y, e) -> S.add y (S.diff (fv e) (S.of_list (List.map fst xs)))
 
+(* substitute a free variable 'a' in 'e' with 'b' *)
+let rec id_subst (e : t) (a : Id.t) (b : Id.t) : t =
+  let subst_ x = if x = a then b else x in
+  match e with
+  | Neg e   -> Neg (subst_ e)
+  | Add (e1, e2)  -> Add  (subst_ e1, subst_ e2)
+  | Sub (e1, e2)  -> Sub  (subst_ e1, subst_ e2)
+  | FNeg e        -> FNeg (subst_ e)
+  | FAdd (e1, e2) -> FAdd (subst_ e1, subst_ e2)
+  | FSub (e1, e2) -> FSub (subst_ e1, subst_ e2)
+  | FMul (e1, e2) -> FMul (subst_ e1, subst_ e2)
+  | FDiv (e1, e2) -> FDiv (subst_ e1, subst_ e2)
+  | IfEq (e1, e2, et, ef) -> IfEq (subst_ e1, subst_ e2, id_subst et a b, id_subst ef a b)
+  | IfLE (e1, e2, et, ef) -> IfLE (subst_ e1, subst_ e2, id_subst et a b, id_subst ef a b)
+  | Let ((x, t), e1, e2) ->
+    (* Note: after alpha-conversion, variable names won't collapse and x <> a is guaranteed *)
+    Let ((x, t), id_subst e1 a b, id_subst e2 a b)
+  | Var x -> Var (subst_ x)
+  | LetRec (f, e) -> LetRec (id_subst_fun f a b, id_subst e a b)
+  | App (e1, e2) -> App (subst_ e1, List.map subst_ e2)
+  | Tuple e -> Tuple (List.map subst_ e)
+  | LetTuple (l, e1, e2) -> LetTuple (List.map (fun (x, t) -> (subst_ x, t)) l, subst_ e1, id_subst e2 a b)
+  | Get (e1, e2) -> Get (subst_ e1, subst_ e2)
+  | Put (e1, e2, e3) -> Put (subst_ e1, subst_ e2, subst_ e3)
+  | ExtArray e -> ExtArray (subst_ e)
+  | ExtFunApp (e, el) -> ExtFunApp (subst_ e, List.map subst_ el)
+  | _ -> e
+and id_subst_fun (f : fundef) (a : Id.t) (b : Id.t) : fundef =
+  let subst_ x = if x = a then b else x in
+  { name = ((subst_ (fst f.name)), snd f.name); args = (List.map (fun (x, t) -> (subst_ x, t)) f.args); body = id_subst f.body a b }
+
 let insert_let (e, t) k = (* k : continuation *)
   match e with
   | Var(x) -> k x

@@ -82,8 +82,9 @@ let rec lift (e : KNormal.t) (in_nest : bool) : KNormal.t =
        (try
           LetRec ({ name = (x, t); args = yts; body = lift e1 true }, newe2)
         with FoundNested ({ name = (x', t'); args = yts'; body = e1' }, e2') ->
-          let ret = KNormal.LetRec ({ name = ((x ^ "_" ^ x'), t'); args = yts'; body = e1' },
-                                    LetRec ({ name = (x, t); args = yts; body = e2' }, e2)) in
+          let newx = x ^ "_" ^ x' in
+          let ret = KNormal.LetRec ({ name = (newx, t'); args = yts'; body = e1' },
+                                    LetRec ({ name = (x, t); args = yts; body = KNormal.id_subst e2' x' newx }, e2)) in
           lift ret false
        )
      | true -> raise (FoundNested ({ name = (x, t); args = yts; body = e1 }, e2)))
