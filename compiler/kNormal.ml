@@ -28,8 +28,8 @@ and fundef = { name : Id.t * Type.t; args : (Id.t * Type.t) list; body : t }
 
 (* [WEEK1 Q1] output pretty string for KNormal.t *)
 let string_of_t (exp : t) =
-  let rec str_of_t ?(endline = "\n") (exp : t) (depth : int) : string =
-    let indent = (String.make (depth * 2) ' ') in
+  let rec str_of_t ?(no_indent = false) ?(endline = "\n") (exp : t) (depth : int) : string =
+    let indent = if no_indent then "" else (String.make (depth * 2) ' ') in
     match exp with
     | Unit -> indent ^ "()" ^ endline
     | Int n   -> indent ^ "INT " ^ (string_of_int n) ^ endline
@@ -46,7 +46,10 @@ let string_of_t (exp : t) =
                                indent ^ "ELSE\n" ^ (str_of_t ef (depth + 1))
     | IfLE (e1, e2, et, ef) -> indent ^ "IF ( " ^ e1 ^ " <= " ^ e2 ^ " ) THEN\n" ^ (str_of_t et (depth + 1)) ^
                                indent ^ "ELSE\n" ^ (str_of_t ef (depth + 1))
-    | Let ((x, _), e1, e2) -> indent ^ "LET " ^ x ^ " =\n" ^ (str_of_t e1 (depth + 1)) ^ (indent ^ "IN\n") ^ (str_of_t e2 depth)
+    | Let ((x, _), e1, e2) ->
+      (match e1 with
+       | Int _ | Float _ | Var _ -> indent ^ "LET " ^ x ^ " = " ^ (str_of_t e1 ~no_indent:true ~endline:"" (depth + 1)) ^ " IN\n" ^ (str_of_t e2 depth)
+       | _ -> indent ^ "LET " ^ x ^ " =\n" ^ (str_of_t e1 (depth + 1)) ^ (indent ^ "IN\n") ^ (str_of_t e2 depth))
     | Var x -> indent ^ "VAR " ^ x ^ endline
     | LetRec (f, e) -> indent ^ "LET REC " ^ (str_of_fundef f (depth + 1)) ^ (indent ^ "IN\n") ^ (str_of_t e depth)
     | App (e1, e2) -> indent ^ e1 ^ " " ^ String.concat " " e2 ^ endline
