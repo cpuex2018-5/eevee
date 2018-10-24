@@ -207,7 +207,6 @@ and g' oc = function (* 各命令のアセンブリ生成 (caml2html: emit_gprime) *)
     Printf.fprintf oc "\tmv\t%s, %s\n" (reg reg_link) (reg reg_sw);
     Printf.fprintf oc "\tjr\tra\n"
   | Tail, CallDir(Id.L(f), iargs, fargs) ->
-    print_stackmap ();
     g'_args oc [] iargs fargs;
     Printf.fprintf oc "\tj\t%s\n" f
   | NonTail(a), CallCls(f, iargs, fargs) ->
@@ -226,7 +225,6 @@ and g' oc = function (* 各命令のアセンブリ生成 (caml2html: emit_gprime) *)
       Printf.fprintf oc "\tfmv.s\t%s, %s\n" (reg a) (reg fregs.(0));
     Printf.fprintf oc "\tmv\t%s, %s\n" (reg reg_link) (reg reg_tmp)
   | (NonTail(a), CallDir(Id.L(f), iargs, fargs)) ->
-    print_stackmap ();
     Printf.fprintf oc "\tmv\t%s, %s\n" (reg reg_tmp) (reg reg_link);
     g'_args oc [] iargs fargs;
     let ss = stacksize () in

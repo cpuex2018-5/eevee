@@ -153,7 +153,7 @@ let rec g env e =
       Type.Unit
   with Unify(t1, t2, p) ->
     let errmsg = Printf.sprintf "Type error in line %d, from character %d: unable to unify " (p.pos_lnum) (p.pos_cnum - p.pos_bol) in
-    let errmsg = errmsg ^ (Type.string_of_type (deref_typ t1)) ^ " and " ^ (Type.string_of_type (deref_typ t2)) in
+    let errmsg = errmsg ^ (Type.string_of_t (deref_typ t1)) ^ " and " ^ (Type.string_of_t (deref_typ t2)) in
     raise (Error errmsg)
 
 let f e =

@@ -163,7 +163,9 @@ let rec g (env : Type.t M.t) (exp : Syntax.t) : t * Type.t = (* where K-normaliz
           (fun y -> FDiv(x, y), Type.Float))
   | Syntax.Eq (_, _, p) | Syntax.LE (_, _, p) as cmp ->
     g env (Syntax.If(cmp, Syntax.Bool(true), Syntax.Bool(false), p))
-  | Syntax.If(Syntax.Not(e1, _), e2, e3, p) -> g env (Syntax.If(e1, e3, e2, p)) (* converting branch by not (caml2html: knormal_not) *)
+  | Syntax.If(Syntax.Not(e1, _), e2, e3, p) ->
+    (* converting branch by not (caml2html: knormal_not) *)
+    g env (Syntax.If(e1, e3, e2, p))
   | Syntax.If(Syntax.Eq(e1, e2, _), e3, e4, _) ->
     insert_let (g env e1)
       (fun x -> insert_let (g env e2)
@@ -178,7 +180,8 @@ let rec g (env : Type.t M.t) (exp : Syntax.t) : t * Type.t = (* where K-normaliz
              let e3', t3 = g env e3 in
              let e4', t4 = g env e4 in
              IfLE(x, y, e3', e4'), t3))
-  | Syntax.If(e1, e2, e3, p) -> g env (Syntax.If(Syntax.Eq(e1, Syntax.Bool(false), p), e3, e2, p)) (* converting branch without comparison (caml2html: knormal_if) *)
+  | Syntax.If(e1, e2, e3, p) ->
+    g env (Syntax.If(Syntax.Eq(e1, Syntax.Bool(false), p), e3, e2, p))
   | Syntax.Let((x, t), e1, e2, _) ->
     let e1', t1 = g env e1 in
     let e2', t2 = g (M.add x t env) e2 in
@@ -252,4 +255,35 @@ let rec g (env : Type.t M.t) (exp : Syntax.t) : t * Type.t = (* where K-normaliz
           (fun y -> insert_let (g env e3)
               (fun z -> Put(x, y, z), Type.Unit)))
 
-let f e = fst (g M.empty e)
+let rec add_args (e : t) (args : Id.t list) : t =
+  match e with
+  | IfEq (x, y, e1, e2) -> IfEq (x, y, add_args e1 args, add_args e2 args)
+  | IfLE (x, y, e1, e2) -> IfLE (x, y, add_args e1 args, add_args e2 args)
+  | Let (xt, e1, e2) -> Let (xt, e1, add_args e2 args)
+  | Var v -> App (v, args)
+  | LetRec (f, e) -> LetRec (f, add_args e args)
+  | App (f, x) -> App (f, x @ args)
+  | LetTuple (xl, y, e) -> LetTuple (xl, y, add_args e args)
+  | Get (a, i) -> e (* no function arrays?? *)
+  | ExtFunApp (f, x) -> ExtFunApp (f, x @ args)
+  | _ -> e
+
+(* eliminate function variables *)
+let rec eta (e : t) : t =
+  match e with
+  | IfEq (x, y, e1, e2) -> IfEq (x, y, eta e1, eta e2)
+  | IfLE (x, y, e1, e2) -> IfLE (x, y, eta e1, eta e2)
+  | Let ((x, t), e1, e2) ->
+    (match t with
+     | Fun (tl, te) ->
+       (* 関数の型情報を利用して、必要な数の引数を生成 *)
+       let extraArgs = List.map (fun t -> (Id.gentmp t, t)) tl in
+       LetRec ({ name = (x, t); args = extraArgs; body = eta (add_args e1 (List.map fst extraArgs)) },
+               eta e2)
+     | _ -> Let ((x, t), eta e1, eta e2))
+  | LetRec ({ name = xt; args = yt; body = e1 }, e2) ->
+    LetRec ({ name = xt; args = yt; body = eta e1 }, eta e2)
+  | LetTuple (xl, y, e) -> LetTuple (xl, y, eta e)
+  | _ -> e
+
+let f e = eta (fst (g M.empty e))
