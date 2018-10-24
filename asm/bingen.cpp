@@ -262,34 +262,41 @@ void BinGen::ReadLabels(std::string input) {
     label_map_[mnemo] = nline_;
 }
 
+bool BinGen::is_sep(char c) {
+    return (c == ' ' || c == '\t' || c == '\0' || c == '#' || c == ',');
+}
+
 // dirty...
 void BinGen::Parse(std::string input, std::string &mnemo, std::vector<std::string> &arg) {
     int curr_pos = 0;
     int start_pos = 0;
     while (input[curr_pos] == ' ' || input[curr_pos] == '\t') curr_pos++;
+    if (input[curr_pos] == '\0' || input[curr_pos] == '#') return;
+
     // mnemonic (or label)
     start_pos = curr_pos;
-    while (!(input[curr_pos] == ' ' || input[curr_pos] == '\t' || input[curr_pos] == '\0')) curr_pos++;
+    while (!is_sep(input[curr_pos])) curr_pos++;
     mnemo = input.substr(start_pos, curr_pos - start_pos);
     while (input[curr_pos] == ' ' || input[curr_pos] == '\t') curr_pos++;
     if (input[curr_pos] == '\0' || input[curr_pos] == '#') return;
+
     // arg[0]
     start_pos = curr_pos;
-    while (!(input[curr_pos] == ' ' || input[curr_pos] == '\t' || input[curr_pos] == ',' || input[curr_pos] == '\0')) curr_pos++;
+    while (!is_sep(input[curr_pos])) curr_pos++;
     arg.push_back(input.substr(start_pos, curr_pos - start_pos));
     while (input[curr_pos] == ' ' || input[curr_pos] == '\t' || input[curr_pos] == ',') curr_pos++;
     if (input[curr_pos] == '\0' || input[curr_pos] == '#') return;
 
     // arg[1]
     start_pos = curr_pos;
-    while (!(input[curr_pos] == ' ' || input[curr_pos] == '\t' || input[curr_pos] == ',' || input[curr_pos] == '\0')) curr_pos++;
+    while (!is_sep(input[curr_pos])) curr_pos++;
     arg.push_back(input.substr(start_pos, curr_pos - start_pos));
     while (input[curr_pos] == ' ' || input[curr_pos] == '\t' || input[curr_pos] == ',') curr_pos++;
     if (input[curr_pos] == '\0' || input[curr_pos] == '#') return;
 
     // arg[2]
     start_pos = curr_pos;
-    while (!(input[curr_pos] == '\0' || input[curr_pos] == '#')) curr_pos++;
+    while (!is_sep(input[curr_pos])) curr_pos++;
     arg.push_back(input.substr(start_pos, curr_pos - start_pos));
 }
 

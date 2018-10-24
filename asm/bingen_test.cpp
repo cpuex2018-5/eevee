@@ -43,15 +43,21 @@ class BinGenTest{
             "	addiw	a5,a5,-1",
             "	sext.w	a5,a5",
             "	call	fib",
+            "	add	a5,s1,a5			# hogehoge",
+            "	add	a5,s1,a5# hogehoge",
+            "	mv ra,s1# hogehoge",
+            "	j fuga# hogehoge",
+            "  # hogehoge",
+            "main:  # hogehoge",
         };
 
         for (auto test_str : test_strs) {
             std::string mnemo;
             std::vector<std::string> args;
             bingen_.Parse(test_str, mnemo, args);
-            std::cout << test_str << " -> " << mnemo << " ";
+            std::cout << test_str << " -> mnemo:|" << mnemo << "|";
             for (auto arg : args) {
-                std::cout << arg << " ";
+                std::cout << "arg:|" << arg << "|";
             }
             std::cout << std::endl;
         }
@@ -59,7 +65,7 @@ class BinGenTest{
 
     void TestConvert() {
         // jalrが符号拡張するのでauipcに渡す即値は0になる
-        assert("0000 0000 0000 0000 0000 0011 0001 0111 \n1111 1100 0100 0011 0000 0000 1110 0111 " ==
+        assert("0000 0000 0000 0000 0000 0011 0001 0111     1111 1100 0100 0011 0000 0000 1110 0111 " ==
                 bingen_.InstToString(bingen_.Convert("    call -60")));
 
         std::printf("Passed: TestConvert()\n");
