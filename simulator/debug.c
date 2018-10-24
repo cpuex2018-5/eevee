@@ -41,7 +41,7 @@ int debug_exec(Simulator *sim,char *buffer){
     return 0;
   }
   else if(strncmp(buffer,"d sp",4)==0){
-    int sp = sim->registers[3];
+    int sp = sim->registers[2];
     int start = sp - 100;
     if(start<0) start = 0;
     int end = sp + 100;

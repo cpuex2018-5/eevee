@@ -46,7 +46,7 @@ void load(Simulator *sim,FILE *fp){
 
 void exec(Simulator *sim){
   int prev_pc = -1; //local variable to detect loop
-
+  unsigned long inst_counter = -4; //keep the number of inst executed
   while(1){
     if(sim->pc>=sim->text_size || sim->pc<0){
       break;
@@ -54,14 +54,14 @@ void exec(Simulator *sim){
     if(prev_pc==sim->pc){
       break;
     }
-
+    inst_counter = inst_counter + 4;
     prev_pc = sim->pc;
     sim->registers[0] = 0; //always set zero register to zero
 
 
     if(debug_mode == 1){
       //for debug
-      fprintf(stdout,"current pc: %ld\n",sim->pc);
+      fprintf(stdout,"current pc: %ld  inst_counter: %ld\n",sim->pc,inst_counter);
       fprintf(stdout,"next instruction: ");
       print_instr(sim);
       while(1){
