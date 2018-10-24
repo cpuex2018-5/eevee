@@ -45,8 +45,8 @@ void load(Simulator *sim,FILE *fp){
 
 
 void exec(Simulator *sim){
-  int prev_pc = -1; //local variable to detect loop
-  unsigned long inst_counter = -4; //keep the number of inst executed
+  unsigned int prev_pc = -1; //local variable to detect loop
+  unsigned long inst_counter = -4; //keep the number of inst execute
   while(1){
     if(sim->pc>=sim->text_size || sim->pc<0){
       break;

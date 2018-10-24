@@ -10,7 +10,7 @@ main:
 	sw	fp,0(sp)
 	addi	fp,sp,8        # fp: old stack pointer
 #	main program starts
-	li	a0,3
+	li	a0,10
 	call	fib
 #	main program ends
 	mv	a5,a0

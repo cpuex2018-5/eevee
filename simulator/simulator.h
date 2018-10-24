@@ -2,8 +2,8 @@
 #include<stdlib.h>
 #include<unistd.h>
 #include<string.h>
-extern const int MEM_SIZE;
-extern const int STACK_POS;
+extern const unsigned int MEM_SIZE;
+extern const unsigned int STACK_POS;
 
 typedef struct {
   unsigned long pc;
