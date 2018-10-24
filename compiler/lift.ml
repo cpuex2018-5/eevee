@@ -29,13 +29,13 @@ let rec expandArg (e : KNormal.t) (fs : (Id.t * (Id.t * Type.t) list) list) (env
   | Let ((x, t), e1, e2) ->
     let newenv = M.add x t env in
     Let ((x, t), (expandArg e1 fs env), (expandArg e2 fs newenv))
-  | LetRec ({ name = (x, t); args = yts; body = e1 }, e2) ->
+  | LetRec ({name = (x, t); args = yts; body = e1}, e2) ->
     let newenv_def = List.fold_left (fun e (y, t) -> M.add y t e) env yts in
     let e1 = expandArg e1 fs (M.add x t newenv_def) in
     let var_args = List.map fst yts in
     let fvs = S.diff (fvs e1) (S.of_list (x :: var_args)) in
     (match S.is_empty fvs with
-     | true -> LetRec ({ name = (x, t); args = yts; body = e1}, e2)
+     | true -> LetRec ({name = (x, t); args = yts; body = e1}, e2)
      | false ->
        let newargs = List.map (fun x -> (x, M.find x env)) (S.elements fvs) in
        print_string "Found FVs: ";
@@ -50,7 +50,44 @@ let rec expandArg (e : KNormal.t) (fs : (Id.t * (Id.t * Type.t) list) list) (env
     App (e1, e2 @ added_args)
   | _ -> e
 
-let rec lift (e : KNormal.t) : KNormal.t =
-  e
+let rec hasLetRec (e : KNormal.t) : bool =
+  match e with
+  | IfEq (_, _, e1, e2) -> hasLetRec e1 || hasLetRec e2
+  | IfLE (_, _, e1, e2) -> hasLetRec e1 || hasLetRec e2
+  | Let (_, e1, e2) -> hasLetRec e1 || hasLetRec e2
+  | LetRec _ -> true
+  | LetTuple (_, _, e) -> hasLetRec e
+  | _ -> false
 
-let rec f (e : KNormal.t) : KNormal.t = expandArg e [] M.empty
+let rec hasNestedLetRec (e : KNormal.t) : bool =
+  match e with
+  | IfEq (_, _, e1, e2) -> hasNestedLetRec e1 || hasNestedLetRec e2
+  | IfLE (_, _, e1, e2) -> hasNestedLetRec e1 || hasNestedLetRec e2
+  | Let (_, e1, e2) -> hasNestedLetRec e1 || hasNestedLetRec e2
+  | LetRec ({ name = _; args = _; body = e1}, e2) -> hasLetRec e1
+  | LetTuple (_, _, e) -> hasNestedLetRec e
+  | _ -> false
+
+exception FoundNested of (KNormal.fundef * KNormal.t)
+
+let rec lift (e : KNormal.t) (in_nest : bool) : KNormal.t =
+  match e with
+  | IfEq (x, y, e1, e2) -> IfEq (x, y, lift e1 in_nest, lift e2 in_nest)
+  | IfLE (x, y, e1, e2) -> IfLE (x, y, lift e1 in_nest, lift e2 in_nest)
+  | Let (xt, e1, e2) -> Let (xt, lift e1 in_nest, lift e2 in_nest)
+  | LetRec ({ name = (x, t); args = yts; body = e1 }, e2) ->
+    (match in_nest with
+     | false ->
+       let newe2 = lift e2 false in
+       (try
+          LetRec ({ name = (x, t); args = yts; body = lift e1 true }, newe2)
+        with FoundNested ({ name = (x', t'); args = yts'; body = e1' }, e2') ->
+          let ret = KNormal.LetRec ({ name = ((x ^ "_" ^ x'), t'); args = yts'; body = e1' },
+                                    LetRec ({ name = (x, t); args = yts; body = e2' }, e2)) in
+          lift ret false
+       )
+     | true -> raise (FoundNested ({ name = (x, t); args = yts; body = e1 }, e2)))
+  | LetTuple (xts, y, e) -> LetTuple (xts, y, lift e in_nest)
+  | _ -> e
+
+let rec f (e : KNormal.t) : KNormal.t = lift (expandArg e [] M.empty) false
