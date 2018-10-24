@@ -3,6 +3,7 @@
 #include <string>
 #include <string.h>
 #include <assert.h>
+#include <string.h>
 #include "bingen.h"
 
 // 01の列にする(4桁ごとに空白)
