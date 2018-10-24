@@ -70,25 +70,35 @@ let rec hasNestedLetRec (e : KNormal.t) : bool =
 
 exception FoundNested of (KNormal.fundef * KNormal.t)
 
+let rec remove (e : KNormal.t) (f : KNormal.fundef) : KNormal.t =
+  match e with
+  | IfEq (x, y, e1, e2) -> IfEq (x, y, remove e1 f, remove e2 f)
+  | IfLE (x, y, e1, e2) -> IfLE (x, y, remove e1 f, remove e2 f)
+  | Let (xt, e1, e2) -> Let (xt, remove e1 f, remove e2 f)
+  | LetRec (f', e2) -> if f = f' then remove e2 f else LetRec (f', remove e2 f)
+  | LetTuple (xl, y, e) -> LetTuple (xl, y, remove e f)
+  | _ -> e
+
 let rec lift (e : KNormal.t) (in_nest : bool) : KNormal.t =
   match e with
-  | IfEq (x, y, e1, e2) -> IfEq (x, y, lift e1 in_nest, lift e2 in_nest)
-  | IfLE (x, y, e1, e2) -> IfLE (x, y, lift e1 in_nest, lift e2 in_nest)
-  | Let (xt, e1, e2) -> Let (xt, lift e1 in_nest, lift e2 in_nest)
+  | IfEq (x, y, e1, e2) -> IfEq (x, y, lift e1 true, lift e2 true)
+  | IfLE (x, y, e1, e2) -> IfLE (x, y, lift e1 true, lift e2 true)
+  | Let (xt, e1, e2) -> Let (xt, lift e1 true, lift e2 true)
   | LetRec ({ name = (x, t); args = yts; body = e1 }, e2) ->
     (match in_nest with
      | false ->
        let newe2 = lift e2 false in
        (try
           LetRec ({ name = (x, t); args = yts; body = lift e1 true }, newe2)
-        with FoundNested ({ name = (x', t'); args = yts'; body = e1' }, e2') ->
+        with FoundNested (f, e2') ->
+          let { name = (x', t'); args = yts'; body = e1' } : KNormal.fundef = f in
           let newx = x ^ "_" ^ x' in
           let ret = KNormal.LetRec ({ name = (newx, t'); args = yts'; body = e1' },
-                                    LetRec ({ name = (x, t); args = yts; body = KNormal.id_subst e2' x' newx }, e2)) in
+                                    LetRec ({ name = (x, t); args = yts; body = remove e1 f }, e2)) in
           lift ret false
        )
      | true -> raise (FoundNested ({ name = (x, t); args = yts; body = e1 }, e2)))
-  | LetTuple (xts, y, e) -> LetTuple (xts, y, lift e in_nest)
+  | LetTuple (xts, y, e) -> LetTuple (xts, y, lift e true)
   | _ -> e
 
 let rec f (e : KNormal.t) : KNormal.t = lift (expandArg e [] M.empty) false
