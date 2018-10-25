@@ -29,8 +29,9 @@ let lexbuf outchan l = (* compile the buffer and put it to outchan (caml2html: m
 let string s = lexbuf stdout (Lexing.from_string s) (* compile a string and put it to stdout (caml2html: main_string) *)
 
 let file f = (* compile a file and put it to stdout (caml2html: main_file) *)
-  let inchan = open_in (f ^ ".ml") in
-  let outchan = open_out (f ^ ".s") in
+  let ofilename = (String.sub f 0 ((String.length f) - 3)) ^ ".s" in
+  let inchan = open_in f in
+  let outchan = open_out ofilename in
   try
     lexbuf outchan (Lexing.from_channel inchan);
     close_in inchan;

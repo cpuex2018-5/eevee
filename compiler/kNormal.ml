@@ -196,7 +196,7 @@ let rec g (env : Type.t M.t) (exp : Syntax.t) : t * Type.t = (* where K-normaliz
     let e2', t2 = g env' e2 in
     let e1', t1 = g (M.add_list yts env') e1 in
     LetRec({ name = (x, t); args = yts; body = e1' }, e2'), t2
-  | Syntax.App(Syntax.Var(f), e2s, _) when not (M.mem f env) -> (* calling external function (caml2html: knormal_extfunapp) *)
+  | Syntax.App(Syntax.Var(f), e2s, _) when not (M.mem f env) ->
     (match M.find f !Typing.extenv with
      | Type.Fun(_, t) ->
        let rec bind xs = function (* "xs" are identifiers for the arguments *)
@@ -255,35 +255,4 @@ let rec g (env : Type.t M.t) (exp : Syntax.t) : t * Type.t = (* where K-normaliz
           (fun y -> insert_let (g env e3)
               (fun z -> Put(x, y, z), Type.Unit)))
 
-let rec add_args (e : t) (args : Id.t list) : t =
-  match e with
-  | IfEq (x, y, e1, e2) -> IfEq (x, y, add_args e1 args, add_args e2 args)
-  | IfLE (x, y, e1, e2) -> IfLE (x, y, add_args e1 args, add_args e2 args)
-  | Let (xt, e1, e2) -> Let (xt, e1, add_args e2 args)
-  | Var v -> App (v, args)
-  | LetRec (f, e) -> LetRec (f, add_args e args)
-  | App (f, x) -> App (f, x @ args)
-  | LetTuple (xl, y, e) -> LetTuple (xl, y, add_args e args)
-  | Get (a, i) -> e (* no function arrays?? *)
-  | ExtFunApp (f, x) -> ExtFunApp (f, x @ args)
-  | _ -> e
-
-(* eliminate function variables *)
-let rec eta (e : t) : t =
-  match e with
-  | IfEq (x, y, e1, e2) -> IfEq (x, y, eta e1, eta e2)
-  | IfLE (x, y, e1, e2) -> IfLE (x, y, eta e1, eta e2)
-  | Let ((x, t), e1, e2) ->
-    (match t with
-     | Fun (tl, te) ->
-       (* 関数の型情報を利用して、必要な数の引数を生成 *)
-       let extraArgs = List.map (fun t -> (Id.gentmp t, t)) tl in
-       LetRec ({ name = (x, t); args = extraArgs; body = eta (add_args e1 (List.map fst extraArgs)) },
-               eta e2)
-     | _ -> Let ((x, t), eta e1, eta e2))
-  | LetRec ({ name = xt; args = yt; body = e1 }, e2) ->
-    LetRec ({ name = xt; args = yt; body = eta e1 }, eta e2)
-  | LetTuple (xl, y, e) -> LetTuple (xl, y, eta e)
-  | _ -> e
-
-let f e = eta (fst (g M.empty e))
+let f e = fst (g M.empty e)

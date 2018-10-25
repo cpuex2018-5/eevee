@@ -1,5 +1,44 @@
+exception GiveUpEtaConv
 exception FoundNested of (KNormal.fundef * KNormal.t)
 
+(* Eta conversion for eliminating the number of closures made *)
+
+let rec add_args (e : KNormal.t) (args : Id.t list) : KNormal.t =
+  match e with
+  | IfEq (x, y, e1, e2) -> IfEq (x, y, add_args e1 args, add_args e2 args)
+  | IfLE (x, y, e1, e2) -> IfLE (x, y, add_args e1 args, add_args e2 args)
+  | Let (xt, e1, e2) -> Let (xt, e1, add_args e2 args)
+  | Var v -> App (v, args)
+  | LetRec (f, e) -> LetRec (f, add_args e args)
+  | App (f, x) -> App (f, x @ args)
+  | LetTuple (xl, y, e) -> LetTuple (xl, y, add_args e args)
+  | Get (a, i) -> raise GiveUpEtaConv
+  | ExtFunApp (f, x) -> ExtFunApp (f, x @ args)
+  | _ -> e
+
+(* eliminate function variables *)
+let rec eta (e : KNormal.t) : KNormal.t =
+  match e with
+  | IfEq (x, y, e1, e2) -> IfEq (x, y, eta e1, eta e2)
+  | IfLE (x, y, e1, e2) -> IfLE (x, y, eta e1, eta e2)
+  | Let ((x, t), e1, e2) ->
+    (match t with
+     | Fun (tl, te) ->
+       (* 関数の型情報を利用して、必要な数の引数を生成 *)
+       let extraArgs = List.map (fun t -> (Id.gentmp t, t)) tl in
+       (try
+          LetRec ({ name = (x, t); args = extraArgs; body = eta (add_args e1 (List.map fst extraArgs)) },
+                  eta e2)
+        with
+        (* When there are function arrays, give up eta conversion *)
+          GiveUpEtaConv -> e)
+     | _ -> Let ((x, t), eta e1, eta e2))
+  | LetRec ({ name = xt; args = yt; body = e1 }, e2) ->
+    LetRec ({ name = xt; args = yt; body = eta e1 }, eta e2)
+  | LetTuple (xl, y, e) -> LetTuple (xl, y, eta e)
+  | _ -> e
+
+(* --------------------Lambda Lifting-------------------- *)
 (* collect free variables in e *)
 let rec fvs (e : KNormal.t) : S.t =
   match e with
@@ -24,7 +63,7 @@ let rec fvs (e : KNormal.t) : S.t =
   | LetTuple (xl, y, _) -> S.singleton y
   | Get (a, i) -> S.of_list [a; i]
   | Put (a, i, x) -> S.of_list [a; i; x]
-  | ExtFunApp (f, x) -> S.of_list (f :: x)
+  | ExtFunApp (f, x) -> S.of_list x
   | _ -> S.empty
 
 (* bind free variables in functions *)
@@ -36,8 +75,8 @@ let rec expandArg (e : KNormal.t) (fs : (Id.t * (Id.t * Type.t) list) list) (env
     let newenv = M.add x t env in
     Let ((x, t), (expandArg e1 fs env), (expandArg e2 fs newenv))
   | LetRec ({name = (x, t); args = yts; body = e1}, e2) ->
-    let newenv_def = List.fold_left (fun e (y, t) -> M.add y t e) env yts in
-    let e1 = expandArg e1 fs (M.add x t newenv_def) in
+    let newenv_e1 = M.add x t (List.fold_left (fun e (y, t) -> M.add y t e) env yts) in
+    let e1 = expandArg e1 fs (M.add x t newenv_e1) in
     let var_args = List.map fst yts in
     let fvs = S.diff (fvs e1) (S.of_list (x :: var_args)) in
     (match S.is_empty fvs with
@@ -47,8 +86,10 @@ let rec expandArg (e : KNormal.t) (fs : (Id.t * (Id.t * Type.t) list) list) (env
        let newargs = List.map (fun x -> (x, M.find x env)) (S.elements fvs) in
        print_string ("[Lift] found free vars in " ^ x ^ ": ");
        Id.print_tlist (List.map fst newargs);
+       (* 再帰関数の場合は(x, newargs)の情報がe1で必要 *)
+       let newe1 = expandArg e1 ((x, newargs) :: fs) (M.add x t env) in
        let newe2 = expandArg e2 ((x, newargs) :: fs) (M.add x t env) in
-       KNormal.LetRec ({ name = (x, t); args = yts @ newargs; body = e1}, newe2))
+       KNormal.LetRec ({ name = (x, t); args = yts @ newargs; body = newe1 }, newe2))
   | LetTuple (l, e1, e2) ->
     let newenv = List.fold_left (fun m (x, t) -> M.add x t m) env l in
     LetTuple (l, e1, expandArg e2 fs newenv)
@@ -100,4 +141,7 @@ let rec lift (e : KNormal.t) (in_nest : bool) (env : (Id.t * Id.t) list) : KNorm
      | None -> e)
   | _ -> e
 
-let f (e : KNormal.t) : KNormal.t = lift (expandArg e [] M.empty) false []
+let f (e : KNormal.t) : KNormal.t =
+  let e = eta e in
+  let e = expandArg e [] M.empty in
+  lift e false []
