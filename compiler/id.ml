@@ -23,3 +23,9 @@ let rec id_of_typ = function
 let gentmp typ =
   incr counter;
   Printf.sprintf "T%s%d" (id_of_typ typ) !counter
+
+let string_of_ids (l : t list) =
+  String.concat ", " l
+
+let print_tlist (l : t list) =
+  print_endline (string_of_ids l)

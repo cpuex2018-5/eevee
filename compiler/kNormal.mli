@@ -29,3 +29,5 @@ val f : Syntax.t -> t
 
 val string_of_t : t -> string
 val print_t : t -> unit
+
+val id_subst : t -> Id.t -> Id.t -> t

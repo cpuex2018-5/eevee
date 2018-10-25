@@ -4,7 +4,11 @@ open Asm
 
 let data = ref [] (* constant lookup table for floating point numbers (caml2html: virtual_data) *)
 
-let classify xts ini addf addi =
+let print_env (env : Type.t M.t) =
+  print_string "env: ";
+  print_endline (String.concat ", " (List.map fst (M.bindings env)))
+
+let classify (xts : (Id.t * Type.t) list) ini addf addi =
   List.fold_left
     (fun acc (x, t) ->
        match t with
@@ -19,8 +23,8 @@ let separate xts =
   classify
     xts
     ([], [])
-    (fun (int, float) x -> (int, float @ [x]))
-    (fun (int, float) x _ -> (int @ [x], float))
+    (fun (iargs, fargs) x -> (iargs, fargs @ [x]))
+    (fun (iargs, fargs) x _ -> (iargs @ [x], fargs))
 
 let expand xts ini addf addi =
   classify
@@ -32,13 +36,13 @@ let expand xts ini addf addi =
     (fun (offset, acc) x t ->
        (offset + 4, addi x t offset acc))
 
-let rec g env = function (* generate VMcode for a formula (caml2html: virtual_g) *)
+let rec g env = function (* 式の仮想マシンコード生成 (caml2html: virtual_g) *)
   | Closure.Unit -> Ans(Nop)
   | Closure.Int(i) -> Ans(Li(i))
   | Closure.Float(d) ->
     let l =
       try
-        (* if it exists in the const lookup table, reuse it *)
+        (* すでに定数テーブルにあったら再利用 *)
         let (l, _) = List.find (fun (_, d') -> d = d') !data in
         l
       with Not_found ->
@@ -73,8 +77,8 @@ let rec g env = function (* generate VMcode for a formula (caml2html: virtual_g)
      | Type.Unit -> Ans(Nop)
      | Type.Float -> Ans(FMv(x))
      | _ -> Ans(Mv(x)))
-  | Closure.MakeCls((x, t), { Closure.entry = l; Closure.actual_fv = ys }, e2) -> (* make closure (caml2html: virtual_makecls) *)
-    (* set closure's address and then store the value of fvar *)
+  | Closure.MakeCls((x, t), { Closure.entry = l; Closure.actual_fv = ys }, e2) ->
+    (* Closureのアドレスをセットしてから、自由変数の値をストア *)
     let e2' = g (M.add x t env) e2 in
     let offset, store_fv =
       expand
@@ -142,7 +146,7 @@ let rec g env = function (* generate VMcode for a formula (caml2html: virtual_g)
      | _ -> assert false)
   | Closure.ExtArray(Id.L(x)) -> Ans(SetL(Id.L("min_caml_" ^ x)))
 
-(* generate VMcode for a formula (caml2html: virtual_h) *)
+(* 関数の仮想マシンコード生成 (caml2html: virtual_h) *)
 let h { Closure.name = (Id.L(x), t); Closure.args = yts; Closure.formal_fv = zts; Closure.body = e } =
   let (int, float) = separate yts in
   let (offset, load) =
@@ -156,7 +160,7 @@ let h { Closure.name = (Id.L(x), t); Closure.args = yts; Closure.formal_fv = zts
     { name = Id.L(x); args = int; fargs = float; body = load; ret = t2 }
   | _ -> assert false
 
-(* generate VMcode for the whole program (caml2html: virtual_f) *)
+(* プログラム全体の仮想マシンコード生成 (caml2html: virtual_f) *)
 let f (Closure.Prog(fundefs, e)) =
   data := [];
   let fundefs = List.map h fundefs in
