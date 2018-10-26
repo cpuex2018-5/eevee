@@ -10,6 +10,7 @@ lexer.ml
 parser.ml
 parser.mli
 *.s
+*.asm
 *.dSYM
 
 sandbox/

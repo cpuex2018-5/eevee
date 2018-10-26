@@ -9,7 +9,7 @@
 class BinGenTest{
   public:
     BinGenTest(std::ofstream ofs)
-        : bingen_(BinGen(std::move(ofs), false /* is_verbose */)) {}
+        : bingen_(BinGen(std::move(ofs), false /* is_verbose */, false /* is_debug */)) {}
     ~BinGenTest() = default;
 
     void TestToString() {

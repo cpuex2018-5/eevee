@@ -64,6 +64,8 @@ $ ./main -d target/fib.s
 
 * `target` : eevee用のアセンブリ(`sample`のコードを元に手動で少し変えたりしたもの)
 
+* `min-caml-asm`: min-camlで吐いたアセンブリ
+
 ## Available pseudoinstructions(順次増やす予定)
 * `la`
 * `li`, `mv`, `neg`

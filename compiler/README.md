@@ -1,3 +1,15 @@
+# eevee compiler
+
+## 使い方
+
+    $ ./build.sh test/fib.ml
+
+test/fib.mlからtest/fib.sをコンパイラで生成し、さらにそれをアセンブラに通してtest/fib (バイナリ)とtest/fib.asm (デバッグ用のアセンブリ)を生成する
+
+---
+
+# Original README
+
 An educational compiler for a minimal subset of OCaml, written in
 ~2000 lines of OCaml.  For details, see:
 
