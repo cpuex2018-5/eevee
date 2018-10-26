@@ -228,15 +228,11 @@ void BinGen::ClearNline_(){
 
 void BinGen::ReadLabels(std::string input) {
     std::string mnemo;
-    std::vector<std::string> vec;
-    Parse(input, mnemo, vec);
+    std::vector<std::string> arg;
+    Parse(input, mnemo, arg);
 
     if (mnemo.back() != ':') {
         // The input wasn't a label.
-
-        std::istringstream istr(input);
-        std::string mnemo;
-        istr >> mnemo;
 
         // Some pseudo-instructions will expand to two instrs
         if (mnemo == "la" || mnemo == "ret" || mnemo == "call") {
@@ -244,22 +240,27 @@ void BinGen::ReadLabels(std::string input) {
             return;
         }
 
+        if (mnemo == "li" && MyStoi(arg[1]) > (1 << 12) - 1) {
+            nline_ += 2;
+            return;
+        }
+
         // Don't count these markers
         if (mnemo == ".file" || mnemo == ".option" || mnemo == ".text" || mnemo == ".align" ||
             mnemo == ".globl" || mnemo == ".type" || mnemo == ".size" || mnemo == ".ident") {
-            std::printf("Note: |%s| was ignored\n", input.c_str());
+            std::fprintf(stderr, "Note: |%s| was ignored\n", input.c_str());
             return;
         }
 
         // Don't count comments
-        if (mnemo[0] == '#')
+        if (mnemo == "")
             return;
 
         nline_++;
         return;
     }
     mnemo.pop_back();
-    std::cout << "new label " << mnemo << " registered at " << nline_ << std::endl;
+    std::cerr << "new label " << mnemo << " registered at " << nline_ << std::endl;
     label_map_[mnemo] = nline_;
 }
 
@@ -346,50 +347,59 @@ BinGen::Inst BinGen::Convert(std::string input) {
     }
 
     else if (mnemo == "addi" || mnemo == "slti" || mnemo == "sltiu" || mnemo == "xori" || mnemo == "ori" || mnemo == "andi"){
-        ret1 = (op_imm(mnemo, arg[0], arg[1], MyStoi(arg[2])));
+        ret1 = op_imm(mnemo, arg[0], arg[1], MyStoi(arg[2]));
     }
     else if (mnemo == "slli" || mnemo == "srli" || mnemo == "srai")
         ret1 = (op_imm_shift(mnemo, arg[0], arg[1], MyStoi(arg[2])));
     else if (mnemo == "add" || mnemo == "sub" || mnemo == "sll" || mnemo == "slt" || mnemo == "sltu" || mnemo == "xor" ||
         mnemo == "srl" || mnemo == "sra" || mnemo == "or" || mnemo == "and")
-        ret1 = (op(mnemo, arg[0], arg[1], arg[2]));
+        ret1 = op(mnemo, arg[0], arg[1], arg[2]);
 
 
     // Pseudo-instructions
     // TODO: test pseudo-insturctions
     else if (mnemo == "la") {
-        ret1 = (auipc(arg[0], MyStoi(arg[1]) >> 12));
+        ret1 = auipc(arg[0], MyStoi(arg[1]) >> 12);
         nline_++;
-        ret2 = (op_imm("addi", arg[0], arg[0], MyStoi(arg[1]) & 0xfff));
+        ret2 = op_imm("addi", arg[0], arg[0], MyStoi(arg[1]) & 0xfff);
     }
 
     else if (mnemo == "li") {
-        ret1 = (op_imm("addi", arg[0], "zero", MyStoi(arg[1])));
+        uint32_t tmp = MyStoi(arg[1]);
+        if (tmp > (1 << 12) - 1) {
+            ret1 = lui(arg[0], tmp >> 12);
+            nline_++;
+            ret2 = op_imm("addi", arg[0], arg[0], tmp & 0xfff);
+        } else {
+            ret1 = op_imm("addi", arg[0], "zero", tmp);
+        }
     }
 
     else if (mnemo == "mv")
-        ret1 =(op_imm("addi", arg[0], arg[1], 0));
+        ret1 = op_imm("addi", arg[0], arg[1], 0);
 
     else if (mnemo == "neg")
-        ret1 = (op("sub", arg[0], "zero", arg[1]));
+        ret1 = op("sub", arg[0], "zero", arg[1]);
 
     else if (mnemo == "bgt")
-        ret1 = (branch("blt", arg[1], arg[0], MyStoi(arg[2])));
+        ret1 = branch("blt", arg[1], arg[0], MyStoi(arg[2]));
 
     else if (mnemo == "j")
-        ret1 = (jal("x0", MyStoi(arg[0])));
+        ret1 = jal("x0", MyStoi(arg[0]));
 
     else if (mnemo == "jr")
-        ret1 = (jalr("zero", arg[0], 0));
+        ret1 = jalr("zero", arg[0], 0);
 
     else if (mnemo == "ret")
-        ret1 = (jalr("x0", "x1", 0u));
+        ret1 = jalr("x0", "x1", 0u);
 
     else if (mnemo == "call") {
         uint32_t imm = MyStoi(arg[0]);
-        ret1 = (auipc("x6", (imm >> 12) + ((imm >> 11) & 1)));
+        // jalrが符号拡張するため、下から12bit目が1の場合はauipcに渡す即値に1を足す
+        // その結果2 ^ 12を超える場合は下位20bitをわたす
+        ret1 = auipc("x6", ((imm >> 12) + ((imm >> 11) & 1)) & 0xfffff);
         nline_++;
-        ret2 = (jalr("x1", "x6", imm &  0xfff));
+        ret2 = jalr("x1", "x6", imm &  0xfff);
    }
 
     else {
@@ -439,9 +449,9 @@ uint32_t BinGen::Pack(Fields fields) {
 // immの上位(32 - range)bitが全部0(imm >= 0の場合)、もしくは全部1(imm < 0の場合)でなければダメ
 void BinGen::CheckImmediate(uint32_t imm, int range, std::string func_name) {
     uint32_t mask = -1 << range;
-    if (mask & imm && mask & (!imm)) {
+    if (mask & imm && mask & (~imm)) {
         //$BId9fIU(B range bit$B?t$N:GBg$H:G>.$KF~$C$F$$$k$+!)(B
-        std::cout << "ERROR(" << func_name << "): The immediate value " << imm << " should be smaller than 2 ^ " << range << std::endl;
+        std::cerr << "ERROR(" << func_name << "): The immediate value " << imm << " should be smaller than 2 ^ " << range << std::endl;
         exit(1);
     }
 }

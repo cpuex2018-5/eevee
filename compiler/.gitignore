@@ -12,6 +12,7 @@ parser.mli
 *.s
 *.asm
 *.dSYM
+*.bin
 
 sandbox/
 shootout/x86/

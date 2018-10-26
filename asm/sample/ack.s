@@ -58,11 +58,6 @@ ack:
 	addi	sp,sp,48
 	jr	ra
 	.size	ack, .-ack
-	.section	.rodata
-	.align	3
-.LC0:
-	.string	"%d\n"
-	.text
 	.align	1
 	.globl	main
 	.type	main, @function
@@ -71,15 +66,10 @@ main:
 	sd	ra,8(sp)
 	sd	s0,0(sp)
 	addi	s0,sp,16
-	li	a1,10
-	li	a0,3
+	li	a1,1
+	li	a0,1
 	call	ack
 	mv	a5,a0
-	mv	a1,a5
-	lui	a5,%hi(.LC0)
-	addi	a0,a5,%lo(.LC0)
-	call	printf
-	li	a5,0
 	mv	a0,a5
 	ld	ra,8(sp)
 	ld	s0,0(sp)

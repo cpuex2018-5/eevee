@@ -46,7 +46,7 @@ int main(int argc, char* argv[])
     }
 
     std::string outfile(infile.begin(), infile.end() - 2);
-    std::ofstream ofs(outfile);
+    std::ofstream ofs(outfile + ".bin");
     std::string str;
     BinGen bingen(std::move(ofs), is_verbose, is_debug);
 

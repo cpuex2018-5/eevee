@@ -60,7 +60,7 @@ void exec(Simulator *sim){
 
     if(debug_mode == 1){
       //for debug
-      fprintf(stdout,"current pc: %ld  inst_counter: %ld\n",sim->pc,inst_counter);
+      fprintf(stdout,"current pc: %ld  inst_counter: %ld  sp:%d\n",sim->pc,inst_counter,sim->registers[2]);
       fprintf(stdout,"next instruction: ");
       print_instr(sim);
       while(1){
