@@ -28,9 +28,9 @@ rule token = parse
     { INT(int_of_string (Lexing.lexeme lexbuf)) }
 | digit+ ('.' digit*)? (['e' 'E'] ['+' '-']? digit+)?
     { FLOAT(float_of_string (Lexing.lexeme lexbuf)) }
-| '-' (* -.����󤷤ˤ��ʤ��Ƥ��ɤ�? ��Ĺ����? *)
+| '-' (* -.より後回しにしなくても良い? 最長一致? *)
     { MINUS }
-| '+' (* +.����󤷤ˤ��ʤ��Ƥ��ɤ�? ��Ĺ����? *)
+| '+' (* +.より後回しにしなくても良い? 最長一致? *)
     { PLUS }
 | "-."
     { MINUS_DOT }

@@ -58,14 +58,14 @@ let rec shuffle sw xys =
 
 let retlabel = ref ""
 
-type dest = Tail | NonTail of Id.t (* ËöÈø¤«¤É¤¦¤«¤òÉ½¤¹¥Ç¡¼¥¿·¿ (caml2html: emit_dest) *)
-let rec g buf = function (* Ì¿ÎáÎó¤Î¥¢¥»¥ó¥Ö¥êÀ¸À® (caml2html: emit_g) *)
+type dest = Tail | NonTail of Id.t (* æœ«å°¾ã‹ã©ã†ã‹ã‚’è¡¨ã™ãƒ‡ãƒ¼ã‚¿å‹ (caml2html: emit_dest) *)
+let rec g buf = function (* å‘½ä»¤åˆ—ã®ã‚¢ã‚»ãƒ³ãƒ–ãƒªç”Ÿæˆ (caml2html: emit_g) *)
   | dest, Ans(exp) -> g' buf (dest, exp)
   | dest, Let((x, t), exp, e) ->
     g' buf (NonTail(x), exp);
     g buf (dest, e)
 and g' buf e =
-  (* ËöÈø¤Ç¤Ê¤«¤Ã¤¿¤é·×»»·ë²Ì¤òdest¤Ë¥»¥Ã¥È (caml2html: emit_nontail) *)
+  (* æœ«å°¾ã§ãªã‹ã£ãŸã‚‰è¨ˆç®—çµæœã‚’destã«ã‚»ãƒƒãƒˆ (caml2html: emit_nontail) *)
   print_stackmap ();
   match e with
   | NonTail(_), Nop -> ()
@@ -92,7 +92,7 @@ and g' buf e =
   | NonTail(x), Slw(y, V(z)) -> Printf.bprintf buf "\tsll\t%s, %s, %s\n" (reg x) (reg y) (reg z)
   | NonTail(x), Slw(y, C(z)) -> Printf.bprintf buf "\tslli\t%s, %s, %d\n" (reg x) (reg y) z
   | NonTail(x), Lwz(y, V(z)) ->
-    (* TODO: asml.ml, virtual.ml¤òÊÑ¹¹¤·¤Æ¤³¤³¤¬1Ì¿Îá¤Ë¤Ê¤ë¤è¤¦¤Ë¤¹¤ë *)
+    (* TODO: asml.ml, virtual.mlã‚’å¤‰æ›´ã—ã¦ã“ã“ãŒ1å‘½ä»¤ã«ãªã‚‹ã‚ˆã†ã«ã™ã‚‹ *)
     Printf.bprintf buf "\tadd\t%s, %s, %s\n" (reg reg_tmp) (reg y) (reg z);
     Printf.bprintf buf "\tlw\t%s, 0(%s)\n" (reg x) (reg reg_tmp)
   | NonTail(x), Lwz(y, C(z)) -> Printf.bprintf buf "\tlw\t%s, %d(%s)\n" (reg x) z (reg y)
@@ -116,7 +116,7 @@ and g' buf e =
     Printf.bprintf buf "\tfsw\t%s, 0(%s)\n" (reg x) (reg reg_tmp)
   | NonTail(_), Stfd(x, y, C(z)) -> Printf.bprintf buf "\tfsw\t%s, %d(%s)\n" (reg x) z (reg y)
   | NonTail(_), Comment(s) -> Printf.bprintf buf "#\t%s\n" s
-  (* ÂàÈò¤Î²¾ÁÛÌ¿Îá¤Î¼ÂÁõ (caml2html: emit_save) *)
+  (* é€€é¿ã®ä»®æƒ³å‘½ä»¤ã®å®Ÿè£… (caml2html: emit_save) *)
   | NonTail(_), Save(x, y) when List.mem x allregs && not (S.mem y !stackset) ->
     save y;
     Printf.bprintf buf "\tsw\t%s, %d(%s)\n" (reg x) (offset y) (reg reg_sp)
@@ -124,13 +124,13 @@ and g' buf e =
     savef y;
     Printf.bprintf buf "\tfsw\t%s, %d(%s)\n" (reg x) (offset y) (reg reg_sp)
   | NonTail(_), Save(x, y) -> assert (S.mem y !stackset); ()
-  (* Éüµ¢¤Î²¾ÁÛÌ¿Îá¤Î¼ÂÁõ (caml2html: emit_restore) *)
+  (* å¾©å¸°ã®ä»®æƒ³å‘½ä»¤ã®å®Ÿè£… (caml2html: emit_restore) *)
   | NonTail(x), Restore(y) when List.mem x allregs ->
     Printf.bprintf buf "\tlw\t%s, %d(%s)\n" (reg x) (offset y) (reg reg_sp)
   | NonTail(x), Restore(y) ->
     assert (List.mem x allfregs);
     Printf.bprintf buf "\tflw\t%s, %d(%s)\n" (reg x) (offset y) (reg reg_sp)
-  (* ËöÈø¤À¤Ã¤¿¤é·×»»·ë²Ì¤ò%a0¤«%fa0¤Ë¥»¥Ã¥È¤·¤Æ¥ê¥¿¡¼¥ó (caml2html: emit_tailret) *)
+  (* æœ«å°¾ã ã£ãŸã‚‰è¨ˆç®—çµæœã‚’%a0ã‹%fa0ã«ã‚»ãƒƒãƒˆã—ã¦ãƒªã‚¿ãƒ¼ãƒ³ (caml2html: emit_tailret) *)
   | Tail, (Nop | Stw _ | Stfd _ | Comment _ | Save _ as exp) ->
     g' buf (NonTail(Id.gentmp Type.Unit), exp);
     Printf.bprintf buf "\tj\t%s\n" !retlabel;
@@ -147,8 +147,8 @@ and g' buf e =
      | _ -> assert false);
     Printf.bprintf buf "\tj\t%s\n" !retlabel;
 
-    (* IFÆâ¤¬false¤Î¾ì¹ç¤Ëjump *)
-    (* TODO: Èæ³Ó¤¹¤ë¤â¤Î¤Î°ìÊı¤¬0¤Î¤È¤­¤Ï°ìÌ¿Îá¸º¤é¤»¤ë *)
+    (* IFå†…ãŒfalseã®å ´åˆã«jump *)
+    (* TODO: æ¯”è¼ƒã™ã‚‹ã‚‚ã®ã®ä¸€æ–¹ãŒ0ã®ã¨ãã¯ä¸€å‘½ä»¤æ¸›ã‚‰ã›ã‚‹ *)
   | Tail, IfEq(x, V(y), e1, e2) ->
     g'_tail_if buf x y e1 e2 "beq" "bne"
   | Tail, IfEq(x, C(y), e1, e2) ->
@@ -177,14 +177,14 @@ and g' buf e =
      | _ ->
        g'_tail_if buf x "zero" e1 e2 "bge" "blt")
   | Tail, IfFEq(x, y, e1, e2) ->
-    (* TODO: FloatingÍÑ¤ËÄ¾¤¹ *)
+    (* TODO: Floatingç”¨ã«ç›´ã™ *)
     (* Store the comparison result in reg_tmp (integer register!) *)
     Printf.bprintf buf "\tfeq.s\t%s, %s, %s\n" reg_tmp x y;
-    (* x = y -> reg_tmp¤¬1 -> beq reg_tmp zero ¤ÇÊ¬´ô¤·¤Ê¤¤ *)
+    (* x = y -> reg_tmpãŒ1 -> beq reg_tmp zero ã§åˆ†å²ã—ãªã„ *)
     g'_tail_if buf reg_tmp "zero" e1 e2 "bne" "beq"
   | Tail, IfFLE(x, y, e1, e2) ->
     Printf.bprintf buf "\tfle.s\t%s, %s, %s\n" reg_tmp x y;
-    (* x <= y -> reg_tmp¤¬1 -> beq reg_tmp zero ¤ÇÊ¬´ô¤·¤Ê¤¤ *)
+    (* x <= y -> reg_tmpãŒ1 -> beq reg_tmp zero ã§åˆ†å²ã—ãªã„ *)
     g'_tail_if buf reg_tmp "zero" e1 e2 "bne" "beq"
   | NonTail(z), IfEq(x, V(y), e1, e2) ->
     g'_non_tail_if buf (NonTail(z)) x y e1 e2 "beq" "bne"
@@ -222,7 +222,7 @@ and g' buf e =
 
   (* INFO: caller-save regs: ra, t*, a* / callee-save regs: sp, fp, s* *)
   | Tail, CallCls(f, iargs, fargs) ->
-    (* TODO: t¥ì¥¸¥¹¥¿¤«¤é»È¤¦¤è¤¦¤Ë¤¹¤ë(?) *)
+    (* TODO: tãƒ¬ã‚¸ã‚¹ã‚¿ã‹ã‚‰ä½¿ã†ã‚ˆã†ã«ã™ã‚‹(?) *)
     g'_args buf [(f, reg_cl)] iargs fargs;
     Printf.bprintf buf "\tlw\tra, 0(%s)\n" (reg reg_cl);
     Printf.bprintf buf "\tjr\tra\n";
@@ -246,11 +246,11 @@ and g' buf e =
       Printf.bprintf buf "\tmv\t%s, %s\n" (reg a) (reg regs.(0))
     else if List.mem a allfregs && a <> fregs.(0) then
       Printf.bprintf buf "\tfmv.s\t%s, %s\n" (reg a) (reg fregs.(0));
-and g'_tail_if buf rs1 rs2 e1 e2 b bn = (* b¤Ï¥é¥Ù¥ë¤Ë»È¤¦¤À¤±¤ÇÌ¿Îá¤Ë¤Ï»È¤ï¤Ê¤¤ *)
+and g'_tail_if buf rs1 rs2 e1 e2 b bn = (* bã¯ãƒ©ãƒ™ãƒ«ã«ä½¿ã†ã ã‘ã§å‘½ä»¤ã«ã¯ä½¿ã‚ãªã„ *)
   let b_else = Id.genid (b ^ "_else") in
   Printf.bprintf buf "\t%s\t%s, %s, %s\n" bn (reg rs1) (reg rs2) b_else;
   let stackset_back = !stackset in
-  g buf (Tail, e1); (* ifÆâ¤¬true¤Î¾ì¹ç = jump¤·¤Ê¤«¤Ã¤¿¾ì¹ç *)
+  g buf (Tail, e1); (* ifå†…ãŒtrueã®å ´åˆ = jumpã—ãªã‹ã£ãŸå ´åˆ *)
   Printf.bprintf buf "%s:\n" b_else;
   stackset := stackset_back;
   g buf (Tail, e2);
@@ -332,7 +332,7 @@ let f oc (Prog(data, fundefs, e)) =
   Buffer.output_buffer oc buf;
   Printf.fprintf oc "#\tmain program ends\n";
   (* Printf.fprintf oc "\tli\ta5, 0\n";
-     Printf.fprintf oc "\tmv\ta0, a5\n"; *) (* return 0¤Ï¤¤¤é¤Ê¤¤¤Ï¤º¡© *)
+     Printf.fprintf oc "\tmv\ta0, a5\n"; *) (* return 0ã¯ã„ã‚‰ãªã„ã¯ãšï¼Ÿ *)
   Printf.fprintf oc "\tlw\tra, 4(sp)\n";
   Printf.fprintf oc "\tlw\tfp, 0(sp)\n";
   Printf.fprintf oc "\taddi\tsp, sp, 8\n";
