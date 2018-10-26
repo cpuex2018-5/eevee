@@ -47,8 +47,9 @@ std::map<std::string, int> regmap =
     { "t6", 31 },
 };
 
-BinGen::BinGen(std::ofstream ofs, bool is_verbose)
+BinGen::BinGen(std::ofstream ofs, bool is_verbose, bool is_debug)
   : is_verbose_(is_verbose),
+    is_debug_(is_debug),
     ofs_(std::move(ofs)) {
     for (int i = 0; i < 32; i++) {
         std::string regname = "x" + std::to_string(i);
@@ -316,8 +317,8 @@ BinGen::Inst BinGen::Convert(std::string input) {
         mnemo == ".globl" || mnemo == ".type" || mnemo == ".size" || mnemo == ".ident")
         return Inst(0, 0);
 
-    // A line starting with # is a comment.
-    if (mnemo[0] == '#')
+    // Comment
+    if (mnemo == "")
         return Inst(0, 0);
 
     // Note: Lack of arguments will cause crash here
@@ -405,11 +406,18 @@ void BinGen::Main(std::string input) {
     int old_nline = nline_;
     BinGen::Inst inst(Convert(input));
 
+    if (is_debug_) {
+        if (inst.first == 0)
+            std::printf("\t%s\n", input.c_str());
+        else
+            std::printf("(%4d)\t%s\n", old_nline * 4, input.c_str());
+    }
+
     // error
     if (inst.first == 0) return;
 
     if (is_verbose_) {
-        std::cout << "(pc " << old_nline << "): " << input << std::endl << "    ";
+        std::cout << "(pc " << old_nline * 4 << "):" << input << std::endl << "    ";
         PrintInst(inst);
         std::cout << std::endl;
     }

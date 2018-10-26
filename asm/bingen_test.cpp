@@ -49,6 +49,8 @@ class BinGenTest{
             "	j fuga# hogehoge",
             "  # hogehoge",
             "main:  # hogehoge",
+            "# main program starts",
+            "   j fib.10_ret",
         };
 
         for (auto test_str : test_strs) {

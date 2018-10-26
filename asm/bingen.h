@@ -10,7 +10,7 @@ class BinGen {
     public:
         typedef std::pair<uint32_t, uint32_t> Inst;
 
-        BinGen(std::ofstream ofs, bool is_verbose);
+        BinGen(std::ofstream ofs, bool is_verbose, bool is_debug);
 
         // 1周目
         void ReadLabels(std::string input);
@@ -70,6 +70,7 @@ class BinGen {
         int nline_ = 0;
 
         bool is_verbose_;
+        bool is_debug_;
         std::ofstream ofs_;
         std::map<std::string, int> label_map_;
 };
