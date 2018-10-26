@@ -2,13 +2,16 @@
 
 ## 使い方
 
-    $ ./build.sh test/fib.ml
+    $ ./build.sh [-d|-v] [filename].ml
 
-test/fib.mlからtest/fib.sをコンパイラで生成し、さらにそれをアセンブラに通してtest/fib (バイナリ)とtest/fib.asm (デバッグ用のアセンブリ)を生成する
+test/fib.mlからtest/fib.sをコンパイラで生成し、さらにそれをアセンブラに通してtest/fib (バイナリ)を生成する
+
+### option
+
+* `-v` : アセンブラのdebugモードの出力を[filename].asmに上書き
+* `-d` : アセンブラのverboseモードの出力を[filename].asmに上書き
 
 ---
-
-# Original README
 
 An educational compiler for a minimal subset of OCaml, written in
 ~2000 lines of OCaml.  For details, see:

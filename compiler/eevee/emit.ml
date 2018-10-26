@@ -177,6 +177,7 @@ and g' buf e =
      | _ ->
        g'_tail_if buf x "zero" e1 e2 "bge" "blt")
   | Tail, IfFEq(x, y, e1, e2) ->
+    (* TODO: Floating用に直す *)
     (* Store the comparison result in reg_tmp (integer register!) *)
     Printf.bprintf buf "\tfeq.s\t%s, %s, %s\n" reg_tmp x y;
     (* x = y -> reg_tmpが1 -> beq reg_tmp zero で分岐しない *)
@@ -245,7 +246,7 @@ and g' buf e =
       Printf.bprintf buf "\tmv\t%s, %s\n" (reg a) (reg regs.(0))
     else if List.mem a allfregs && a <> fregs.(0) then
       Printf.bprintf buf "\tfmv.s\t%s, %s\n" (reg a) (reg fregs.(0));
-and g'_tail_if buf rs1 rs2 e1 e2 b bn =
+and g'_tail_if buf rs1 rs2 e1 e2 b bn = (* bはラベルに使うだけで命令には使わない *)
   let b_else = Id.genid (b ^ "_else") in
   Printf.bprintf buf "\t%s\t%s, %s, %s\n" bn (reg rs1) (reg rs2) b_else;
   let stackset_back = !stackset in

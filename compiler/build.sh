@@ -1,13 +1,29 @@
 #!/bin/bash
 
-if [ $# -ne 2 ]; then
-    echo "Usage: ./build.sh [asm-option] [filename].ml"
+if [ $# -gt 2 ]; then
+    echo "Usage: ./build.sh [-d | -v] [filename].ml"
     exit 0
 fi
 
-./min-caml $2
-FILENAME=$2
+if [ $# -eq 1 ]; then
+    FILENAME=$1
+else
+    FLAG=$1
+    FILENAME=$2
+fi
+
 ASMNAME=${FILENAME/\.ml/\.s}
+BINNAME=${FILENAME/\.ml/\.bin}
+
+./min-caml $FILENAME
+
+# まだprint_intを実装してないため
 sed -i "" "/min_caml_print_int/d" $ASMNAME
-./../asm/main $1 $ASMNAME > ${FILENAME/\.ml/\.asm}
-echo "generated " $ASMNAME " and " ${FILENAME/\.ml/\.asm}
+
+if [ $# -eq 1 ]; then
+    ./../asm/main $ASMNAME
+    echo "generated " $ASMNAME " and " $BINNAME
+else
+    ./../asm/main $FLAG $ASMNAME > ${FILENAME/\.ml/\.asm}
+    echo "generated " $ASMNAME ", " $BINNAME " and " ${FILENAME/\.ml/\.asm}
+fi
