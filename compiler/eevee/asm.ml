@@ -45,8 +45,8 @@ let seq(e1, e2) = Let((Id.gentmp Type.Unit, Type.Unit), e1, e2)
 
 let regs =
   [| "%a0"; "%a1"; "%a2"; "%a3"; "%a4"; "%a5"; "%a6"; "%a7";
-     "%t0"; "%t1"; "%t2"; "%t3"; "%t4"; "%t5"; "%t6";
-     "%s1"; "%s2"; "%s3"; "%s4"; "%s5"; "%s6"; "%s7"; "%s8"; "%s9"; "%s10"; "%s11" |]
+     "%s1"; "%s2"; "%s3"; "%s4"; "%s5"; "%s6"; "%s7"; "%s8"; "%s9"; "%s10"; "%s11";
+     "%t0"; "%t1"; "%t2"; "%t3"; "%t4"; "%t5"; "%t6" |]
 let fregs =
   [| "%fa0"; "%fa1"; "%fa2"; "%fa3"; "%fa4"; "%fa5"; "%fa6"; "%fa7";
      "%fs1"; "%fs2"; "%fs3"; "%fs4"; "%fs5"; "%fs6"; "%fs7"; "%fs8"; "%fs9"; "%fs10"; "%fs11";
@@ -60,7 +60,7 @@ let reg_sp = "%sp" (* stack pointer *)
 let reg_fp = "%fp" (* frame pointer *)
 let reg_link = "%ra" (* link register *)
 let reg_hp = "%hp" (* heap pointer (caml2html: sparcasm_reghp) *) (* TODO *)
-let reg_tmp = "%s11" (* [XX] ad hoc *)
+let reg_tmp = "%t6" (* [XX] ad hoc *)
 let is_reg x = (x.[0] = '%')
 
 (* super-tenuki *)

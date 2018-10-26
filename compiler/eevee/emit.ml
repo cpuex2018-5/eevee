@@ -27,7 +27,7 @@ let locate x =
     | y :: zs -> List.map succ (loc zs) in
   loc !stackmap
 let offset x = 4 * List.hd (locate x)
-let stacksize () = align ((List.length !stackmap + 1) * 4)
+let stacksize () = (List.length !stackmap + 1) * 4
 
 let reg r =
   if is_reg r
@@ -64,8 +64,10 @@ let rec g buf = function (* 命令列のアセンブリ生成 (caml2html: emit_g) *)
   | dest, Let((x, t), exp, e) ->
     g' buf (NonTail(x), exp);
     g buf (dest, e)
-and g' buf = function (* 各命令のアセンブリ生成 (caml2html: emit_gprime) *)
+and g' buf e =
   (* 末尾でなかったら計算結果をdestにセット (caml2html: emit_nontail) *)
+  print_stackmap ();
+  match e with
   | NonTail(_), Nop -> ()
   | NonTail(x), Li(i) when -32768 <= i && i < 32768 -> Printf.bprintf buf "\tli\t%s, %d\n" (reg x) i
   | NonTail(x), Li(i) ->
@@ -222,10 +224,12 @@ and g' buf = function (* 各命令のアセンブリ生成 (caml2html: emit_gprime) *)
     (* TODO: tレジスタから使うようにする(?) *)
     g'_args buf [(f, reg_cl)] iargs fargs;
     Printf.bprintf buf "\tlw\tra, 0(%s)\n" (reg reg_cl);
-    Printf.bprintf buf "\tjr\tra\n"
+    Printf.bprintf buf "\tjr\tra\n";
+    Printf.bprintf buf "\tj\t%s\n" !retlabel
   | Tail, CallDir(Id.L(f), iargs, fargs) ->
     g'_args buf [] iargs fargs;
-    Printf.bprintf buf "\tj\t%s\n" f
+    Printf.bprintf buf "\tcall\t%s\n" f;
+    Printf.bprintf buf "\tj\t%s\n" !retlabel
   | NonTail(a), CallCls(f, iargs, fargs) ->
     g'_args buf [(f, reg_cl)] iargs fargs;
     Printf.bprintf buf "\tlw\tra, 0(%s)\n" (reg reg_cl); (* set closure address to %ra *)
@@ -288,7 +292,7 @@ let h oc { name = Id.L(x); args = _; fargs = _; body = e; ret = _ } =
   let buf = Buffer.create 128 in
   retlabel := x ^ "_ret";
   g buf (Tail, e);
-  let ss = stacksize () in
+  let ss = stacksize () + 8 in
   Printf.fprintf oc "\taddi\tsp, sp, %d\n" (-1 * ss);
   Printf.fprintf oc "\tsw\tra, %d(sp)\n" (ss - 4);
   Printf.fprintf oc "\tsw\tfp, %d(sp)\n" (ss - 8);
@@ -331,7 +335,7 @@ let f oc (Prog(data, fundefs, e)) =
   Printf.fprintf oc "\tlw\tra, 4(sp)\n";
   Printf.fprintf oc "\tlw\tfp, 0(sp)\n";
   Printf.fprintf oc "\taddi\tsp, sp, 8\n";
-  Printf.fprintf oc "\tjal\tzero, end\n";
+  Printf.fprintf oc "\tj\tend\n";
   List.iter (fun fundef -> h oc fundef) fundefs;
   Printf.fprintf oc "end:\n";
-  Printf.fprintf oc "\tjal\tzero, end\n";
+  Printf.fprintf oc "\tj\tend\n";
