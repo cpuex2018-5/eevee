@@ -56,7 +56,6 @@ void exec(Simulator *sim){
     }
     inst_counter = inst_counter + 4;
     prev_pc = sim->pc;
-    sim->registers[0] = 0; //always set zero register to zero
 
 
     if(debug_mode == 1){
@@ -422,6 +421,7 @@ void exec(Simulator *sim){
     }
     free(op);
     op=NULL;
+    sim->registers[0]=0;
   }
 
   print_regs(sim);
