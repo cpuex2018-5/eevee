@@ -33,3 +33,6 @@ virtual.ml
 libmincaml.S
 min-rt/globals.s
 bytemark/Makefile
+
+raytracer/
+min-rt/
