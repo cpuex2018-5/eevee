@@ -5,11 +5,11 @@
 ### assembler
 
     $ make
-    $ ./main hoge.s  # `hoge` will be generated
+    $ ./main [-a] [-v | -d] hoge.s  # `hoge.bin` will be generated
 
 #### option
 
-* `-v` : verbose mode (アセンブリの入力とそれを変換したバイナリ、pcの値を表示)
+* `-v` : verbose mode (アセンブリの入力とそれを変換したバイナリ、pcの値をstdoutに表示)
 
 ```
 $ ./main -v target/fib.s
@@ -35,7 +35,7 @@ $ ./main -v target/fib.s
     0000 0000 0000 0101 0000 0111 1001 0011
 ```
 
-* `-d` : debug mode (pcの値を先頭につけたアセンブリを表示)
+* `-d` : debug mode (pcの値を先頭につけたアセンブリをstdoutに表示)
 
 ```
 $ ./main -d target/fib.s
@@ -53,6 +53,9 @@ $ ./main -d target/fib.s
 (  36)		addi	sp, sp, 8
 (  40)		jal	zero, end
 ```
+
+* `-a` : ascii mode (バイナリファイルではなく`0`, `1`でのASCIIファイルを出力する, vivadoのシミュレーション用)
+    * `-v`, `-d` と併用可能
 
 ### tests:
 

@@ -10,7 +10,7 @@ class BinGen {
     public:
         typedef std::pair<uint32_t, uint32_t> Inst;
 
-        BinGen(std::ofstream ofs, bool is_verbose, bool is_debug);
+        BinGen(std::ofstream ofs, bool is_verbose, bool is_debug, bool is_ascii);
 
         // 1周目
         void ReadLabels(std::string input);
@@ -59,7 +59,8 @@ class BinGen {
         uint32_t Pack(Fields fields);
         void CheckImmediate(uint32_t imm, int range, std::string func_name);
         void CheckImmediateUnsigned(uint32_t imm, int range, std::string func_name);
-        void WriteData(uint32_t data);
+        void WriteDataInBinary(uint32_t data);
+        void WriteDataInAscii(uint32_t data);
 
         // |imm|がラベルの場合は対応する値を返し、即値ならstoiして返す　
         uint32_t MyStoi(std::string imm);
@@ -71,6 +72,7 @@ class BinGen {
 
         bool is_verbose_;
         bool is_debug_;
+        bool is_ascii_;
         std::ofstream ofs_;
         std::map<std::string, int> label_map_;
 };

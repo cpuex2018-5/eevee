@@ -21,20 +21,24 @@ std::string PrettyString(uint32_t inst) {
 int main(int argc, char* argv[])
 {
     if (argc < 2) {
-        std::cout << "ERROR: No input files specified" << std::endl;
+        std::cout << "Usage: ./main [-a] [-v | -d] [filename].s" << std::endl;
         return 0;
     }
 
     bool is_verbose = false;
     bool is_debug = false;
+    bool is_ascii = false;
 
-    if (strcmp(argv[1], "-v") == 0)
+    if (strcmp(argv[1], "-a") == 0 || strcmp(argv[2], "-a") == 0)
+        is_ascii = true;
+
+    if (strcmp(argv[1], "-v") == 0 || strcmp(argv[2], "-v") == 0)
         is_verbose = true;
 
-    if (strcmp(argv[1], "-d") == 0)
+    if (strcmp(argv[1], "-d") == 0 || strcmp(argv[2], "-d") == 0)
         is_debug = true;
 
-    std::string infile = (is_verbose || is_debug) ? argv[2] : argv[1];
+    std::string infile = argv[argc - 1];
     if (!(infile[infile.size() - 2] == '.' && infile[infile.size() - 1] == 's')) {
         std::cout << "ERROR: The input file should have suffix '.s'" << std::endl;
         return 0;
@@ -48,7 +52,7 @@ int main(int argc, char* argv[])
     std::string outfile(infile.begin(), infile.end() - 2);
     std::ofstream ofs(outfile + ".bin");
     std::string str;
-    BinGen bingen(std::move(ofs), is_verbose, is_debug);
+    BinGen bingen(std::move(ofs), is_verbose, is_debug, is_ascii);
 
     // Round 1: Skim through the assembly code and get the position of each label
     while (getline(ifs, str)) {
