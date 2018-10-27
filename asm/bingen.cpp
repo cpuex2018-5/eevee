@@ -47,9 +47,10 @@ std::map<std::string, int> regmap =
     { "t6", 31 },
 };
 
-BinGen::BinGen(std::ofstream ofs, bool is_verbose, bool is_debug)
+BinGen::BinGen(std::ofstream ofs, bool is_verbose, bool is_debug, bool is_ascii)
   : is_verbose_(is_verbose),
     is_debug_(is_debug),
+    is_ascii_(is_ascii),
     ofs_(std::move(ofs)) {
     for (int i = 0; i < 32; i++) {
         std::string regname = "x" + std::to_string(i);
@@ -213,13 +214,22 @@ uint32_t BinGen::op (std::string mnemo, std::string rd, std::string rs1, std::st
     return Pack(fields);
 }
 
-void BinGen::WriteData(uint32_t data) {
+void BinGen::WriteDataInBinary(uint32_t data) {
     unsigned char d[4];
     d[0] = data >> 24;
     d[1] = data >> 16;
     d[2] = data >> 8;
     d[3] = data;
     ofs_.write((char *)d, 4);
+}
+
+void BinGen::WriteDataInAscii(uint32_t data) {
+    std::string str;
+    for (int i = 0; i < 32; i++) {
+        str.push_back(((data >> (31 - i)) & 0x1)? '1' : '0');
+    }
+    assert(str.size() == 32);
+    ofs_ << str << std::endl;
 }
 
 void BinGen::ClearNline_(){
@@ -432,9 +442,16 @@ void BinGen::Main(std::string input) {
         std::cout << std::endl;
     }
 
-    WriteData(inst.first);
+    if (is_ascii_) {
+        WriteDataInAscii(inst.first);
+        if (inst.second == 0) return;
+        WriteDataInAscii(inst.second);
+        return;
+    }
+
+    WriteDataInBinary(inst.first);
     if (inst.second == 0) return;
-    WriteData(inst.second);
+    WriteDataInBinary(inst.second);
 }
 
 uint32_t BinGen::Pack(Fields fields) {
