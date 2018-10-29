@@ -18,6 +18,9 @@ class BinGen {
         // 2周目
         void Main(std::string input);
 
+        // 終了処理
+        void Finish();
+
         void Parse(std::string input, std::string &mnemo, std::vector<std::string> &arg);
         void ParseOffset(std::string arg, std::string* reg, uint32_t* offset);
 
