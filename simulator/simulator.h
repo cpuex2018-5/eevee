@@ -46,7 +46,7 @@ unsigned int get_binary(unsigned int,int,int);
 void usage();
 void print_binary(int);
 void print_instr(Simulator *);
-void disas(unsigned int);
+void disas(unsigned int,unsigned int,Op *);
 //debug.c
 void print_fregs(Simulator *);
 void dump_memory(Simulator *,int,int);

@@ -63,12 +63,16 @@ void exec(Simulator *sim){
 
 
     unsigned int inst = (sim->text_memory[sim->pc]<<24) | (sim->text_memory[sim->pc+1]<<16) | (sim->text_memory[sim->pc+2]<<8) | sim->text_memory[sim->pc+3];
-
+    unsigned int opcode = get_binary(inst,0,7);
+    int s_imm = 0; //sign extended immediate
+    unsigned int address = 0;
+    
     if(debug_mode == 1){
       //for debug
+      Op *dbgop = (Op *)malloc(sizeof(Op));
       fprintf(stdout,"current pc: %ld  inst_counter: %ld  sp:%d\n",sim->pc,inst_counter,sim->registers[2]);
       //print_instr(sim);
-      disas(inst);
+      disas(inst,opcode,dbgop);
       while(1){
         //disasm(sim);
         char buffer[16] = "";
@@ -83,13 +87,12 @@ void exec(Simulator *sim){
           break;
         }
       }
+      free(dbgop);
+      dbgop == NULL;
     }
 
     Op *op = (Op *)malloc(sizeof(Op));
     memset(op,0,sizeof(Op));
-    unsigned int opcode = get_binary(inst,0,7);
-    int s_imm; //sign extended immediate
-    unsigned int address;
     switch(opcode){
       case 0b0110111:
         //検証済み
