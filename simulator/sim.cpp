@@ -1,5 +1,7 @@
 #include"./simulator.h"
 extern int debug_mode;
+
+
 Simulator *init(unsigned long m_size,unsigned long s_pos,FILE *in,FILE *out){
   int i = 0;
   Simulator *sim = (Simulator *)malloc(sizeof(Simulator));
@@ -65,7 +67,7 @@ void exec(Simulator *sim){
     int s_imm = 0; //sign extended immediate
     unsigned int address = 0;
     
-    for(int i=0;i<sim->breakpoints.size();i++){
+    for(unsigned int i=0;i<sim->breakpoints.size();i++){
       if(sim->pc==sim->breakpoints[i]){
         fprintf(stdout,"break!!\n");
         sim->breakpoints.erase(sim->breakpoints.begin()+i);
@@ -81,16 +83,17 @@ void exec(Simulator *sim){
       //print_instr(sim);
       disas(inst,opcode,dbgop);
       while(1){
-        //disasm(sim);
-        char buffer[16] = "";
+        std::string buffer;
+        std::vector<std::string> dbginst;
+        int ret = 0;
         fprintf(stdout,"(edb) ");
-        if(scanf("%15[^\n]%*[^\n]",buffer)==EOF){
-          fprintf(stderr,"Unknown debugger command!!\n");
-          exit(1);
+        std::getline(std::cin,buffer);
+        ret = debug_parse(sim,buffer,dbginst);
+        if(ret == 1){
+          break;
         }
-        scanf("%*c");
-        int i = debug_exec(sim,buffer);
-        if(i==1){
+        ret = debug_exec(sim,dbginst);
+        if(ret == 1){
           break;
         }
       }

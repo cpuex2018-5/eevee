@@ -1,17 +1,21 @@
 #include "simulator.h"
 extern int debug_mode;
 extern const char *Regs[];
+
+
 void print_regs(Simulator *sim){
   for(int i=0;i<32;i++){
     fprintf(stdout,"Reg %02d(%7s):   D:%8d   H:%8x\n",i,Regs[i],sim->registers[i],sim->registers[i]);
   }
 }
 
+
 void print_fregs(Simulator *sim){
   for(int i=0;i<32;i++){
     fprintf(stdout,"fReg %02d:  D:%f\n",i,sim->f_registers[i]);
   }
 }
+
 
 void dump_memory(Simulator *sim,int start,int end){
   int len = end - start;
@@ -28,70 +32,146 @@ void dump_memory(Simulator *sim,int start,int end){
   fflush(stdout);
 }
 
-int debug_exec(Simulator *sim,char *buffer){
-  if(strcmp(buffer,"")==0){
+void list_breakpoints(Simulator *sim){
+  fprintf(stdout,"list of breakpoints...\n");
+  for(unsigned int i=0;i<sim->breakpoints.size();i++){
+    fprintf(stdout,"breakpoints[%03d]: pc: %08d\n",i,sim->breakpoints[i]);
+  }
+}
+
+void add_breakpoints(Simulator *sim,int v){
+  if(v<0){
+    fprintf(stdout,"Warning! you are setting a breakpoint outside text memory\n");
+  }
+  if((unsigned int) v > sim->text_size){
+    fprintf(stdout,"Warning! you are setting a breakpoint outside text memory\n");
+  }
+  if(v%4!=0){
+    fprintf(stdout,"Warning! breakpoints must be set at pc which is multiple of 4\n");
+  }
+  for(unsigned int i=0;i<sim->breakpoints.size();i++){
+    if(sim->breakpoints[i]==(unsigned int)v){
+      fprintf(stdout,"breakpoints already set\n");
+      return;
+    }
+  }
+  sim -> breakpoints.push_back(v);
+}
+
+int debug_parse(Simulator *sim,std::string& buffer,std::vector<std::string> &dbginst){
+  //return 1 if input is empty else return 0
+  int curr_pos = 0;
+  int start_pos = 0;
+  while(skip(buffer[curr_pos])){
+    curr_pos++;
+  }
+  if(buffer[curr_pos]=='\0'){
     return 1;
   }
-  else if(strncmp(buffer,"p r",3)==0){
-    print_regs(sim);
+
+  start_pos = curr_pos;
+  while(!skip(buffer[curr_pos]) && buffer[curr_pos] != '\0'){
+    curr_pos++;
+  }
+  dbginst.push_back(buffer.substr(start_pos,curr_pos-start_pos));
+  while(skip(buffer[curr_pos])){
+    curr_pos++;
+  }
+  if(buffer[curr_pos] == '\0'){
     return 0;
   }
-  else if(strncmp(buffer,"p fr",4)==0){
-    print_fregs(sim);
+
+  start_pos = curr_pos;
+  while(!skip(buffer[curr_pos]) && buffer[curr_pos] != '\0'){
+    curr_pos++;
+  }
+  dbginst.push_back(buffer.substr(start_pos,curr_pos-start_pos));
+  while(skip(buffer[curr_pos])){
+    curr_pos++;
+  }
+  if(buffer[curr_pos] == '\0'){
     return 0;
   }
-  else if(strncmp(buffer,"d sp",4)==0){
-    int sp = sim->registers[2];
-    int start = sp - 100;
-    if(start<0) start = 0;
-    int end = sp + 100;
-    if(end>0x100010) end = 0x100011;
-    dump_memory(sim,start,end);
+
+  start_pos = curr_pos;
+  while(!skip(buffer[curr_pos]) && buffer[curr_pos] != '\0'){
+    curr_pos++;
   }
-  else if(strncmp(buffer,"d",1)==0){
-    char *start;
-    char *end;
-    strtok(buffer," ");
-    start = strtok(NULL," ");
-    end =strtok(NULL," ");
-    dump_memory(sim,atoi(start),atoi(end));
+  dbginst.push_back(buffer.substr(start_pos,curr_pos-start_pos));
+  return 0;
+}
+
+
+
+int debug_exec(Simulator *sim,std::vector<std::string> &dbginst){
+  //return -1 if "c",return 0 if other command, return -1 if command is wrong
+  
+  if(dbginst[0]=="p" && dbginst.size()==2){
+    if(dbginst[1]=="r"){
+      print_regs(sim);
+    }
+    else if(dbginst[1]=="fr"){
+      print_fregs(sim);
+    }
+    else{
+      fprintf(stderr,"(unknown)\n");
+    }
     return 0;
   }
-  else if(strncmp(buffer,"c",1)==0){
+  else if(dbginst[0] == "d" && (dbginst.size()==2 || dbginst.size()==3)){
+    if(dbginst[1]=="sp" && dbginst.size()==2){
+      int sp = sim->registers[2];
+      int start = sp - 100;
+      if(start < 0) start = 0;
+      int end = sp + 100;
+      if(end > 0x100010) end = 0x100010;
+      dump_memory(sim,start,end);
+    }
+    else if(dbginst.size()==3){
+      int start = 0;
+      int end = 0;
+      try{
+        start = std::stoi(dbginst[1],nullptr,10);
+        end = std::stoi(dbginst[2],nullptr,10);
+        dump_memory(sim,start,end);
+      }
+      catch (...){
+        fprintf(stderr,"arguments must be an integer!!\n");
+      }
+    }
+    else{
+      fprintf(stderr,"(unknown)\n");
+    }
+    return 0;
+  }
+  else if(dbginst[0] == "c"){
     debug_mode = 0;
     printf("continue...\n");
     return 1;
   }
-  else if(strncmp(buffer,"i b",3)==0){
-    fprintf(stdout,"list of breakpoints...\n");
-    for(int i=0;i<sim->breakpoints.size();i++){
-      fprintf(stdout,"breakpoint[%d]: pc: %d\n",i,sim->breakpoints[i]);
+  else if(dbginst[0] == "i" && dbginst.size() == 2){
+    if(dbginst[1]=="b"){
+      list_breakpoints(sim);
+    }
+    else{
+      printf("(unknown)\n");
     }
     return 0;
   }
-  else if(strncmp(buffer,"b",1)==0){
-    char *strv;
-    strtok(buffer," ");
-    strv = strtok(NULL," ");
-    int v = atoi(strv);
-    fprintf(stdout,"added breakpoints at pc: %d\n",v);
-    if(v%4!=0){
-      fprintf(stdout,"WARNING! breakpoints must be set at pc which is multiple of 4\n");
+  else if(dbginst[0] == "b" && dbginst.size()==2){
+    int bp = 0;
+    try{
+      bp = std::stoi(dbginst[1],nullptr,10);
+      add_breakpoints(sim,bp);
     }
-    if(v>sim->text_size || v<0){
-      fprintf(stdout,"WARNING! breakpoints outside of text memory\n");
+    catch (...){
+      fprintf(stderr,"argument must be an integer!!\n");
     }
-    for(int i=0;i<sim->breakpoints.size();i++){
-      if(sim->breakpoints[i]==v){
-        fprintf(stdout,"breakpoints already set\n");
-        return 0;
-      }
-    }
-    sim->breakpoints.push_back(v);
     return 0;
   }
   else{
-    fprintf(stderr,"Unknown debugger command\n");
+    fprintf(stderr,"(unknown)\n");
   }
   return -1;
 }
+

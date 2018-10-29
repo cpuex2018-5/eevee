@@ -20,13 +20,17 @@ void print_binary(int val){
   }
   printf("\n");
 }
+
+bool skip(char c){
+  return (c == ' ' || c == '\t');
+}
+
 void print_instr(Simulator *sim){
   fprintf(stdout,"%02x %02x %02x %02x\n",(unsigned char)sim->text_memory[sim->pc],(unsigned char)sim->text_memory[sim->pc+1],(unsigned char)sim->text_memory[sim->pc+2],(unsigned char)sim->text_memory[sim->pc+3]);
 }
 
 void disas(unsigned int inst,unsigned int opcode,Op *dbgop){
   int s_imm = 0;
-  unsigned int address = 0;
   fprintf(stdout,"next instruction: %02x %02x %02x %02x : ",(unsigned char)(inst >> 24),(unsigned char)(inst >> 16),(unsigned char)(inst >> 8),(unsigned char)(inst));
   switch(opcode){
     case 0b0110111:
@@ -69,7 +73,7 @@ void disas(unsigned int inst,unsigned int opcode,Op *dbgop){
         fprintf(stdout,"bgeu %s,%s,%d",Regs[dbgop->rs1],Regs[dbgop->rs2],s_imm);
       }
       else{
-        fprintf(stdout,"(unknown)");
+        fprintf(stdout,"(unknown)\n");
       }
       break;
     case 0b0000011:
@@ -91,7 +95,7 @@ void disas(unsigned int inst,unsigned int opcode,Op *dbgop){
         fprintf(stdout,"lhu %s,%d(%s)",Regs[dbgop->rd],s_imm,Regs[dbgop->rs1]);
       }
       else{
-        fprintf(stdout,"(unknown)");
+        fprintf(stdout,"(unknown)\n");
       }
       break;
     case 0b0100011:
@@ -107,7 +111,7 @@ void disas(unsigned int inst,unsigned int opcode,Op *dbgop){
         fprintf(stdout,"sw %s,%d(%s)",Regs[dbgop->rs2],s_imm,Regs[dbgop->rs1]);
       }
       else{
-        fprintf(stdout,"(unknown)");
+        fprintf(stdout,"(unknown)\n");
       }
       break;
     case 0b0010011:
@@ -141,7 +145,7 @@ void disas(unsigned int inst,unsigned int opcode,Op *dbgop){
         fprintf(stdout,"srai %s,%s,%d",Regs[dbgop->rd],Regs[dbgop->rs2],s_imm);
       }
       else{
-        fprintf(stdout,"(unknown)");
+        fprintf(stdout,"(unknown)\n");
       }
       break;
     case 0b0110011:
@@ -177,7 +181,7 @@ void disas(unsigned int inst,unsigned int opcode,Op *dbgop){
         fprintf(stdout,"and %s,%s,%s",Regs[dbgop->rd],Regs[dbgop->rs1],Regs[dbgop->rs2]);
       }
       else{
-        fprintf(stdout,"(unknown)");
+        fprintf(stdout,"(unknown)\n");
       }
       break;
     case 0b1111111:
@@ -188,11 +192,11 @@ void disas(unsigned int inst,unsigned int opcode,Op *dbgop){
         fprintf(stdout,"in %s",Regs[dbgop->rd]);
       }
       else{
-        fprintf(stdout,"(unknown)");
+        fprintf(stdout,"(unknown)\n");
       }
       break;
     default:
-      fprintf(stdout,"(unknown)");
+      fprintf(stdout,"(unknown)\n");
   }
 
   fprintf(stdout,"\n");

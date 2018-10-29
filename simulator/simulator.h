@@ -3,6 +3,7 @@
 #include<unistd.h>
 #include<string.h>
 #include<vector>
+#include<string>
 #include<iostream>
 extern const unsigned int MEM_SIZE;
 extern const unsigned int STACK_POS;
@@ -50,8 +51,10 @@ void usage();
 void print_binary(int);
 void print_instr(Simulator *);
 void disas(unsigned int,unsigned int,Op *);
+bool skip(char);
 //debug.c
 void print_fregs(Simulator *);
 void dump_memory(Simulator *,int,int);
 void print_regs(Simulator *);
-int debug_exec(Simulator *,char *);
+int debug_exec(Simulator *,std::vector<std::string>&);
+int debug_parse(Simulator* ,std::string&,std::vector<std::string>&);
