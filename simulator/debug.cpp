@@ -144,7 +144,7 @@ int debug_exec(Simulator *sim,std::vector<std::string> &dbginst){
     }
     return 0;
   }
-  else if(dbginst[0] == "c"){
+  else if(dbginst[0] == "c" && dbginst.size() == 1){
     debug_mode = 0;
     printf("continue...\n");
     return 1;
