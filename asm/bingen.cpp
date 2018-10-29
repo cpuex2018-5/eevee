@@ -264,7 +264,7 @@ void BinGen::ReadLabels(std::string input) {
             return;
         }
 
-        if (mnemo == "li" && MyStoi(arg[1]) > (1 << 12) - 1) {
+        if (mnemo == "li" && MyStoi(arg[1]) > (1 << 11) - 1) {
             nline_ += 2;
             return;
         }
@@ -284,7 +284,7 @@ void BinGen::ReadLabels(std::string input) {
         return;
     }
     mnemo.pop_back();
-    std::cerr << "new label " << mnemo << " registered at " << nline_ << std::endl;
+    std::cerr << "[INFO] new label " << mnemo << " registered at " << nline_ << std::endl;
     label_map_[mnemo] = nline_;
 }
 
@@ -406,16 +406,17 @@ BinGen::Inst BinGen::Convert(std::string input) {
     // TODO: test pseudo-insturctions
     else if (mnemo == "la") {
         assert(2 == arg.size());
-        ret1 = auipc(arg[0], MyStoi(arg[1]) >> 12);
+        uint32_t tmp = MyStoi(arg[1]);
+        ret1 = auipc(arg[0], ((tmp >> 12) + (tmp >> 11) & 0x1) & 0xfffff);
         nline_++;
-        ret2 = op_imm("addi", arg[0], arg[0], MyStoi(arg[1]) & 0xfff);
+        ret2 = op_imm("addi", arg[0], arg[0], tmp & 0xfff);
     }
 
     else if (mnemo == "li") {
         assert(2 == arg.size());
         uint32_t tmp = MyStoi(arg[1]);
-        if (tmp > (1 << 12) - 1) {
-            ret1 = lui(arg[0], tmp >> 12);
+        if (tmp > (1 << 11) - 1) {
+            ret1 = lui(arg[0], ((tmp >> 12) + (tmp >> 11) & 0x1) & 0xfffff);
             nline_++;
             ret2 = op_imm("addi", arg[0], arg[0], tmp & 0xfff);
         } else {
@@ -531,7 +532,7 @@ void BinGen::CheckImmediate(uint32_t imm, int range, std::string func_name) {
     uint32_t mask = -1 << range;
     if (mask & imm && mask & (~imm)) {
         //符号付 range bit数の最大と最小に入っているか？
-        std::cerr << "ERROR(" << func_name << "): The immediate value " << imm << " should be smaller than 2 ^ " << range << std::endl;
+        std::cerr << "\x1b[31m[ERROR](" << func_name << "): The immediate value " << imm << " should be smaller than 2 ^ " << range << "\x1b[39m\n";
         exit(1);
     }
 }
@@ -550,6 +551,10 @@ uint32_t BinGen::MyStoi(std::string imm) {
     catch (...) {
         // stoi() failed. |imm| was a label.
         // std::cout << imm << label_map_[imm] << std::endl;
+        if (label_map_[imm] == 0 && imm != "main") {
+            std::cerr << "\x1b[31m[ERROR] Undefined symbol: " << imm << "\x1b[39m\n";
+            return 0;
+        }
         return (label_map_[imm] - nline_) * 4;
     }
 }

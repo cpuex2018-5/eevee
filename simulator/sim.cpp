@@ -391,6 +391,7 @@ void exec(Simulator *sim){
         else{
           fprintf(stderr,"Unknown instruction\n");
         }
+        sim->pc = sim -> pc + 4;
         break;
       default:
         fprintf(stderr,"unknown instruction\n");

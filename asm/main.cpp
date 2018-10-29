@@ -45,8 +45,8 @@ int main(int argc, char* argv[])
         std::cout << "ERROR: The input file should have suffix '.s'" << std::endl;
         return 0;
     }
-    std::ifstream ifs(infile);
-    if (ifs.fail()) {
+    std::ifstream ifs(infile), lib("libmincaml.S");
+    if (ifs.fail() || lib.fail()) {
         std::cerr << "ERROR: Failed to open the file" << std::endl;
         return 0;
     }
@@ -57,18 +57,26 @@ int main(int argc, char* argv[])
     BinGen bingen(std::move(ofs), is_verbose, is_debug, is_ascii);
 
     // Round 1: Skim through the assembly code and get the position of each label
-    while (getline(ifs, str)) {
+    while (getline(ifs, str))
         // Parse the input.
         bingen.ReadLabels(str);
-    }
+
+    // link the whole library.
+    while (getline(lib, str))
+        bingen.ReadLabels(str);
+
     bingen.ClearNline_();
     ifs.clear();
     ifs.seekg(0, std::ios::beg);
+    lib.clear();
+    lib.seekg(0, std::ios::beg);
 
     // Round 2: Replace the instructions with bytecodes
-    while (getline(ifs, str)) {
+    while (getline(ifs, str))
         bingen.Main(str);
-    }
+
+    while (getline(lib, str))
+        bingen.Main(str);
 
     bingen.Finish();
 
