@@ -77,7 +77,7 @@ $ ./main -d target/fib.s
 * `bge`, `ble`
 * `j`, `jr`, `ret`, `call`
 * `b` : 無条件にbranch
-    * `b offset` = `beq zero, zero, offset`
+    * `b offset` = `bge zero, zero, offset`
 
 ## TODOs
 - [ ] テストを増やす(?)
@@ -103,3 +103,17 @@ $ ./main -d target/fib.s
 * pseudo-instruction `li` の挙動を修正した(即値が大きい場合は2命令になる)
 
 * 吐き出すバイナリファイルに拡張子 `.bin` をつけるようにしました
+
+### I/O命令について
+
+* `w` (write), `r` (read)。命令フォーマットは以下。
+
+```
+|32              15|14  12|11   7|6     0|
+|000000000000000000|funct3|  reg | opcode|
+|000000000000000000| 000  |  rs  |1111111| w (write)
+|000000000000000000| 001  |  rd  |1111111| r (read)
+```
+
+* `w    rs` : `rs`の内容の下位8bitをuartに送信する
+* `r    rd` : uartから受信した8bitを`rd`に入れる

@@ -214,6 +214,20 @@ uint32_t BinGen::op (std::string mnemo, std::string rd, std::string rs1, std::st
     return Pack(fields);
 }
 
+// |32              15|14  12|11   7|6     0|
+// |000000000000000000|funct3|  reg | opcode|
+// |000000000000000000| 000  |  rs  |1111111| w (write)
+// |000000000000000000| 001  |  rd  |1111111| r (read)
+uint32_t BinGen::io (std::string mnemo, std::string reg) {
+    uint32_t funct3 = (mnemo == "w") ? 0b000 : 0b001;
+    Fields fields;
+    fields.emplace_back(7, 0b1111111);
+    fields.emplace_back(5, regmap[reg]);
+    fields.emplace_back(3, funct3);
+    fields.emplace_back(18, 0x00000);
+    return Pack(fields);
+}
+
 void BinGen::WriteDataInBinary(uint32_t data) {
     unsigned char d[4];
     d[0] = data >> 24;
@@ -382,6 +396,12 @@ BinGen::Inst BinGen::Convert(std::string input) {
         ret1 = op(mnemo, arg[0], arg[1], arg[2]);
     }
 
+    // I/O instructions (temporary)
+    else if (mnemo == "w" || mnemo == "r") {
+        assert(1 == arg.size());
+        ret1 = io(mnemo, arg[0]);
+    }
+
     // Pseudo-instructions
     // TODO: test pseudo-insturctions
     else if (mnemo == "la") {
@@ -421,7 +441,8 @@ BinGen::Inst BinGen::Convert(std::string input) {
     }
     else if (mnemo == "b") {
         assert(1 == arg.size());
-        ret1 = branch("beq", "zero", "zero", MyStoi(arg[0]));
+        // これはbeqでもよい
+        ret1 = branch("bge", "zero", "zero", MyStoi(arg[0]));
     }
     else if (mnemo == "j") {
         assert(1 == arg.size());

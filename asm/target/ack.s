@@ -1,7 +1,8 @@
 main:
 	addi	sp,sp,-8
 	sw	ra,4(sp)
-	sw	fp,0(sp) addi	fp,sp,8
+	sw	fp,0(sp)
+	addi	fp,sp,8
 # main program starts
 	li	a1,10
 	li	a0,3

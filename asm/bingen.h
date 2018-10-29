@@ -56,6 +56,9 @@ class BinGen {
         // add, sub, sll, slt, sltu, xor, srl, sra, or, and
         uint32_t op(std::string mnemo, std::string rd, std::string rs1, std::string rs2);
 
+        // read, write
+        uint32_t io(std::string mnemo, std::string r);
+
         uint32_t Pack(Fields fields);
         void CheckImmediate(uint32_t imm, int range, std::string func_name);
         void CheckImmediateUnsigned(uint32_t imm, int range, std::string func_name);
