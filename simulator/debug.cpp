@@ -62,6 +62,34 @@ int debug_exec(Simulator *sim,char *buffer){
     printf("continue...\n");
     return 1;
   }
+  else if(strncmp(buffer,"i b",3)==0){
+    fprintf(stdout,"list of breakpoints...\n");
+    for(int i=0;i<sim->breakpoints.size();i++){
+      fprintf(stdout,"breakpoint[%d]: pc: %d\n",i,sim->breakpoints[i]);
+    }
+    return 0;
+  }
+  else if(strncmp(buffer,"b",1)==0){
+    char *strv;
+    strtok(buffer," ");
+    strv = strtok(NULL," ");
+    int v = atoi(strv);
+    fprintf(stdout,"added breakpoints at pc: %d\n",v);
+    if(v%4!=0){
+      fprintf(stdout,"WARNING! breakpoints must be set at pc which is multiple of 4\n");
+    }
+    if(v>sim->text_size || v<0){
+      fprintf(stdout,"WARNING! breakpoints outside of text memory\n");
+    }
+    for(int i=0;i<sim->breakpoints.size();i++){
+      if(sim->breakpoints[i]==v){
+        fprintf(stdout,"breakpoints already set\n");
+        return 0;
+      }
+    }
+    sim->breakpoints.push_back(v);
+    return 0;
+  }
   else{
     fprintf(stderr,"Unknown debugger command\n");
   }

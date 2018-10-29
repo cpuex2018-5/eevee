@@ -2,6 +2,8 @@
 #include<stdlib.h>
 #include<unistd.h>
 #include<string.h>
+#include<vector>
+#include<iostream>
 extern const unsigned int MEM_SIZE;
 extern const unsigned int STACK_POS;
 
@@ -14,6 +16,7 @@ typedef struct {
   unsigned int text_size;
   FILE *in;
   FILE *out;
+  std::vector<unsigned int> breakpoints;
 } Simulator;
 
 typedef struct {

@@ -23,7 +23,6 @@ Simulator *init(unsigned long m_size,unsigned long s_pos,FILE *in,FILE *out){
   //allocate the same size of memory for text and data section for now
   sim -> in = in;
   sim -> out = out;
-  
   return sim;
 }
 
@@ -59,14 +58,22 @@ void exec(Simulator *sim){
     }
     inst_counter = inst_counter + 4;
     prev_pc = sim->pc;
-
-
+    
 
     unsigned int inst = (sim->text_memory[sim->pc]<<24) | (sim->text_memory[sim->pc+1]<<16) | (sim->text_memory[sim->pc+2]<<8) | sim->text_memory[sim->pc+3];
     unsigned int opcode = get_binary(inst,0,7);
     int s_imm = 0; //sign extended immediate
     unsigned int address = 0;
     
+    for(int i=0;i<sim->breakpoints.size();i++){
+      if(sim->pc==sim->breakpoints[i]){
+        fprintf(stdout,"break!!\n");
+        sim->breakpoints.erase(sim->breakpoints.begin()+i);
+        debug_mode=1; //break
+      }
+    }
+
+
     if(debug_mode == 1){
       //for debug
       Op *dbgop = (Op *)malloc(sizeof(Op));
