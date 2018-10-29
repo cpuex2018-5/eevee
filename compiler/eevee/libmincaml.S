@@ -3,11 +3,11 @@ min_caml_print_byte:
 # a0の下位8bitに出力したい文字のasciiコードが入っている
 	w	a0
 	jr	ra
-min_caml_print_endline:
-	sw	ra, 4(sp)
-	li	a0, 10			# '\n'
-	j	min_caml_print_byte
-	lw	ra, 4(sp)
+min_caml_print_newline:
+	li	t1, 13
+	w	t1
+	li	t1, 10
+	w	t1
 	jr	ra
 min_caml_print_int:
 	addi	sp, sp, -12
