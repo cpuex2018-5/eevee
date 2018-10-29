@@ -21,3 +21,7 @@ void print_binary(int val){
 void print_instr(Simulator *sim){
   fprintf(stdout,"%02x %02x %02x %02x\n",(unsigned char)sim->text_memory[sim->pc],(unsigned char)sim->text_memory[sim->pc+1],(unsigned char)sim->text_memory[sim->pc+2],(unsigned char)sim->text_memory[sim->pc+3]);
 }
+
+void disas(unsigned int inst){
+  fprintf(stdout,"next instruction: %02x %02x %02x %02x\n",(unsigned char)(inst >> 24),(unsigned char)(inst >> 16),(unsigned char)(inst >> 8),(unsigned char)(inst));
+}

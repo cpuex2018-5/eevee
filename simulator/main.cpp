@@ -35,7 +35,17 @@ int main(int argc,char **argv){
     exit(1);
   }
 
-  Simulator *sim = init(MEM_SIZE,STACK_POS);
+  FILE *in = fopen("input","rb");
+  if(in==NULL){
+    fprintf(stderr,"input file not found\n");
+  }
+  FILE *out = fopen("output","wb");
+  if(out==NULL){
+    fprintf(stderr,"can not create output file\n");
+  }
+
+
+  Simulator *sim = init(MEM_SIZE,STACK_POS,in,out);
 
   load(sim,fp);
   exec(sim);

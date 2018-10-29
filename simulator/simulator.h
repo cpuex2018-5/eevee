@@ -12,6 +12,8 @@ typedef struct {
   unsigned char *text_memory;
   unsigned char *data_memory;
   unsigned int text_size;
+  FILE *in;
+  FILE *out;
 } Simulator;
 
 typedef struct {
@@ -26,7 +28,7 @@ typedef struct {
 
 
 //sim.c
-Simulator *init(unsigned long m_size,unsigned long s_pos);
+Simulator *init(unsigned long m_size,unsigned long s_pos,FILE *,FILE *);
 void destroy(Simulator*);
 void load(Simulator*,FILE *);
 void exec(Simulator*);
@@ -38,13 +40,13 @@ Op *decode_s(unsigned int inst,Op *op);
 Op *decode_u(unsigned int inst,Op *op);
 Op *decode_b(unsigned int inst,Op *op);
 Op *decode_j(unsigned int inst,Op *op);
-
+Op *decode_io(unsigned int inst,Op *op);
 //util.c
 unsigned int get_binary(unsigned int,int,int);
 void usage();
 void print_binary(int);
 void print_instr(Simulator *);
-
+void disas(unsigned int);
 //debug.c
 void print_fregs(Simulator *);
 void dump_memory(Simulator *,int,int);

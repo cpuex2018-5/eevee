@@ -1,8 +1,8 @@
 #include"./simulator.h"
 extern int debug_mode;
-Simulator *init(unsigned long m_size,unsigned long s_pos){
+Simulator *init(unsigned long m_size,unsigned long s_pos,FILE *in,FILE *out){
   int i = 0;
-  Simulator *sim = malloc(sizeof(Simulator));
+  Simulator *sim = (Simulator *)malloc(sizeof(Simulator));
 
   sim -> pc = 0;
 
@@ -16,15 +16,17 @@ Simulator *init(unsigned long m_size,unsigned long s_pos){
     sim -> f_registers[i] = 0.0;
   }
 
-  sim -> text_memory = malloc(sizeof(char)*m_size);
+  sim -> text_memory = (unsigned char*)malloc(sizeof(char)*m_size);
   memset(sim->text_memory,0,sizeof(char)*m_size);
-  sim -> data_memory = malloc(sizeof(unsigned char)*m_size);
+  sim -> data_memory = (unsigned char*)malloc(sizeof(unsigned char)*m_size);
   memset(sim->data_memory,0,sizeof(unsigned char)*m_size);
-  fprintf(stdout,"allocated %ld bytes memory for text and data segment,which lies at %p and %p respectively\n"
-          ,m_size,sim->text_memory,sim->data_memory);
   //allocate the same size of memory for text and data section for now
+  sim -> in = in;
+  sim -> out = out;
+  
   return sim;
 }
+
 
 void destroy(Simulator *sim){
 
@@ -33,6 +35,7 @@ void destroy(Simulator *sim){
   free(sim->data_memory);
   sim -> data_memory = NULL;
 }
+
 
 void load(Simulator *sim,FILE *fp){
   unsigned int size = fread(sim->text_memory,sizeof(char),MEM_SIZE,fp);
@@ -58,12 +61,16 @@ void exec(Simulator *sim){
     prev_pc = sim->pc;
 
 
+
+    unsigned int inst = (sim->text_memory[sim->pc]<<24) | (sim->text_memory[sim->pc+1]<<16) | (sim->text_memory[sim->pc+2]<<8) | sim->text_memory[sim->pc+3];
+
     if(debug_mode == 1){
       //for debug
       fprintf(stdout,"current pc: %ld  inst_counter: %ld  sp:%d\n",sim->pc,inst_counter,sim->registers[2]);
-      fprintf(stdout,"next instruction: ");
-      print_instr(sim);
+      //print_instr(sim);
+      disas(inst);
       while(1){
+        //disasm(sim);
         char buffer[16] = "";
         fprintf(stdout,"(edb) ");
         if(scanf("%15[^\n]%*[^\n]",buffer)==EOF){
@@ -78,11 +85,8 @@ void exec(Simulator *sim){
       }
     }
 
-
-
-    Op *op = malloc(sizeof(Op));
+    Op *op = (Op *)malloc(sizeof(Op));
     memset(op,0,sizeof(Op));
-    unsigned int inst = (sim->text_memory[sim->pc]<<24) | (sim->text_memory[sim->pc+1]<<16) | (sim->text_memory[sim->pc+2]<<8) | sim->text_memory[sim->pc+3];
     unsigned int opcode = get_binary(inst,0,7);
     int s_imm; //sign extended immediate
     unsigned int address;
@@ -356,64 +360,24 @@ void exec(Simulator *sim){
           //and
           sim -> registers[op->rd] = sim -> registers[op -> rs1] & sim -> registers[op -> rs2];
         }
-        else if(op->funct3 == 0b000 && op->funct7 == 0b0000001){
-          //mul
-          sim -> registers[op->rd] = sim -> registers[op->rs1] * sim -> registers[op->rs2];
-        }
-        else if(op->funct3 == 0b100 && op->funct7 == 0b0000001){
-          //div
-          if(sim->registers[op->rs2]==0){
-            //0除算
-            fprintf(stderr,"You tried to divide by 0\n");
-            sim->registers[op->rd]=-1;
-          }
-          else if(sim->registers[op->rs1]==(-2147483648) && sim->registers[op->rs2]==-1){
-            fprintf(stderr,"Overflow in division\n");
-            sim->registers[op->rd]=-2147483648;
-          }
-          else{
-            sim->registers[op->rd] = sim->registers[op->rs1] / sim->registers[op->rs2];
-          }
-        }
-        else if(op->funct3 == 0b101 && op->funct7 == 0b0000001){
-          //divu
-          if(sim->registers[op->rs2]==0){
-            fprintf(stderr,"You tried to divide by 0\n");
-            sim->registers[op->rd]=2147483647;
-          }
-          else{
-            sim->registers[op->rd] = sim->registers[op->rs1] / sim->registers[op->rs2];
-          }
-        }
-        else if(op->funct3 == 0b110 && op->funct7 == 0b0000001){
-          //rem
-          if(sim->registers[op->rs2]==0){
-            //0除算
-            fprintf(stderr,"You tried to divide by 0\n");
-            sim->registers[op->rd]=sim->registers[op->rs1];
-          }
-          else if(sim->registers[op->rs1]==(-2147483648) && sim->registers[op->rs2]==-1){
-            fprintf(stderr,"Overflow in division\n");
-            sim->registers[op->rd]=0;
-          }
-          else{
-            sim->registers[op->rd] = sim->registers[op->rs1] % sim->registers[op->rs2];
-          }
-        }
-        else if(op->funct3 == 0b111 && op->funct7 == 0b0000001){
-          //remu
-          if(sim->registers[op->rs2]==0){
-            fprintf(stderr,"You tried to divide by 0\n");
-            sim->registers[op->rd]=sim->registers[op->rs1];
-          }
-          else{
-            sim->registers[op->rd] = sim->registers[op->rs1] % sim->registers[op->rs2];
-          }
-        }
         else{
           fprintf(stderr,"Unknown instruction\n");
         }
         sim -> pc = sim -> pc + 4;
+        break;
+      case 0b1111111:
+        decode_io(inst,op);
+        if(op->funct3 == 0b000){
+          char iobuf[1] = {(char)sim->registers[op->rd]};
+          fwrite(iobuf,sizeof(char),1,sim->out);
+        }
+        else if(op->funct3 == 0b001){
+          char iobuf[1] = {(char)sim->registers[op->rd]};
+          fread(iobuf,sizeof(char),1,sim->in);
+        }
+        else{
+          fprintf(stderr,"Unknown instruction\n");
+        }
         break;
       default:
         fprintf(stderr,"unknown instruction\n");
