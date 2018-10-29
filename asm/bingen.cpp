@@ -406,16 +406,17 @@ BinGen::Inst BinGen::Convert(std::string input) {
     // TODO: test pseudo-insturctions
     else if (mnemo == "la") {
         assert(2 == arg.size());
-        ret1 = auipc(arg[0], MyStoi(arg[1]) >> 12);
+        uint32_t tmp = MyStoi(arg[1]);
+        ret1 = auipc(arg[0], ((tmp >> 12) + (tmp >> 11) & 0x1) & 0xfffff);
         nline_++;
-        ret2 = op_imm("addi", arg[0], arg[0], MyStoi(arg[1]) & 0xfff);
+        ret2 = op_imm("addi", arg[0], arg[0], tmp & 0xfff);
     }
 
     else if (mnemo == "li") {
         assert(2 == arg.size());
         uint32_t tmp = MyStoi(arg[1]);
         if (tmp > (1 << 12) - 1) {
-            ret1 = lui(arg[0], tmp >> 12);
+            ret1 = lui(arg[0], ((tmp >> 12) + (tmp >> 11) & 0x1) & 0xfffff);
             nline_++;
             ret2 = op_imm("addi", arg[0], arg[0], tmp & 0xfff);
         } else {

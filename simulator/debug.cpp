@@ -53,7 +53,7 @@ int debug_exec(Simulator *sim,char *buffer){
     char *end;
     strtok(buffer," ");
     start = strtok(NULL," ");
-    end =strtok(NULL," ");
+    end = strtok(NULL," ");
     dump_memory(sim,atoi(start),atoi(end));
     return 0;
   }

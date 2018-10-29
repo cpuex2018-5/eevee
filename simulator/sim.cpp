@@ -82,9 +82,9 @@ void exec(Simulator *sim){
       disas(inst,opcode,dbgop);
       while(1){
         //disasm(sim);
-        char buffer[16] = "";
+        char buffer[32] = "";
         fprintf(stdout,"(edb) ");
-        if(scanf("%15[^\n]%*[^\n]",buffer)==EOF){
+        if(scanf("%31[^\n]%*[^\n]",buffer)==EOF){
           fprintf(stderr,"Unknown debugger command!!\n");
           exit(1);
         }
@@ -388,6 +388,7 @@ void exec(Simulator *sim){
         else{
           fprintf(stderr,"Unknown instruction\n");
         }
+        sim->pc = sim -> pc + 4;
         break;
       default:
         fprintf(stderr,"unknown instruction\n");
