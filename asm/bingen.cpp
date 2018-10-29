@@ -333,48 +333,66 @@ BinGen::Inst BinGen::Convert(std::string input) {
         return Inst(0, 0);
 
     // Note: Lack of arguments will cause crash here
-    if (mnemo == "lui")
+    if (mnemo == "lui") {
+        assert(2 == arg.size());
         ret1 = lui(arg[0], MyStoi(arg[1]));
-    else if (mnemo == "auipc")
+    }
+    else if (mnemo == "auipc") {
+        assert(2 == arg.size());
         ret1 = auipc(arg[0], MyStoi(arg[1]));
-    else if (mnemo == "jal")
+    }
+    else if (mnemo == "jal") {
+        assert(2 == arg.size());
         ret1 = jal(arg[0], MyStoi(arg[1]));
-    else if (mnemo == "jalr")
+    }
+    else if (mnemo == "jalr") {
+        assert(3 == arg.size());
         ret1 = jalr(arg[0], arg[1], MyStoi(arg[2]));
-    else if (mnemo == "beq" || mnemo == "bne" || mnemo == "blt" || mnemo == "bge" || mnemo == "bltu")
+    }
+    else if (mnemo == "beq" || mnemo == "bne" || mnemo == "blt" || mnemo == "bge" || mnemo == "bltu") {
+        assert(3 == arg.size());
         ret1 = branch(mnemo,arg[0],arg[1], MyStoi(arg[2]));
 
+    }
     else if (mnemo == "lb" || mnemo == "lh" || mnemo == "lw" || mnemo == "lbu" || mnemo == "lhu") {
+        assert(2 == arg.size());
         std::string rs1; uint32_t offset;
         ParseOffset(arg[1], &rs1, &offset);
         ret1 = load(mnemo, arg[0], rs1, offset);
     }
 
     else if (mnemo == "sb" || mnemo == "sh" || mnemo == "sw") {
+        assert(2 == arg.size());
         std::string rs1; uint32_t offset;
         ParseOffset(arg[1], &rs1, &offset);
         ret1 = store(mnemo, arg[0], rs1, offset);
     }
 
-    else if (mnemo == "addi" || mnemo == "slti" || mnemo == "sltiu" || mnemo == "xori" || mnemo == "ori" || mnemo == "andi"){
+    else if (mnemo == "addi" || mnemo == "slti" || mnemo == "sltiu" || mnemo == "xori" || mnemo == "ori" || mnemo == "andi") {
+        assert(3 == arg.size());
         ret1 = op_imm(mnemo, arg[0], arg[1], MyStoi(arg[2]));
     }
-    else if (mnemo == "slli" || mnemo == "srli" || mnemo == "srai")
+    else if (mnemo == "slli" || mnemo == "srli" || mnemo == "srai") {
+        assert(3 == arg.size());
         ret1 = (op_imm_shift(mnemo, arg[0], arg[1], MyStoi(arg[2])));
+    }
     else if (mnemo == "add" || mnemo == "sub" || mnemo == "sll" || mnemo == "slt" || mnemo == "sltu" || mnemo == "xor" ||
-        mnemo == "srl" || mnemo == "sra" || mnemo == "or" || mnemo == "and")
+        mnemo == "srl" || mnemo == "sra" || mnemo == "or" || mnemo == "and") {
+        assert(3 == arg.size());
         ret1 = op(mnemo, arg[0], arg[1], arg[2]);
-
+    }
 
     // Pseudo-instructions
     // TODO: test pseudo-insturctions
     else if (mnemo == "la") {
+        assert(2 == arg.size());
         ret1 = auipc(arg[0], MyStoi(arg[1]) >> 12);
         nline_++;
         ret2 = op_imm("addi", arg[0], arg[0], MyStoi(arg[1]) & 0xfff);
     }
 
     else if (mnemo == "li") {
+        assert(2 == arg.size());
         uint32_t tmp = MyStoi(arg[1]);
         if (tmp > (1 << 12) - 1) {
             ret1 = lui(arg[0], tmp >> 12);
@@ -385,25 +403,40 @@ BinGen::Inst BinGen::Convert(std::string input) {
         }
     }
 
-    else if (mnemo == "mv")
+    else if (mnemo == "mv") {
+        assert(2 == arg.size());
         ret1 = op_imm("addi", arg[0], arg[1], 0);
-
-    else if (mnemo == "neg")
+    }
+    else if (mnemo == "neg") {
+        assert(2 == arg.size());
         ret1 = op("sub", arg[0], "zero", arg[1]);
-
-    else if (mnemo == "bgt")
+    }
+    else if (mnemo == "bgt") {
+        assert(3 == arg.size());
         ret1 = branch("blt", arg[1], arg[0], MyStoi(arg[2]));
-
-    else if (mnemo == "j")
+    }
+    else if (mnemo == "ble") {
+        assert(3 == arg.size());
+        ret1 = branch("bge", arg[1], arg[0], MyStoi(arg[2]));
+    }
+    else if (mnemo == "b") {
+        assert(1 == arg.size());
+        ret1 = branch("beq", "zero", "zero", MyStoi(arg[0]));
+    }
+    else if (mnemo == "j") {
+        assert(1 == arg.size());
         ret1 = jal("x0", MyStoi(arg[0]));
-
-    else if (mnemo == "jr")
+    }
+    else if (mnemo == "jr") {
+        assert(1 == arg.size());
         ret1 = jalr("zero", arg[0], 0);
-
-    else if (mnemo == "ret")
+    }
+    else if (mnemo == "ret") {
+        assert(0 == arg.size());
         ret1 = jalr("x0", "x1", 0u);
-
+    }
     else if (mnemo == "call") {
+        assert(1 == arg.size());
         uint32_t imm = MyStoi(arg[0]);
         // jalrが符号拡張するため、下から12bit目が1の場合はauipcに渡す即値に1を足す
         // その結果2 ^ 12を超える場合は下位20bitをわたす

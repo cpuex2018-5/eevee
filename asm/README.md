@@ -69,10 +69,15 @@ $ ./main -d target/fib.s
 
 * `min-caml-asm`: min-camlで吐いたアセンブリ
 
+* `libtest` : libmincaml.Sのテスト用のアセンブリ
+
 ## Available pseudoinstructions(順次増やす予定)
 * `la`
 * `li`, `mv`, `neg`
+* `bge`, `ble`
 * `j`, `jr`, `ret`, `call`
+* `b` : 無条件にbranch
+    * `b offset` = `beq zero, zero, offset`
 
 ## TODOs
 - [ ] テストを増やす(?)

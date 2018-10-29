@@ -29,14 +29,16 @@ int main(int argc, char* argv[])
     bool is_debug = false;
     bool is_ascii = false;
 
-    if (strcmp(argv[1], "-a") == 0 || strcmp(argv[2], "-a") == 0)
-        is_ascii = true;
+    if (argc > 2) {
+        if (strcmp(argv[1], "-a") == 0 || strcmp(argv[2], "-a") == 0)
+            is_ascii = true;
 
-    if (strcmp(argv[1], "-v") == 0 || strcmp(argv[2], "-v") == 0)
-        is_verbose = true;
+        if (strcmp(argv[1], "-v") == 0 || strcmp(argv[2], "-v") == 0)
+            is_verbose = true;
 
-    if (strcmp(argv[1], "-d") == 0 || strcmp(argv[2], "-d") == 0)
-        is_debug = true;
+        if (strcmp(argv[1], "-d") == 0 || strcmp(argv[2], "-d") == 0)
+            is_debug = true;
+    }
 
     std::string infile = argv[argc - 1];
     if (!(infile[infile.size() - 2] == '.' && infile[infile.size() - 1] == 's')) {
