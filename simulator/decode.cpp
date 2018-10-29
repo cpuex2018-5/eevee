@@ -57,4 +57,5 @@ Op *decode_io(unsigned int inst,Op *op){
   op->rd = get_binary(inst,7,11);
   op->funct3 = get_binary(inst,12,15);
   //ignore bits after 15th bit
+  return op;
 }

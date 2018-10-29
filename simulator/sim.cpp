@@ -95,7 +95,7 @@ void exec(Simulator *sim){
         }
       }
       free(dbgop);
-      dbgop == NULL;
+      dbgop = NULL;
     }
 
     Op *op = (Op *)malloc(sizeof(Op));

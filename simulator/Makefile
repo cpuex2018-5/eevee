@@ -1,6 +1,6 @@
 OBJS=main.o sim.o util.o decode.o debug.o
 SRCS=$(OBJS:%.o=%.cpp)
-CFLAGS=-Wall
+CFLAGS=-Wall -std=c++11
 TARGET=eevee_sim
 $(TARGET):$(OBJS)
 	$(CXX) $(CFLAGS) -o $(TARGET) $(OBJS)
