@@ -18,13 +18,23 @@ void print_fregs(Simulator *sim){
 
 
 void dump_memory(Simulator *sim,int start,int end){
+  if(start < 0) start = 0;
+  if(end > 0x100010) end = 0x100010;
   int len = end - start;
+  if(len < 0) len = 0;
+
+  int sp = sim->registers[2];
   for(int i=0;i<len;i++){
     if(i%16 == 0){
-      fprintf(stdout,"%5x :",(start+i));
+      fprintf(stdout,"%07x :",(start+i));
     }
-    printf("%02x ",(unsigned char)sim->data_memory[start+i]);
-    if(i%16 == 15){
+    if((start+i)==sp){
+      printf("\x1b[41m%02x\x1b[49m ",(unsigned char)sim->data_memory[start+i]);
+    }
+    else{
+      printf("%02x ",(unsigned char)sim->data_memory[start+i]);
+    }
+      if(i%16 == 15){
       fprintf(stdout,"\n");
     }
   }
