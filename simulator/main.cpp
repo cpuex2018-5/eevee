@@ -48,7 +48,8 @@ int main(int argc,char **argv){
   Simulator *sim = init(MEM_SIZE,STACK_POS,in,out);
 
   load(sim,fp);
-  exec(sim);
+  Op *op = (Op *)malloc(sizeof(Op));
+  exec(sim,op);
   fclose(fp);
   destroy(sim);
   free(sim);

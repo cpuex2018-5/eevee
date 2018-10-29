@@ -35,7 +35,7 @@ typedef struct {
 Simulator *init(unsigned long m_size,unsigned long s_pos,FILE *,FILE *);
 void destroy(Simulator*);
 void load(Simulator*,FILE *);
-void exec(Simulator*);
+void exec(Simulator*,Op *);
 
 //decode.c
 Op *decode_r(unsigned int inst,Op *op);

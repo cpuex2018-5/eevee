@@ -48,7 +48,7 @@ void load(Simulator *sim,FILE *fp){
 }
 
 
-void exec(Simulator *sim){
+void exec(Simulator *sim,Op *op){
   unsigned int prev_pc = -1; //local variable to detect loop
   unsigned long inst_counter = -4; //keep the number of inst execute
   while(1){
@@ -101,7 +101,7 @@ void exec(Simulator *sim){
       dbgop = NULL;
     }
 
-    Op *op = (Op *)malloc(sizeof(Op));
+    //Op *op = (Op *)malloc(sizeof(Op));
     memset(op,0,sizeof(Op));
     switch(opcode){
       case 0b0110111:
@@ -397,8 +397,8 @@ void exec(Simulator *sim){
         fprintf(stderr,"unknown instruction\n");
         sim->pc = sim -> pc + 4;
     }
-    free(op);
-    op=NULL;
+    //free(op);
+    //op=NULL;
     sim->registers[0]=0;
   }
 
