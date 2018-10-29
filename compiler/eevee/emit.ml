@@ -321,7 +321,7 @@ let f oc (Prog(data, fundefs, e)) =
   Printf.fprintf oc "\t.align 2\n";
   Printf.fprintf oc "_min_caml_start: # main entry point\n";
   Printf.fprintf oc "\taddi\tsp, sp, -8\n";
-  Printf.fprintf oc "\tsw\tra, 4(sp)\n";
+  (* Printf.fprintf oc "\tsw\tra, 4(sp)\n"; *) (* returnしないので *)
   Printf.fprintf oc "\tsw\tfp, 0(sp)\n";
   Printf.fprintf oc "\taddi\tfp, sp, 8\n";
   Printf.fprintf oc "#\tmain program starts\n";
