@@ -508,6 +508,15 @@ void BinGen::Main(std::string input) {
     WriteDataInBinary(inst.second);
 }
 
+void BinGen::Finish() {
+    if (is_ascii_) {
+        WriteDataInAscii(0);
+        return;
+    }
+    WriteDataInBinary(0);
+    ofs_.close();
+}
+
 uint32_t BinGen::Pack(Fields fields) {
     uint32_t ret = 0;
     for (auto itr = fields.rbegin();itr != fields.rend();++itr) {

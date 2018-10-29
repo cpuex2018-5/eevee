@@ -70,8 +70,9 @@ int main(int argc, char* argv[])
         bingen.Main(str);
     }
 
+    bingen.Finish();
+
     ifs.close();
-    ofs.close();
 
     return 0;
 }

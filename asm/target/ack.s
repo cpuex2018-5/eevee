@@ -5,7 +5,7 @@ main:
 	addi	fp,sp,8
 # main program starts
 	li	a1,10
-	li	a0,3
+	li	a0,2		# ack(2, 10)
 	call	ack
 # main program ends
 	lw	ra,4(sp)

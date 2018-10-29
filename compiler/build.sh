@@ -1,6 +1,6 @@
 #!/bin/bash
 
-if [ $# -gt 2 ]; then
+if [ $# -gt 2 -o $# -lt 1 ]; then
     echo "Usage: ./build.sh [-d | -v] [filename].ml"
     exit 0
 fi
