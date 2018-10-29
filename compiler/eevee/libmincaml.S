@@ -1,3 +1,4 @@
+# ============= beginning of libmincaml.S ===============
 min_caml_print_byte:
 # a0の下位8bitに出力したい文字のasciiコードが入っている
 	w	a0
@@ -15,7 +16,6 @@ min_caml_print_int:
 	sw	fp, 0(sp)
 	addi	fp, sp, 12
 # 負数なら'-'を出力し、絶対値を取る
-# 出力すべき文字のasciiコードをstackに積んでいく
 	bge	a0, zero, .print_int_L0
 	li	t1, 45
 	w	t1		# '-'
@@ -23,10 +23,12 @@ min_caml_print_int:
 	addi	a0, a0, 1	# neg
 	li	s1, 0		# s1: 何桁あるかを数える
 .print_int_L0:
+# 出力すべき文字のasciiコードをstackに積んでいく
 	addi	s1, s1, 1
 	li	a1, 10
-	j	min_caml_div_rem
+	call	min_caml_div_rem
 	addi	sp, sp, -4
+	addi	a1, a1, 48
 	sw	a1, 0(sp)
 	bgt	a0, zero, .print_int_L0
 .print_int_L1:

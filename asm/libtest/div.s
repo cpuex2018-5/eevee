@@ -4,9 +4,9 @@ main:
 	sw	fp,0(sp)
 	addi	fp,sp,8     # fp: old stack pointer
 #	main program starts
-	li	a0, 15
+	li	a0, 14
 	li	a1, 3
-	call	min_caml_div
+	call	min_caml_div_rem
 #	main program ends
 	mv	a5,a0
 	mv	a0,a5
@@ -14,3 +14,5 @@ main:
 	lw	s0,0(sp)
 	addi	sp,sp,8
 	jal	zero,end
+end:
+	j	end
