@@ -5,6 +5,7 @@
 #include<vector>
 #include<string>
 #include<iostream>
+#include<cmath>
 extern const unsigned int MEM_SIZE;
 extern const unsigned int STACK_POS;
 

@@ -393,6 +393,98 @@ void exec(Simulator *sim,Op *op){
         }
         sim->pc = sim -> pc + 4;
         break;
+      case 0b0000111:
+        //flw
+        //riscv-spec-vには明示されてないけど符号拡張しとく
+        s_imm = (op->imm) | ((op->imm & 0x800) ? 0xFFFFF800:0);
+        address = sim -> registers[op->rs1] + s_imm;
+        decode_i(inst,op);
+        if(op->funct3 == 0b010){
+          sim -> f_registers[op->rd] = ((unsigned int)sim->data_memory[address+3]<<24)+((unsigned int)sim->data_memory[address+2]<<16)
+                                        + ((unsigned int)sim->data_memory[address+1]<<8)+((unsigned int)sim->data_memory[address]);
+        }
+        else{
+          fprintf(stderr,"Unknown instruction\n");
+        }
+        sim -> pc = sim -> pc + 4;
+        break;
+      case 0b0100111:
+        //fsw
+        s_imm = (op->imm) | ((op->imm & 0x800) ? 0xFFFFF800:0);
+        address = sim->registers[op->rs1] + s_imm;
+        decode_s(inst,op);
+        if(op->funct3 == 0b010){
+          sim -> data_memory[address] = get_binary(sim->f_registers[op->rs2],0,8);
+          sim -> data_memory[address+1] = get_binary(sim->f_registers[op->rs2],8,16);
+          sim -> data_memory[address+2] = get_binary(sim->f_registers[op->rs2],16,24);
+          sim -> data_memory[address+3] = get_binary(sim->f_registers[op->rs2],24,32);
+        }
+        else{
+          fprintf(stderr,"Unknown instruction\n");
+        }
+        sim -> pc = sim -> pc + 4;
+        break;
+      case 0b1010011:
+        decode_r(inst,op);
+        if(op->funct7 == 0b0000000){
+          //fadd.s
+          sim -> f_registers[op->rd] = sim -> f_registers[op->rs1] + sim -> f_registers[op->rs2];
+        }
+        else if(op->funct7 == 0b0000100){
+          //fsub.s
+          sim -> f_registers[op->rd] = sim -> f_registers[op->rs1] - sim -> f_registers[op->rs2];
+        }
+        else if(op->funct7 == 0b0001000){
+          //fmul.s
+          sim -> f_registers[op->rd] = sim -> f_registers[op->rs1] * sim -> f_registers[op->rs2];
+        }
+        else if(op->funct7 == 0b0001100){
+          //fdiv.s
+          sim -> f_registers[op->rd] = sim -> f_registers[op->rs1] / sim -> f_registers[op->rs2];
+        }
+        else if(op->funct7 == 0b0101100 && op->rs2 == 0b00000){
+          //fsqrt.s
+          sim -> f_registers[op->rd] = std::sqrt(sim->f_registers[op->rs1]);
+        }
+        else if(op->funct7 == 0b1010000 && op->funct3 == 0b010){
+          //feq.s
+          if(sim->f_registers[op->rs1] == sim->f_registers[op->rs2]){
+            sim->f_registers[op->rd] = 1;
+          }
+          else{
+            sim->f_registers[op->rd] = 0;
+          }
+        }
+        else if(op->funct7 == 0b1010000 && op->funct3 == 0b000){
+          //fle.s
+          if(sim->f_registers[op->rs1] <= sim->f_registers[op->rs2]){
+            sim->f_registers[op->rd] = 1;
+          }
+          else{
+            sim->f_registers[op->rd] = 0;
+          }
+        }
+        else if(op->funct7 == 0b0010000 && op->rs2 == 0b00000 && op->funct3 == 0b000){
+          //fmv.s
+          sim -> f_registers[op->rd] = sim -> f_registers[op->rs1];
+        }
+        else if(op->funct7 == 0b0010000 && op->rs2 == 0b00000 && op->funct3 == 0b001){
+          //fneg.s
+          sim -> f_registers[op->rd] = - (sim -> f_registers[op->rs1]);
+        }
+        else if(op->funct7 == 0b0010000 && op->rs2 == 0b00000 && op->funct3 == 0b010){
+          //fabs.s
+          sim -> f_registers[op->rd] = fabs(sim->f_registers[op->rs1]);
+        }
+        else if(op->funct7 == 0b0010000 && op->rs2 == 0b00000 && op->funct3 == 0b011){
+          //finv.s
+          sim -> f_registers[op->rd] = 1/sim->f_registers[op->rs1];
+        }
+        else{
+          fprintf(stderr,"Unknown instruction\n");
+        }
+        sim->pc = sim->pc+4;
+        break;
       default:
         fprintf(stderr,"unknown instruction\n");
         sim->pc = sim -> pc + 4;
