@@ -1,7 +1,7 @@
 #include "simulator.h"
 extern int debug_mode;
 extern const char *Regs[];
-
+extern const char *fRegs[];
 
 void print_regs(Simulator *sim){
   for(int i=0;i<32;i++){
@@ -12,7 +12,7 @@ void print_regs(Simulator *sim){
 
 void print_fregs(Simulator *sim){
   for(int i=0;i<32;i++){
-    fprintf(stdout,"fReg %02d:  D:%f\n",i,sim->f_registers[i]);
+    fprintf(stdout,"fReg %02d(%7s):  D:%f\n",i,fRegs[i],sim->f_registers[i]);
   }
 }
 
