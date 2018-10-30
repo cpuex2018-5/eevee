@@ -50,9 +50,10 @@ Op *decode_io(unsigned int inst,Op *op);
 unsigned int get_binary(unsigned int,int,int);
 void usage();
 void print_binary(int);
-void print_instr(Simulator *);
+void floatToBinary(float f);
 void disas(unsigned int,unsigned int,Op *);
 bool skip(char);
+
 //debug.c
 void print_fregs(Simulator *);
 void dump_memory(Simulator *,int,int);

@@ -21,6 +21,16 @@ void print_binary(int val){
   printf("\n");
 }
 
+void floatToBinary(float f){
+  union {float f; unsigned int i;}u ;
+  u.f = f;
+  for(int j = 31;j>=0;j--){
+    printf("%d ",((u.i>>j)&0x1));
+  }
+  printf("\n");
+  printf("%20f",f);
+}
+
 bool skip(char c){
   return (c == ' ' || c == '\t');
 }
