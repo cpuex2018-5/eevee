@@ -135,6 +135,10 @@ let rec lift (e : KNormal.t) (in_nest : bool) (env : (Id.t * Id.t) list) : KNorm
           lift ret false newenv)
      | true -> raise (FoundNested ({ name = (x, t); args = yts; body = e1 }, e2)))
   | LetTuple (xts, y, e) -> LetTuple (xts, y, lift e in_nest env)
+  | Var e ->
+    (match List.assoc_opt e env with
+     | Some e' -> Var e'
+     | None -> Var e)
   | App (e1, e2) ->
     (match List.assoc_opt e1 env with
      | Some e1' -> App (e1', e2)

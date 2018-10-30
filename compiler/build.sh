@@ -18,7 +18,7 @@ BINNAME=${FILENAME/\.ml/\.bin}
 ./min-caml $FILENAME
 
 # まだprint_intを実装してないため
-sed -i "" "/min_caml_print_int/d" $ASMNAME
+# sed -i "" "/min_caml_print_int/d" $ASMNAME
 
 if [ $# -eq 1 ]; then
     ./../asm/main $ASMNAME

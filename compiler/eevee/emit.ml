@@ -34,11 +34,13 @@ let reg r =
   then String.sub r 1 (String.length r - 1)
   else r
 
+(*
 let load_label r label =
   let r' = reg r in
   Printf.sprintf
     "\tlis\t%s, ha16(%s)\n\taddi\t%s, %s, lo16(%s)\n"
     r' label r' r' label
+*)
 
 (* Shuffle registers so that the old content will not be lost *)
 let rec shuffle sw xys =
@@ -77,11 +79,10 @@ and g' buf e =
     Printf.bprintf buf "\tlui\t%s, %d\n" r n;
     Printf.bprintf buf "\tori\t%s, %s, %d\n" r r m
   | NonTail(x), FLi(Id.L(l)) ->
-    let s = load_label (reg reg_tmp) l in
-    Printf.bprintf buf "%s\tflw\t%s, 0(%s)\n" s (reg x) (reg reg_tmp)
+    Printf.bprintf buf "\tla\t%s, %s\n" (reg reg_tmp) l;
+    Printf.bprintf buf "\tflw\t%s, 0(%s)\n" (reg x) (reg reg_tmp)
   | NonTail(x), SetL(Id.L(y)) ->
-    let s = load_label x y in
-    Printf.bprintf buf "%s" s
+    Printf.bprintf buf "\tla\t%s, %s\n" (reg x) y
   | NonTail(x), Mv(y) when x = y -> ()
   | NonTail(x), Mv(y) -> Printf.bprintf buf "\tmv\t%s, %s\n" (reg x) (reg y)
   | NonTail(x), Neg(y) -> Printf.bprintf buf "\tneg\t%s, %s\n" (reg x) (reg y)
