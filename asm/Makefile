@@ -2,13 +2,16 @@
 CC = g++
 CFLAGS = -std=c++0x -Wall -O2 -g
 
-main: bingen.o main.cpp
+main: utils.o bingen.o main.cpp
 	$(CC) $(CFLAGS) $^ -o $@
 
-test: bingen.o bingen_test.cpp
+test: utils.o bingen.o bingen_test.cpp
 	$(CC) $(CFLAGS) $^ -o $@
 
 bingen.o: bingen.cpp
+	$(CC) $(CFLAGS) -c $^ -o $@
+
+utils.o: utils.cpp
 	$(CC) $(CFLAGS) -c $^ -o $@
 
 clean:

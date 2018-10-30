@@ -81,6 +81,8 @@ class BinGen {
         bool is_ascii_;
         std::ofstream ofs_;
         std::map<std::string, int> label_map_;
+        const std::map<std::string, int> regmap_;
+        const std::map<std::string, int> fregmap_;
 };
 
 #endif  // __BINGEN_H__

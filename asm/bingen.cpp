@@ -7,62 +7,23 @@
 #include <utility>
 #include <cmath>
 #include <assert.h>
+#include "utils.h"
 
 void print_binary(int);
-
-std::map<std::string, int> regmap =
-{
-    { "zero", 0 },
-    { "ra", 1 },
-    { "sp", 2 },
-    { "gp", 3 },
-    { "tp", 4 },
-    { "t0", 5 },
-    { "t1", 6 },
-    { "t2", 7 },
-    { "s0", 8 },
-    { "fp", 8 },
-    { "s1", 9 },
-    { "a0", 10 },
-    { "a1", 11 },
-    { "a2", 12 },
-    { "a3", 13 },
-    { "a4", 14 },
-    { "a5", 15 },
-    { "a6", 16 },
-    { "a7", 17 },
-    { "s2", 18 },
-    { "s3", 19 },
-    { "s4", 20 },
-    { "s5", 21 },
-    { "s6", 22 },
-    { "s7", 23 },
-    { "s8", 24 },
-    { "s9", 25 },
-    { "s10", 26 },
-    { "s11", 27 },
-    { "t3", 28 },
-    { "t4", 29 },
-    { "t5", 30 },
-    { "t6", 31 },
-};
 
 BinGen::BinGen(std::ofstream ofs, bool is_verbose, bool is_debug, bool is_ascii)
   : is_verbose_(is_verbose),
     is_debug_(is_debug),
     is_ascii_(is_ascii),
-    ofs_(std::move(ofs)) {
-    for (int i = 0; i < 32; i++) {
-        std::string regname = "x" + std::to_string(i);
-        regmap[regname] = i;
-    }
-}
+    ofs_(std::move(ofs)),
+    regmap_(create_regmap()),
+    fregmap_(create_fregmap()) {}
 
 uint32_t BinGen::lui (std::string rd, uint32_t imm) {
     CheckImmediate(imm, 20, "lui");
     Fields fields;
     fields.emplace_back(7, 0b0110111);
-    fields.emplace_back(5, regmap[rd]);
+    fields.emplace_back(5, regmap_.at(rd));
     fields.emplace_back(20, imm);
     return Pack(fields);
 }
@@ -71,7 +32,7 @@ uint32_t BinGen::auipc (std::string rd, uint32_t imm) {
     CheckImmediate(imm, 20, "auipc");
     Fields fields;
     fields.emplace_back(7, 0b0010111);
-    fields.emplace_back(5, regmap[rd]);
+    fields.emplace_back(5, regmap_.at(rd));
     fields.emplace_back(20, imm);
     return Pack(fields);
 }
@@ -80,7 +41,7 @@ uint32_t BinGen::jal (std::string rd, uint32_t imm) {
     CheckImmediate(imm, 20, "jal");
     Fields fields;
     fields.emplace_back(7, 0b1101111);
-    fields.emplace_back(5, regmap[rd]);
+    fields.emplace_back(5, regmap_.at(rd));
     fields.emplace_back(8, (imm & 0xff000) >> 12);
     fields.emplace_back(1, (imm & 0x800) >> 11);
     fields.emplace_back(10,(imm & 0x7fe) >> 1);
@@ -92,9 +53,9 @@ uint32_t BinGen::jalr (std::string rd, std::string rs1, uint32_t imm) {
     CheckImmediate(imm, 12, "jalr");
     Fields fields;
     fields.emplace_back(7, 0b1100111);
-    fields.emplace_back(5, regmap[rd]);
+    fields.emplace_back(5, regmap_.at(rd));
     fields.emplace_back(3, 0);
-    fields.emplace_back(5, regmap[rs1]);
+    fields.emplace_back(5, regmap_.at(rs1));
     fields.emplace_back(12, imm);
     return Pack(fields);
 }
@@ -114,8 +75,8 @@ uint32_t BinGen::branch (std::string mnemo, std::string rs1, std::string rs2, ui
     fields.emplace_back(1, (offset & 0x800) >> 11);
     fields.emplace_back(4, (offset & 0x1e) >> 1);
     fields.emplace_back(3, funct3);
-    fields.emplace_back(5, regmap[rs1]);
-    fields.emplace_back(5, regmap[rs2]);
+    fields.emplace_back(5, regmap_.at(rs1));
+    fields.emplace_back(5, regmap_.at(rs2));
     fields.emplace_back(6, (offset & 0x7e0) >> 5);
     fields.emplace_back(1, (offset & 0x1000) >> 12);
     return Pack(fields);
@@ -132,9 +93,9 @@ uint32_t BinGen::load (std::string mnemo, std::string rd, std::string rs1, uint3
     if (mnemo == "lhu") funct3 = 0b101;
     Fields fields;
     fields.emplace_back(7, 0b0000011);
-    fields.emplace_back(5, regmap[rd]);
+    fields.emplace_back(5, regmap_.at(rd));
     fields.emplace_back(3, funct3);
-    fields.emplace_back(5, regmap[rs1]);
+    fields.emplace_back(5, regmap_.at(rs1));
     fields.emplace_back(12, offset);
     return Pack(fields);
 }
@@ -150,8 +111,8 @@ uint32_t BinGen::store (std::string mnemo, std::string rs2, std::string rs1, uin
     fields.emplace_back(7, 0b0100011);
     fields.emplace_back(5, offset & 0x1f);
     fields.emplace_back(3, funct3);
-    fields.emplace_back(5, regmap[rs1]);
-    fields.emplace_back(5, regmap[rs2]);
+    fields.emplace_back(5, regmap_.at(rs1));
+    fields.emplace_back(5, regmap_.at(rs2));
     fields.emplace_back(7, (offset & 0xfe0) >> 5);
     return Pack(fields);
 }
@@ -168,9 +129,9 @@ uint32_t BinGen::op_imm (std::string mnemo, std::string rd, std::string rs1, uin
     if (mnemo == "andi")  funct3 = 0b111;
     Fields fields;
     fields.emplace_back(7, 0b0010011);
-    fields.emplace_back(5, regmap[rd]);
+    fields.emplace_back(5, regmap_.at(rd));
     fields.emplace_back(3, funct3);
-    fields.emplace_back(5, regmap[rs1]);
+    fields.emplace_back(5, regmap_.at(rs1));
     fields.emplace_back(12, imm);
     return Pack(fields);
 }
@@ -182,9 +143,9 @@ uint32_t BinGen::op_imm_shift (std::string mnemo, std::string rd, std::string rs
     uint32_t funct7 = (mnemo == "srai") ? 0b0100000 : 0b0000000;
     Fields fields;
     fields.emplace_back(7, 0b0010011);
-    fields.emplace_back(5, regmap[rd]);
+    fields.emplace_back(5, regmap_.at(rd));
     fields.emplace_back(3, funct3);
-    fields.emplace_back(5, regmap[rs1]);
+    fields.emplace_back(5, regmap_.at(rs1));
     fields.emplace_back(5, shamt);
     fields.emplace_back(7, funct7);
     return Pack(fields);
@@ -206,10 +167,10 @@ uint32_t BinGen::op (std::string mnemo, std::string rd, std::string rs1, std::st
     uint32_t funct7 = (mnemo == "sub" || mnemo == "sra") ? 0b0100000 : 0b0000000;
     Fields fields;
     fields.emplace_back(7, 0b0110011);
-    fields.emplace_back(5, regmap[rd]);
+    fields.emplace_back(5, regmap_.at(rd));
     fields.emplace_back(3, funct3);
-    fields.emplace_back(5, regmap[rs1]);
-    fields.emplace_back(5, regmap[rs2]);
+    fields.emplace_back(5, regmap_.at(rs1));
+    fields.emplace_back(5, regmap_.at(rs2));
     fields.emplace_back(7, funct7);
     return Pack(fields);
 }
@@ -222,7 +183,7 @@ uint32_t BinGen::io (std::string mnemo, std::string reg) {
     uint32_t funct3 = (mnemo == "w") ? 0b000 : 0b001;
     Fields fields;
     fields.emplace_back(7, 0b1111111);
-    fields.emplace_back(5, regmap[reg]);
+    fields.emplace_back(5, regmap_.at(reg));
     fields.emplace_back(3, funct3);
     fields.emplace_back(18, 0x00000);
     return Pack(fields);
