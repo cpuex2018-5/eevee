@@ -1,7 +1,7 @@
 #include "./simulator.h"
 
 extern const char *Regs[];
-
+extern const char *fRegs[];
 unsigned int get_binary(unsigned int n,int start,int end){
   int len = end - start;
   n = n << (32-end);
@@ -73,7 +73,7 @@ void disas(unsigned int inst,unsigned int opcode,Op *dbgop){
         fprintf(stdout,"bgeu %s,%s,%d",Regs[dbgop->rs1],Regs[dbgop->rs2],s_imm);
       }
       else{
-        fprintf(stdout,"(unknown)\n");
+        fprintf(stdout,"(unknown)");
       }
       break;
     case 0b0000011:
@@ -95,7 +95,7 @@ void disas(unsigned int inst,unsigned int opcode,Op *dbgop){
         fprintf(stdout,"lhu %s,%d(%s)",Regs[dbgop->rd],s_imm,Regs[dbgop->rs1]);
       }
       else{
-        fprintf(stdout,"(unknown)\n");
+        fprintf(stdout,"(unknown)");
       }
       break;
     case 0b0100011:
@@ -111,7 +111,7 @@ void disas(unsigned int inst,unsigned int opcode,Op *dbgop){
         fprintf(stdout,"sw %s,%d(%s)",Regs[dbgop->rs2],s_imm,Regs[dbgop->rs1]);
       }
       else{
-        fprintf(stdout,"(unknown)\n");
+        fprintf(stdout,"(unknown)");
       }
       break;
     case 0b0010011:
@@ -145,7 +145,7 @@ void disas(unsigned int inst,unsigned int opcode,Op *dbgop){
         fprintf(stdout,"srai %s,%s,%d",Regs[dbgop->rd],Regs[dbgop->rs1],s_imm);
       }
       else{
-        fprintf(stdout,"(unknown)\n");
+        fprintf(stdout,"(unknown)");
       }
       break;
     case 0b0110011:
@@ -181,22 +181,83 @@ void disas(unsigned int inst,unsigned int opcode,Op *dbgop){
         fprintf(stdout,"and %s,%s,%s",Regs[dbgop->rd],Regs[dbgop->rs1],Regs[dbgop->rs2]);
       }
       else{
-        fprintf(stdout,"(unknown)\n");
+        fprintf(stdout,"(unknown)");
       }
       break;
     case 0b1111111:
+      decode_io(inst,dbgop);
       if(dbgop->funct3 == 0b000){
-        fprintf(stdout,"out %s",Regs[dbgop->rd]);
+        fprintf(stdout,"w %s",Regs[dbgop->rd]);
       }
       else if(dbgop->funct3 == 0b001){
-        fprintf(stdout,"in %s",Regs[dbgop->rd]);
+        fprintf(stdout,"r %s",Regs[dbgop->rd]);
       }
       else{
-        fprintf(stdout,"(unknown)\n");
+        fprintf(stdout,"(unknown)");
       }
       break;
-    default:
-      fprintf(stdout,"(unknown)\n");
+    case 0b0000111:
+      //flw
+      decode_i(inst,dbgop);
+      s_imm = (dbgop->imm) | ((dbgop->imm & 0x800) ? 0xFFFFF800:0);
+      if(dbgop->funct3==0b010){
+        fprintf(stdout,"flw %s,%d(%s)",fRegs[dbgop->rd],s_imm,fRegs[dbgop->rs1]);
+      }
+      else{
+        fprintf(stdout,"(unknown)");
+      }
+      break;
+    case 0b0100111:
+      decode_s(inst,dbgop);
+      s_imm = (dbgop->imm) | ((dbgop->imm & 0x800) ? 0xFFFFF800:0);
+      if(dbgop->funct3==0b010){
+        fprintf(stdout,"fsw %s,%d(%s)",fRegs[dbgop->rs2],s_imm,fRegs[dbgop->rs1]);
+      }
+      else{
+        fprintf(stdout,"(unknown)");
+      }
+      break;
+    case 0b1010011:
+      decode_r(inst,dbgop);
+      if(dbgop->funct7==0b0000000){
+        fprintf(stdout,"fadd %s,%s,%s",fRegs[dbgop->rd],fRegs[dbgop->rs1],fRegs[dbgop->rs2]);
+      }
+      else if(dbgop->funct7 == 0b0000100){
+        fprintf(stdout,"fsub %s,%s,%s",fRegs[dbgop->rd],fRegs[dbgop->rs1],fRegs[dbgop->rs2]);
+      }
+      else if(dbgop->funct7 == 0b0001000){
+        fprintf(stdout,"fmul %s,%s,%s",fRegs[dbgop->rd],fRegs[dbgop->rs1],fRegs[dbgop->rs2]);
+      }
+      else if(dbgop->funct7 == 0b0001100){
+        fprintf(stdout,"fdiv %s,%s,%s",fRegs[dbgop->rd],fRegs[dbgop->rs1],fRegs[dbgop->rs2]);
+      }
+      else if(dbgop->funct7 == 0b0101100 && dbgop->rs2 == 0b00000){
+        fprintf(stdout,"fsqrt %s,%s",fRegs[dbgop->rd],fRegs[dbgop->rs1]);
+      }
+      else if(dbgop->funct7 == 0b1010000 && dbgop->funct3 == 0b010){
+        fprintf(stdout,"feq %s,%s,%s",fRegs[dbgop->rd],fRegs[dbgop->rs1],fRegs[dbgop->rs2]);
+      }
+      else if(dbgop->funct7 == 0b1010000 && dbgop->funct3 == 0b000){
+        fprintf(stdout,"fle %s,%s,%s",fRegs[dbgop->rd],fRegs[dbgop->rs1],fRegs[dbgop->rs2]);
+      }
+      else if(dbgop->funct7 == 0b0010000 && dbgop->rs2 == 0b00000 && dbgop->funct3 == 0b000){
+        fprintf(stdout,"fmv %s,%s",fRegs[dbgop->rd],fRegs[dbgop->rs1]);
+      }
+      else if(dbgop->funct7 == 0b0010000 && dbgop->rs2 == 0b00000 && dbgop->funct3 == 0b001){
+        fprintf(stdout,"fneg %s,%s",fRegs[dbgop->rd],fRegs[dbgop->rs1]);
+      }
+      else if(dbgop->funct7 == 0b0010000 && dbgop->rs2 == 0b00000 && dbgop->funct3 == 0b010){
+        fprintf(stdout,"fabs %s,%s",fRegs[dbgop->rd],fRegs[dbgop->rs1]);
+      }
+      else if(dbgop->funct7 == 0b0010000 && dbgop->rs2 == 0b00000 && dbgop->funct3 == 0b011){
+        fprintf(stdout,"finv %s,%s",fRegs[dbgop->rd],fRegs[dbgop->rs1]);
+      }
+      else{
+        fprintf(stdout,"(unknown)");
+      }
+      break;
+default:
+      fprintf(stdout,"(unknown)");
   }
 
   fprintf(stdout,"\n");
