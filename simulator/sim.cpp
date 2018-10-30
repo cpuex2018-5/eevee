@@ -396,12 +396,29 @@ void exec(Simulator *sim,Op *op){
       case 0b0000111:
         //flw
         //riscv-spec-vには明示されてないけど符号拡張しとく
+        decode_i(inst,op);
         s_imm = (op->imm) | ((op->imm & 0x800) ? 0xFFFFF800:0);
         address = sim -> registers[op->rs1] + s_imm;
-        decode_i(inst,op);
+        
+        /*
+        std::cout << address << std::endl;
+        print_binary((unsigned int)sim->data_memory[address]);
+        print_binary((unsigned int)sim->data_memory[address+1]<<8);
+        print_binary((unsigned int)sim->data_memory[address+2]<<16);
+        print_binary((unsigned int)sim->data_memory[address+3]<<24); //これらは正しい
+        print_binary(((unsigned int)sim->data_memory[address+3]<<24)+((unsigned int)sim->data_memory[address+2]<<16)
+                                        + ((unsigned int)sim->data_memory[address+1]<<8)+((unsigned int)sim->data_memory[address]));
+        */
+        union {float f_f;unsigned int f_i;} u;
+        u.f_i = ((unsigned int)sim->data_memory[address+3]<<24)+((unsigned int)sim->data_memory[address+2]<<16)
+                                        + ((unsigned int)sim->data_memory[address+1]<<8)+((unsigned int)sim->data_memory[address]);
         if(op->funct3 == 0b010){
+          /*
           sim -> f_registers[op->rd] = ((unsigned int)sim->data_memory[address+3]<<24)+((unsigned int)sim->data_memory[address+2]<<16)
                                         + ((unsigned int)sim->data_memory[address+1]<<8)+((unsigned int)sim->data_memory[address]);
+          */
+          sim -> f_registers[op->rd] = u.f_f;
+          //floatToBinary(sim->f_registers[op->rd]);
         }
         else{
           fprintf(stderr,"Unknown instruction\n");
@@ -410,9 +427,9 @@ void exec(Simulator *sim,Op *op){
         break;
       case 0b0100111:
         //fsw
+        decode_s(inst,op);
         s_imm = (op->imm) | ((op->imm & 0x800) ? 0xFFFFF800:0);
         address = sim->registers[op->rs1] + s_imm;
-        decode_s(inst,op);
         if(op->funct3 == 0b010){
           sim -> data_memory[address] = get_binary(sim->f_registers[op->rs2],0,8);
           sim -> data_memory[address+1] = get_binary(sim->f_registers[op->rs2],8,16);

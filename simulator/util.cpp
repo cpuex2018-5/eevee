@@ -211,7 +211,7 @@ void disas(unsigned int inst,unsigned int opcode,Op *dbgop){
       decode_i(inst,dbgop);
       s_imm = (dbgop->imm) | ((dbgop->imm & 0x800) ? 0xFFFFF800:0);
       if(dbgop->funct3==0b010){
-        fprintf(stdout,"flw %s,%d(%s)",fRegs[dbgop->rd],s_imm,fRegs[dbgop->rs1]);
+        fprintf(stdout,"flw %s,%d(%s)",fRegs[dbgop->rd],s_imm,Regs[dbgop->rs1]);
       }
       else{
         fprintf(stdout,"(unknown)");
@@ -221,7 +221,7 @@ void disas(unsigned int inst,unsigned int opcode,Op *dbgop){
       decode_s(inst,dbgop);
       s_imm = (dbgop->imm) | ((dbgop->imm & 0x800) ? 0xFFFFF800:0);
       if(dbgop->funct3==0b010){
-        fprintf(stdout,"fsw %s,%d(%s)",fRegs[dbgop->rs2],s_imm,fRegs[dbgop->rs1]);
+        fprintf(stdout,"fsw %s,%d(%s)",fRegs[dbgop->rs2],s_imm,Regs[dbgop->rs1]);
       }
       else{
         fprintf(stdout,"(unknown)");
