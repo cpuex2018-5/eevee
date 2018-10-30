@@ -256,7 +256,7 @@ void disas(unsigned int inst,unsigned int opcode,Op *dbgop){
         fprintf(stdout,"(unknown)");
       }
       break;
-default:
+    default:
       fprintf(stdout,"(unknown)");
   }
 
