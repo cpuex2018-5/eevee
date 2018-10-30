@@ -7,7 +7,12 @@
     $ make
     $ ./main [-a] [-v | -d] hoge.s  # `hoge.bin` will be generated
 
-#### option
+for tests:
+
+    $ make test
+    $ ./tests
+
+#### options
 
 * `-v` : verbose mode (アセンブリの入力とそれを変換したバイナリ、pcの値をstdoutに表示)
 
@@ -57,11 +62,6 @@ $ ./main -d target/fib.s
 * `-a` : ascii mode (バイナリファイルではなく`0`, `1`でのASCIIファイルを出力する, vivadoのシミュレーション用)
     * `-v`, `-d` と併用可能
 
-### tests:
-
-    $ make test
-    $ ./test
-
 ## Notes
 * `sample` : RISC-V Toolchainのgccを使って生成した実際のRISC-Vのアセンブリと元のCプログラム(64bit命令がある・・・)
 
@@ -71,7 +71,9 @@ $ ./main -d target/fib.s
 
 * `libtest` : libmincaml.Sのテスト用のアセンブリ
 
-## Available pseudoinstructions(順次増やす予定)
+## Specification
+### Pseudo-instructions
+
 * `la`
 * `li`, `mv`, `neg`
 * `bge`, `ble`
@@ -79,12 +81,7 @@ $ ./main -d target/fib.s
 * `b` : 無条件にbranch
     * `b offset` = `bge zero, zero, offset`
 
-## TODOs
-- [ ] テストを増やす(?)
-- [ ] 浮動小数点用の命令への対応(?)
-- [x] RISC-V pseudoinstructionへの対応(`call`など)
-
-## 備忘録
+### その他, 更新logなど
 * ファイルの先頭の
 
 ```
@@ -105,17 +102,3 @@ $ ./main -d target/fib.s
 * 吐き出すバイナリファイルに拡張子 `.bin` をつけるようにしました
 
 * プログラムの最後に32bitの0の羅列がつくようになりました(10/29)
-
-### I/O命令について
-
-* `w` (write), `r` (read)。命令フォーマットは以下。
-
-```
-|32              15|14  12|11   7|6     0|
-|000000000000000000|funct3|  reg | opcode|
-|000000000000000000| 000  |  rs  |1111111| w (write)
-|000000000000000000| 001  |  rd  |1111111| r (read)
-```
-
-* `w    rs` : `rs`の内容の下位8bitをuartに送信する
-* `r    rd` : uartから受信した8bitを`rd`に入れる

@@ -67,3 +67,26 @@ min_caml_mul:
 .mul_end:
 	mv	a0, t1
 	jr	ra
+
+min_caml_print_float:
+# TODO
+
+min_caml_sin:
+# TODO
+
+min_caml_cos:
+# TODO
+
+min_caml_abs_float:
+	fabs.s	a0, a0
+	jr	ra
+
+min_caml_sqrt:
+	fsqrt.s	a0, a0
+	jr	ra
+
+min_caml_float_of_int: # int -> float
+# TODO
+
+min_caml_int_of_float: # float -> int
+# TODO

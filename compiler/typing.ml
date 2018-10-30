@@ -158,6 +158,10 @@ let rec g env e =
 
 let f e =
   extenv := M.empty;
+  extenv := M.add "sin" (Type.Fun([Float], Float)) !extenv;
+  extenv := M.add "cos" (Type.Fun([Float], Float)) !extenv;
+  extenv := M.add "sqrt" (Type.Fun([Float], Float)) !extenv;
+  extenv := M.add "abs_float" (Type.Fun([Float], Float)) !extenv;
 (*
   (match deref_typ (g M.empty e) with
   | Type.Unit -> ()
