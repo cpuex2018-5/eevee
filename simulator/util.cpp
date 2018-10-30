@@ -49,7 +49,7 @@ void disas(unsigned int inst,unsigned int opcode,Op *dbgop){
     case 0b1100111:
       decode_i(inst,dbgop);
       s_imm = (dbgop -> imm ) | ((dbgop->imm & 0x800) ? 0xFFFFF800:0);
-      fprintf(stdout,"jalr %s,%d",Regs[dbgop->rd],s_imm);
+      fprintf(stdout,"jalr %s,%s,%d",Regs[dbgop->rd],Regs[dbgop->rs1],s_imm);
       break;
     case 0b1100011:
       decode_b(inst,dbgop);
@@ -118,7 +118,7 @@ void disas(unsigned int inst,unsigned int opcode,Op *dbgop){
       decode_i(inst,dbgop);
       s_imm = (dbgop->imm) | ((dbgop->imm & 0x800) ? 0xFFFFF800:0);
       if(dbgop->funct3 == 0b000){
-        fprintf(stdout,"addi %s,%s,%d",Regs[dbgop->rd],Regs[dbgop->rd],s_imm);
+        fprintf(stdout,"addi %s,%s,%d",Regs[dbgop->rd],Regs[dbgop->rs2],s_imm);
       }
       else if(dbgop->funct3 == 0b010){
         fprintf(stdout,"slti %s,%s,%d",Regs[dbgop->rd],Regs[dbgop->rs2],s_imm);

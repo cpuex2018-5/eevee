@@ -403,5 +403,5 @@ void exec(Simulator *sim,Op *op){
   }
 
   print_regs(sim);
-  fprintf(stdout,"simulation finished\n");
+  fprintf(stdout,"simulation finished inst_counter: %ld\n",inst_counter);
 }

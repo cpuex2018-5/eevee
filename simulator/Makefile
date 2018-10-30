@@ -4,7 +4,6 @@ CXXFLAGS=-Wall -g -std=c++11
 TARGET=eevee_sim
 $(TARGET):$(OBJS)
 	$(CXX) $(CFLAGS) -o $(TARGET) $(OBJS)
-
 clean:
 	rm -rf $(OBJS) eevee_sim peda-session* .gdb_history core output
 runtest:
