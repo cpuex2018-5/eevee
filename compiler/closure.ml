@@ -152,7 +152,4 @@ let rec g env known e =
 let f e =
   toplevel := [];
   let e' = g M.empty S.empty e in
-  let p = Prog(List.rev !toplevel, e') in
-  print_endline "-----------Closure.prog-----------------";
-  print_prog p;
-  p
+  Prog(List.rev !toplevel, e')

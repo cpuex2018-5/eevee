@@ -3,7 +3,12 @@ let limit = ref 1000
 let rec iter n e = (* optimization (caml2html: main_iter) *)
   Format.eprintf "iteration %d@." n;
   if n = 0 then e else
-    (let e' = Elim.f (ConstFold.f (Inline.f (Assoc.f (Beta.f (Common.f e))))) in
+    (let e' = Common.f e in
+     let e' = Beta.f e' in
+     let e' = Assoc.f e' in
+     let e' = Inline.f e' in
+     let e' = ConstFold.f e' in
+     let e' = Elim.f e' in
      if e = e' then e else
        iter (n - 1) e')
 
@@ -18,6 +23,11 @@ let lexbuf outchan l = (* compile the buffer and put it to outchan (caml2html: m
   let e4 = Alpha.f e3 in
   let e5 = iter !limit e4 in
   let e6 = Closure.f e5 in
+  print_endline "-----------Closure.prog-----------------";
+  Closure.print_prog e6;
+  let e6 = TupleOpt.f e6 in
+  print_endline "-----------After TupleOpt---------------";
+  Closure.print_prog e6;
   let e7 = Virtual.f e6 in
   let e8 = Simm.f e7 in
   let e9 = RegAlloc.f e8 in
