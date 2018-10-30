@@ -17,3 +17,7 @@ sw a2,-4(sp)
 flw f1,-4(sp)
 fsw f1,-8(sp)
 flw f2,-8(sp)
+fadd.s f3,f1,f2
+fsub.s f4,f2,f3
+fmul.s f5,f3,f4
+fdiv.s f6,f4,f5

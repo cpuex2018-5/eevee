@@ -399,7 +399,6 @@ void exec(Simulator *sim,Op *op){
         decode_i(inst,op);
         s_imm = (op->imm) | ((op->imm & 0x800) ? 0xFFFFF800:0);
         address = sim -> registers[op->rs1] + s_imm;
-        
         /*
         std::cout << address << std::endl;
         print_binary((unsigned int)sim->data_memory[address]);
@@ -409,15 +408,15 @@ void exec(Simulator *sim,Op *op){
         print_binary(((unsigned int)sim->data_memory[address+3]<<24)+((unsigned int)sim->data_memory[address+2]<<16)
                                         + ((unsigned int)sim->data_memory[address+1]<<8)+((unsigned int)sim->data_memory[address]));
         */
-        union {float f_f;unsigned int f_i;} u;
-        u.f_i = ((unsigned int)sim->data_memory[address+3]<<24)+((unsigned int)sim->data_memory[address+2]<<16)
+        union {float f_f;unsigned int f_i;} u1;
+        u1.f_i = ((unsigned int)sim->data_memory[address+3]<<24)+((unsigned int)sim->data_memory[address+2]<<16)
                                         + ((unsigned int)sim->data_memory[address+1]<<8)+((unsigned int)sim->data_memory[address]);
         if(op->funct3 == 0b010){
           /*
           sim -> f_registers[op->rd] = ((unsigned int)sim->data_memory[address+3]<<24)+((unsigned int)sim->data_memory[address+2]<<16)
                                         + ((unsigned int)sim->data_memory[address+1]<<8)+((unsigned int)sim->data_memory[address]);
           */
-          sim -> f_registers[op->rd] = u.f_f;
+          sim -> f_registers[op->rd] = u1.f_f;
           //floatToBinary(sim->f_registers[op->rd]);
         }
         else{
@@ -430,11 +429,19 @@ void exec(Simulator *sim,Op *op){
         decode_s(inst,op);
         s_imm = (op->imm) | ((op->imm & 0x800) ? 0xFFFFF800:0);
         address = sim->registers[op->rs1] + s_imm;
+        union {float f_f;unsigned int f_i;} u2;
+        u2.f_f = sim->f_registers[op->rs2];
+        /*
+        print_binary(get_binary(u2.f_i,0,8));
+        print_binary(get_binary(u2.f_i,8,16));
+        print_binary(get_binary(u2.f_i,16,24));
+        print_binary(get_binary(u2.f_i,24,32));
+        */
         if(op->funct3 == 0b010){
-          sim -> data_memory[address] = get_binary(sim->f_registers[op->rs2],0,8);
-          sim -> data_memory[address+1] = get_binary(sim->f_registers[op->rs2],8,16);
-          sim -> data_memory[address+2] = get_binary(sim->f_registers[op->rs2],16,24);
-          sim -> data_memory[address+3] = get_binary(sim->f_registers[op->rs2],24,32);
+          sim -> data_memory[address] = get_binary(u2.f_i,0,8);
+          sim -> data_memory[address+1] = get_binary(u2.f_i,8,16);
+          sim -> data_memory[address+2] = get_binary(u2.f_i,16,24);
+          sim -> data_memory[address+3] = get_binary(u2.f_i,24,32);
         }
         else{
           fprintf(stderr,"Unknown instruction\n");

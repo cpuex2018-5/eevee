@@ -207,7 +207,7 @@ uint32_t BinGen::fsw(std::string frs2, std::string frs1, uint32_t imm) {
     fields.emplace_back(7, 0b0100111);
     fields.emplace_back(5, imm & 0x1f);
     fields.emplace_back(3, 0b010);
-    fields.emplace_back(5, fregmap_.at(frs1));
+    fields.emplace_back(5, regmap_.at(frs1));
     fields.emplace_back(5, fregmap_.at(frs2));
     fields.emplace_back(7, (imm >> 5) & 0x7f);
     return Pack(fields);
