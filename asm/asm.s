@@ -21,3 +21,8 @@ fadd.s f3,f1,f2
 fsub.s f4,f2,f3
 fmul.s f5,f3,f4
 fdiv.s f6,f4,f5
+fsqrt.s f7,f4
+fmv.s f8,f1
+fneg.s f9,f1
+fabs.s f10,f2
+finv.s f11,f1

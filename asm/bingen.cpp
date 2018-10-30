@@ -234,6 +234,7 @@ uint32_t BinGen::f_op2(std::string mnemo, std::string frd, std::string frs) {
 
 // fadd.s, fsub.s, fmul.s, fdiv.s (3 operands)
 uint32_t BinGen::f_op3(std::string mnemo, std::string frd, std::string frs1, std::string frs2) {
+    
     uint32_t funct7;
     if (mnemo == "fadd.s") funct7 = 0b0000000;
     if (mnemo == "fsub.s") funct7 = 0b0000100;
@@ -458,11 +459,11 @@ BinGen::Inst BinGen::Convert(std::string input) {
 
     else if (mnemo == "fsqrt.s" || mnemo == "fabs.s" || mnemo == "fneg.s" || mnemo == "fmv.s" || mnemo == "finv.s") {
         assert(2 == arg.size());
-        f_op2(mnemo, arg[0], arg[1]);
+        ret1 = f_op2(mnemo, arg[0], arg[1]);
     }
     else if (mnemo == "fadd.s" || mnemo == "fsub.s" || mnemo == "fmul.s" || mnemo == "fdiv.s") {
         assert(3 == arg.size());
-        f_op3(mnemo, arg[0], arg[1], arg[2]);
+        ret1 = f_op3(mnemo, arg[0], arg[1], arg[2]);
     }
 
     // Pseudo-instructions ===================================================================
