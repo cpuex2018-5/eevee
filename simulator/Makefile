@@ -8,4 +8,4 @@ clean:
 	rm -rf $(OBJS) eevee_sim peda-session* .gdb_history core output
 runtest:
 	ulimit -c unlimited
-	./eevee_sim -d test/fib.bin
+	./eevee_sim -d test/fib3.bin

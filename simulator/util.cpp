@@ -118,31 +118,31 @@ void disas(unsigned int inst,unsigned int opcode,Op *dbgop){
       decode_i(inst,dbgop);
       s_imm = (dbgop->imm) | ((dbgop->imm & 0x800) ? 0xFFFFF800:0);
       if(dbgop->funct3 == 0b000){
-        fprintf(stdout,"addi %s,%s,%d",Regs[dbgop->rd],Regs[dbgop->rs2],s_imm);
+        fprintf(stdout,"addi %s,%s,%d",Regs[dbgop->rd],Regs[dbgop->rs1],s_imm);
       }
       else if(dbgop->funct3 == 0b010){
-        fprintf(stdout,"slti %s,%s,%d",Regs[dbgop->rd],Regs[dbgop->rs2],s_imm);
+        fprintf(stdout,"slti %s,%s,%d",Regs[dbgop->rd],Regs[dbgop->rs1],s_imm);
       }
       else if(dbgop->funct3 == 0b011){
-        fprintf(stdout,"sltiu %s,%s,%d",Regs[dbgop->rd],Regs[dbgop->rs2],s_imm);
+        fprintf(stdout,"sltiu %s,%s,%d",Regs[dbgop->rd],Regs[dbgop->rs1],s_imm);
       }
       else if(dbgop->funct3 == 0b100){
-        fprintf(stdout,"xori %s,%s,%d",Regs[dbgop->rd],Regs[dbgop->rs2],s_imm);
+        fprintf(stdout,"xori %s,%s,%d",Regs[dbgop->rd],Regs[dbgop->rs1],s_imm);
       }
       else if(dbgop->funct3 == 0b110){
-        fprintf(stdout,"ori %s,%s,%d",Regs[dbgop->rd],Regs[dbgop->rs2],s_imm);
+        fprintf(stdout,"ori %s,%s,%d",Regs[dbgop->rd],Regs[dbgop->rs1],s_imm);
       }
       else if(dbgop->funct3 == 0b111){
-        fprintf(stdout,"andi %s,%s,%d",Regs[dbgop->rd],Regs[dbgop->rs2],s_imm);
+        fprintf(stdout,"andi %s,%s,%d",Regs[dbgop->rd],Regs[dbgop->rs1],s_imm);
       }
       else if(dbgop->funct3 == 0b001 && get_binary(dbgop->imm,5,12)==0b0000000){
-        fprintf(stdout,"slli %s,%s,%d",Regs[dbgop->rd],Regs[dbgop->rs2],s_imm);
+        fprintf(stdout,"slli %s,%s,%d",Regs[dbgop->rd],Regs[dbgop->rs1],s_imm);
       }
       else if(dbgop->funct3 == 0b101 && get_binary(dbgop->imm,5,12)==0b0000000){
-        fprintf(stdout,"srli %s,%s,%d",Regs[dbgop->rd],Regs[dbgop->rs2],s_imm);
+        fprintf(stdout,"srli %s,%s,%d",Regs[dbgop->rd],Regs[dbgop->rs1],s_imm);
       }
       else if(dbgop->funct3 == 0b101 && get_binary(dbgop->imm,5,12)==0b0100000){
-        fprintf(stdout,"srai %s,%s,%d",Regs[dbgop->rd],Regs[dbgop->rs2],s_imm);
+        fprintf(stdout,"srai %s,%s,%d",Regs[dbgop->rd],Regs[dbgop->rs1],s_imm);
       }
       else{
         fprintf(stdout,"(unknown)\n");
