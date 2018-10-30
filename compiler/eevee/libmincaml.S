@@ -78,11 +78,11 @@ min_caml_cos:
 # TODO
 
 min_caml_abs_float:
-	fabs.s	a0, a0
+	fabs.s	fa0, fa0
 	jr	ra
 
 min_caml_sqrt:
-	fsqrt.s	a0, a0
+	fsqrt.s	fa0, fa0
 	jr	ra
 
 min_caml_float_of_int: # int -> float

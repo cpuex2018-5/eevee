@@ -9,7 +9,8 @@
 #include <assert.h>
 #include "utils.h"
 
-void print_binary(int);
+// round mode (dummy)
+#define RM 0b000
 
 BinGen::BinGen(std::ofstream ofs, bool is_verbose, bool is_debug, bool is_ascii)
   : is_verbose_(is_verbose),
@@ -189,6 +190,83 @@ uint32_t BinGen::io (std::string mnemo, std::string reg) {
     return Pack(fields);
 }
 
+uint32_t BinGen::flw(std::string frd, std::string rs, uint32_t imm) {
+    CheckImmediate(imm, 12, "flw");
+    Fields fields;
+    fields.emplace_back(7, 0b0000111);
+    fields.emplace_back(5, fregmap_.at(frd));
+    fields.emplace_back(3, 0b010);
+    fields.emplace_back(5, regmap_.at(rs));
+    fields.emplace_back(12, imm & 0xfff);
+    return Pack(fields);
+}
+
+uint32_t BinGen::fsw(std::string frs2, std::string frs1, uint32_t imm) {
+    CheckImmediate(imm, 12, "fsw");
+    Fields fields;
+    fields.emplace_back(7, 0b0100111);
+    fields.emplace_back(5, imm & 0x1f);
+    fields.emplace_back(3, 0b010);
+    fields.emplace_back(5, fregmap_.at(frs1));
+    fields.emplace_back(5, fregmap_.at(frs2));
+    fields.emplace_back(7, (imm >> 5) & 0x7f);
+    return Pack(fields);
+}
+
+// fsqrt.s, fabs.s, fneg.s, fmv.s, finv.s (2 operands)
+uint32_t BinGen::f_op2(std::string mnemo, std::string frd, std::string frs) {
+    uint32_t funct7 = (mnemo == "fsqrt.s") ? 0b0101100 : 0b0010000;
+    uint32_t funct3;
+    if (mnemo == "fsqrt.s") funct3 = RM;
+    if (mnemo == "fmv.s")   funct3 = 0b000;
+    if (mnemo == "fneg.s")  funct3 = 0b001;
+    if (mnemo == "fabs.s")  funct3 = 0b010;
+    if (mnemo == "finv.s")  funct3 = 0b011;
+    Fields fields;
+    fields.emplace_back(7, 0b1010011);
+    fields.emplace_back(5, fregmap_.at(frd));
+    fields.emplace_back(3, funct3);
+    fields.emplace_back(5, fregmap_.at(frs));
+    fields.emplace_back(5, 0b00000);
+    fields.emplace_back(7, funct7);
+    return Pack(fields);
+}
+
+// fadd.s, fsub.s, fmul.s, fdiv.s (3 operands)
+uint32_t BinGen::f_op3(std::string mnemo, std::string frd, std::string frs1, std::string frs2) {
+    uint32_t funct7;
+    if (mnemo == "fadd.s") funct7 = 0b0000000;
+    if (mnemo == "fsub.s") funct7 = 0b0000100;
+    if (mnemo == "fmul.s") funct7 = 0b0001000;
+    if (mnemo == "fdiv.s") funct7 = 0b0001100;
+
+    Fields fields;
+    fields.emplace_back(7, 0b1010011);
+    fields.emplace_back(5, fregmap_.at(frd));
+    fields.emplace_back(3, RM);
+    fields.emplace_back(5, fregmap_.at(frs1));
+    fields.emplace_back(5, fregmap_.at(frs2));
+    fields.emplace_back(7, funct7);
+    return Pack(fields);
+}
+
+// feq.s, flt.s, fle.s
+uint32_t BinGen::f_cmp(std::string mnemo, std::string rd, std::string frs1, std::string frs2) {
+    uint32_t funct3;
+    if (mnemo == "feq.s") funct3 = 0b010;
+    if (mnemo == "flt.s") funct3 = 0b001;
+    if (mnemo == "fle.s") funct3 = 0b000;
+
+    Fields fields;
+    fields.emplace_back(7, 0b1010011);
+    fields.emplace_back(5, regmap_.at(rd));
+    fields.emplace_back(3, funct3);
+    fields.emplace_back(5, fregmap_.at(frs1));
+    fields.emplace_back(5, fregmap_.at(frs2));
+    fields.emplace_back(7, 0b1010000);
+    return Pack(fields);
+}
+
 void BinGen::WriteDataInBinary(uint32_t data) {
     unsigned char d[4];
     d[0] = data >> 24;
@@ -307,7 +385,7 @@ BinGen::Inst BinGen::Convert(std::string input) {
     if (mnemo == "")
         return Inst(0, 0);
 
-    // Note: Lack of arguments will cause crash here
+    // RV32I basic instructions ==============================================================
     if (mnemo == "lui") {
         assert(2 == arg.size());
         ret1 = lui(arg[0], MyStoi(arg[1]));
@@ -357,14 +435,37 @@ BinGen::Inst BinGen::Convert(std::string input) {
         ret1 = op(mnemo, arg[0], arg[1], arg[2]);
     }
 
-    // I/O instructions (temporary)
+    // I/O instructions (temporary) ==========================================================
     else if (mnemo == "w" || mnemo == "r") {
         assert(1 == arg.size());
         ret1 = io(mnemo, arg[0]);
     }
 
-    // Pseudo-instructions
-    // TODO: test pseudo-insturctions
+    // Floating-point instructions ===========================================================
+    else if (mnemo == "flw") {
+        assert(2 == arg.size());
+        std::string rs; uint32_t offset;
+        ParseOffset(arg[1], &rs, &offset);
+        ret1 = flw(arg[0], rs, offset);
+    }
+
+    else if (mnemo == "fsw") {
+        assert(2 == arg.size());
+        std::string rs; uint32_t offset;
+        ParseOffset(arg[1], &rs, &offset);
+        ret1 = fsw(arg[0], rs, offset);
+    }
+
+    else if (mnemo == "fsqrt.s" || mnemo == "fabs.s" || mnemo == "fneg.s" || mnemo == "fmv.s" || mnemo == "finv.s") {
+        assert(2 == arg.size());
+        f_op2(mnemo, arg[0], arg[1]);
+    }
+    else if (mnemo == "fadd.s" || mnemo == "fsub.s" || mnemo == "fmul.s" || mnemo == "fdiv.s") {
+        assert(3 == arg.size());
+        f_op3(mnemo, arg[0], arg[1], arg[2]);
+    }
+
+    // Pseudo-instructions ===================================================================
     else if (mnemo == "la") {
         assert(2 == arg.size());
         uint32_t tmp = MyStoi(arg[1]);

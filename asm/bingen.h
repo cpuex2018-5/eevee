@@ -15,6 +15,9 @@ class BinGen {
         // 1周目
         void ReadLabels(std::string input);
 
+        // 1周目のあとに呼ぶ
+        void ClearNline_();
+
         // 2周目
         void Main(std::string input);
 
@@ -26,7 +29,6 @@ class BinGen {
 
         // Parses and evaluates the input. Returns the converted instructions (zero, one or two)
         Inst Convert(std::string input);
-        void ClearNline_();
 
         std::string ToString(uint32_t inst);
         std::string InstToString(Inst inst);
@@ -62,9 +64,20 @@ class BinGen {
         // read, write
         uint32_t io(std::string mnemo, std::string r);
 
+        uint32_t flw(std::string frd, std::string rs, uint32_t imm);
+        uint32_t fsw(std::string frs2, std::string frs1, uint32_t imm);
+
+        // fsqrt.s, fabs.s, fneg.s, fmv.s, finv.s (2 operands)
+        uint32_t f_op2(std::string mnemo, std::string frd, std::string frs);
+
+        // fadd.s, fsub.s, fmul.s, fdiv.s (3 operands)
+        uint32_t f_op3(std::string mnemo, std::string frd, std::string frs1, std::string frs2);
+
+        // feq.s, flt.s, fle.s
+        uint32_t f_cmp(std::string mnemo, std::string rd, std::string frs1, std::string frs2);
+
         uint32_t Pack(Fields fields);
         void CheckImmediate(uint32_t imm, int range, std::string func_name);
-        void CheckImmediateUnsigned(uint32_t imm, int range, std::string func_name);
         void WriteDataInBinary(uint32_t data);
         void WriteDataInAscii(uint32_t data);
 
@@ -83,6 +96,8 @@ class BinGen {
         std::map<std::string, int> label_map_;
         const std::map<std::string, int> regmap_;
         const std::map<std::string, int> fregmap_;
+
+        void print_binary(uint32_t inst);
 };
 
 #endif  // __BINGEN_H__

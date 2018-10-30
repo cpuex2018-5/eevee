@@ -72,6 +72,9 @@ $ ./main -d target/fib.s
 * `libtest` : libmincaml.Sのテスト用のアセンブリ
 
 ## Specification
+### eevee ISA
+See [Wiki](https://github.com/cpuex2018-5/eevee/wiki/eevee-ISA-extension).
+
 ### Pseudo-instructions
 
 * `la`
@@ -102,3 +105,5 @@ $ ./main -d target/fib.s
 * 吐き出すバイナリファイルに拡張子 `.bin` をつけるようにしました
 
 * プログラムの最後に32bitの0の羅列がつくようになりました(10/29)
+
+* 浮動小数演算のround modeの情報はデコードする際は読み捨ててください
