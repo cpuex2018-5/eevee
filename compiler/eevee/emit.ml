@@ -155,28 +155,28 @@ and g' buf e =
   | Tail, IfEq(x, C(y), e1, e2) ->
     (match y with
      | 0 ->
-       Printf.bprintf buf "\tli\t%s, %d\n" (reg reg_tmp) y;
-       g'_tail_if buf x reg_tmp e1 e2 "beq" "bne"
+       g'_tail_if buf x "zero" e1 e2 "beq" "bne"
      | _ ->
-       g'_tail_if buf x "zero" e1 e2 "beq" "bne")
+       Printf.bprintf buf "\tli\t%s, %d\n" (reg reg_tmp) y;
+       g'_tail_if buf x reg_tmp e1 e2 "beq" "bne")
   | Tail, IfLE(x, V(y), e1, e2) ->
     g'_tail_if buf x y e1 e2 "ble" "bgt"
   | Tail, IfLE(x, C(y), e1, e2) ->
     (match y with
      | 0 ->
-       Printf.bprintf buf "\tli\t%s, %d\n" (reg reg_tmp) y;
-       g'_tail_if buf x reg_tmp e1 e2 "ble" "bgt"
+       g'_tail_if buf x "zero" e1 e2 "ble" "bgt"
      | _ -> 
-       g'_tail_if buf x "zero" e1 e2 "ble" "bgt")
+       Printf.bprintf buf "\tli\t%s, %d\n" (reg reg_tmp) y;
+       g'_tail_if buf x reg_tmp e1 e2 "ble" "bgt")
   | Tail, IfGE(x, V(y), e1, e2) ->
     g'_tail_if buf x y e1 e2 "bge" "blt"
   | Tail, IfGE(x, C(y), e1, e2) ->
     (match y with
      | 0 ->
-       Printf.bprintf buf "\tli\t%s, %d\n" (reg reg_tmp) y;
-       g'_tail_if buf x reg_tmp e1 e2 "bge" "blt"
+       g'_tail_if buf x "zero" e1 e2 "bge" "blt"
      | _ ->
-       g'_tail_if buf x "zero" e1 e2 "bge" "blt")
+       Printf.bprintf buf "\tli\t%s, %d\n" (reg reg_tmp) y;
+       g'_tail_if buf x reg_tmp e1 e2 "bge" "blt")
   | Tail, IfFEq(x, y, e1, e2) ->
     (* TODO: Floating用に直す *)
     (* Store the comparison result in reg_tmp (integer register!) *)
@@ -192,28 +192,28 @@ and g' buf e =
   | NonTail(z), IfEq(x, C(y), e1, e2) ->
     (match y with
      | 0 ->
-       Printf.bprintf buf "\tli\t%s, %d\n" (reg reg_tmp) y;
-       g'_non_tail_if buf (NonTail(z)) x reg_tmp e1 e2 "beq" "bne"
+       g'_non_tail_if buf (NonTail(z)) x "zero" e1 e2 "beq" "bne"
      | _ ->
-       g'_non_tail_if buf (NonTail(z)) x "zero" e1 e2 "beq" "bne")
+       Printf.bprintf buf "\tli\t%s, %d\n" (reg reg_tmp) y;
+       g'_non_tail_if buf (NonTail(z)) x reg_tmp e1 e2 "beq" "bne")
   | NonTail(z), IfLE(x, V(y), e1, e2) ->
     g'_non_tail_if buf (NonTail(z)) x y e1 e2 "ble" "bgt"
   | NonTail(z), IfLE(x, C(y), e1, e2) ->
     (match y with
      | 0 ->
-       Printf.bprintf buf "\tli\t%s, %d\n" (reg reg_tmp) y;
-       g'_non_tail_if buf (NonTail(z)) x reg_tmp e1 e2 "ble" "bgt"
+       g'_non_tail_if buf (NonTail(z)) x "zero" e1 e2 "ble" "bgt"
      | _ ->
-       g'_non_tail_if buf (NonTail(z)) x "zero" e1 e2 "ble" "bgt")
+       Printf.bprintf buf "\tli\t%s, %d\n" (reg reg_tmp) y;
+       g'_non_tail_if buf (NonTail(z)) x reg_tmp e1 e2 "ble" "bgt")
   | NonTail(z), IfGE(x, V(y), e1, e2) ->
     g'_non_tail_if buf (NonTail(z)) x y e1 e2 "bge" "blt"
   | NonTail(z), IfGE(x, C(y), e1, e2) ->
     (match y with
      | 0 ->
-       Printf.bprintf buf "\tli\t%s, %d\n" (reg reg_tmp) y;
-       g'_non_tail_if buf (NonTail(z)) x reg_tmp e1 e2 "bge" "blt"
+       g'_non_tail_if buf (NonTail(z)) x "zero" e1 e2 "bge" "blt"
      | _ ->
-       g'_non_tail_if buf (NonTail(z)) x "zero" e1 e2 "bge" "blt")
+       Printf.bprintf buf "\tli\t%s, %d\n" (reg reg_tmp) y;
+       g'_non_tail_if buf (NonTail(z)) x reg_tmp e1 e2 "bge" "blt")
   | NonTail(z), IfFEq(x, y, e1, e2) ->
     Printf.bprintf buf "\tfeq.s\t%s, %s, %s\n" reg_tmp x y;
     g'_non_tail_if buf (NonTail(z)) reg_tmp "zero" e1 e2 "bne" "beq"
