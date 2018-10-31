@@ -11,6 +11,6 @@ include M
 let add_list xys env = List.fold_left (fun env (x, y) -> add x y env) env xys
 let add_list2 xs ys env = List.fold_left2 (fun env x y -> add x y env) env xs ys
 
-let print_env (env : Type.t M.t) =
+let print_env (env : 'a M.t) =
   print_string "env: ";
   print_endline (String.concat ", " (List.map fst (M.bindings env)))

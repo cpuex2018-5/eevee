@@ -78,22 +78,32 @@ let rec effect e =
   | AppCls _ | AppDir _ -> true
   | _ -> false
 
-let rec elim_ e =
+(* 使われない変数を削除 *)
+let rec elim_ e tenv =
   match e with
-  | IfEq(x, y, e1, e2) -> IfEq(x, y, elim_ e1, elim_ e2)
-  | IfLE(x, y, e1, e2) -> IfLE(x, y, elim_ e1, elim_ e2)
+  | IfEq(x, y, e1, e2) -> IfEq(x, y, elim_ e1 tenv, elim_ e2 tenv)
+  | IfLE(x, y, e1, e2) -> IfLE(x, y, elim_ e1 tenv, elim_ e2 tenv)
   | Let ((x, t), Var y, e2) ->
-    Closure.id_subst e2 x y
+    elim_ (Closure.id_subst e2 x y) tenv
+  | Let ((x, t), Tuple ys, e2) ->
+    let e2' = elim_ e2 (M.add x ys tenv) in
+    if S.mem x (fv e2') then Let ((x, t), Tuple ys, e2') else e2'
   | Let ((x, t), e1, e2) ->
-    let e1' = elim_ e1 in
-    let e2' = elim_ e2 in
+    let e1' = elim_ e1 tenv in
+    let e2' = elim_ e2 tenv in
     if effect e1' || S.mem x (fv e2') then Let((x, t), e1', e2') else
       (Format.eprintf "eliminating variable %s@." x;
        e2')
-  | MakeCls (xt, c, e) -> MakeCls (xt, c, elim_ e)
-  | LetTuple(xts, y, e) ->
+  | MakeCls (xt, c, e) -> MakeCls (xt, c, elim_ e tenv)
+  | LetTuple (xts, y, e) when M.mem y tenv ->
+    List.fold_left2
+      (fun e' xt z -> Let (xt, Var(z), e'))
+      (elim_ e tenv)
+      xts
+      (M.find y tenv)
+  | LetTuple (xts, y, e) ->
     let xs = List.map fst xts in
-    let e' = elim_ e in
+    let e' = elim_ e tenv in
     let live = fv e' in
     if List.exists (fun x -> S.mem x live) xs then LetTuple(xts, y, e') else
       (Format.eprintf "eliminating variables %s@." (Id.pp_list xs);
@@ -103,8 +113,9 @@ let rec elim_ e =
 let elim (Prog (fundefs, e)) =
   let newfundefs = List.map
       (fun { name = xt; args = yts; formal_fv = zts; body = e } ->
-         { name = xt; args = yts; formal_fv = zts; body = elim_ e }) fundefs in
-  let newe = elim_ e in
+         { name = xt; args = yts; formal_fv = zts; body = elim_ e M.empty }) fundefs in
+  let newe = elim_ e M.empty in
   Prog (newfundefs, newe)
 
-let f p = elim (flatten p)
+let f p =
+  elim (elim (flatten p))
