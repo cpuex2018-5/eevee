@@ -9,14 +9,10 @@ let print_letenv (env : letenv) =
 
 let rec may_have_side_effect (exp : KNormal.t) : bool =
   match exp with
-  | IfEq (_, _, et, ef) -> (may_have_side_effect et) || (may_have_side_effect ef)
-  | IfLE (_, _, et, ef) -> (may_have_side_effect et) || (may_have_side_effect ef)
-  | Let (_, e1, e2) -> (may_have_side_effect e1) || (may_have_side_effect e2)
-  | LetRec (_, e) -> may_have_side_effect e
-  | App _ -> true
-  | LetTuple (_, _, e2) -> (may_have_side_effect e2)
-  | Put _ -> true
-  | ExtFunApp _ -> true
+  | IfEq (_, _, e1, e2) | IfLE (_, _, e1, e2) | Let (_, e1, e2) ->
+    (may_have_side_effect e1) || (may_have_side_effect e2)
+  | LetRec (_, e) | LetTuple (_, _, e) -> may_have_side_effect e
+  | App _ | Put _ | Get _ | ExtFunApp _ -> true  (* Getを含む場合は書き換えてはダメ! *)
   | _ -> false
 
 (* Equality of KNotmal.t *)

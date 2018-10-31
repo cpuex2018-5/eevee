@@ -73,6 +73,7 @@ let rec string_of_prog (Prog (fundefs, e)) =
   String.concat "\n" (List.map string_of_fundef fundefs) ^ "\n" ^ string_of_t e
 
 let print_t (exp : t) = print_string (string_of_t exp)
+let print_fundef f = print_string (string_of_fundef f)
 let print_prog p = print_string (string_of_prog p)
 
 let rec id_subst (e : t) (a : Id.t) (b : Id.t) : t =

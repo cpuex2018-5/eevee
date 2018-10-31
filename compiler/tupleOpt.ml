@@ -36,11 +36,11 @@ let rec helper (xts : (Id.t * Type.t) list) (tmpvars : (Id.t * Type.t) list) (ta
               Let ((x, t), Var x', inner_ xtl tmpvars' tail)))
   in (inner_ xts tmpvars tail, !tenv', !env')
 
-let flatten (Prog (fundefs, e)) =
-  let rec inner_ (e : t) (tenv : (Id.t list) M.t) (env : Type.t M.t) =
+let flatten (e : t) (funnames : Id.l list) =
+  let rec flatten_ (e : t) (tenv : (Id.t list) M.t) (env : Type.t M.t) =
     match e with
-    | IfEq (x, y, e1, e2) -> IfEq (x, y, inner_ e1 tenv env, inner_ e2 tenv env)
-    | IfLE (x, y, e1, e2) -> IfLE (x, y, inner_ e1 tenv env, inner_ e2 tenv env)
+    | IfEq (x, y, e1, e2) -> IfEq (x, y, flatten_ e1 tenv env, flatten_ e2 tenv env)
+    | IfLE (x, y, e1, e2) -> IfLE (x, y, flatten_ e1 tenv env, flatten_ e2 tenv env)
     | Let ((x, t), Tuple ys, e2) ->
       let newys = List.concat
           (List.map (fun y ->
@@ -49,11 +49,16 @@ let flatten (Prog (fundefs, e)) =
                | None -> [y]) ys) in
       let newtenv = M.add x newys tenv in
       let newenv = M.add x t env in
-      Let ((x, t), Tuple newys, inner_ e2 newtenv newenv)
+      Let ((x, t), Tuple newys, flatten_ e2 newtenv newenv)
     | Let ((x, t), e1, e2) ->
-      Let ((x, t), inner_ e1 tenv env, inner_ e2 tenv (M.add x t env))
+      Let ((x, t), flatten_ e1 tenv env, flatten_ e2 tenv (M.add x t env))
     | MakeCls ((x, t), c, e) ->
-      MakeCls ((x, t), c, inner_ e tenv (M.add x t env))
+      MakeCls ((x, t), c, flatten_ e tenv (M.add x t env))
+    | AppCls (x, ys) ->
+      AppCls (x, List.concat (List.map (fun y -> try M.find y tenv with Not_found -> [y]) ys))
+    | AppDir (l, ys) when List.mem l funnames ->
+      AppDir (l, List.concat (List.map (fun y -> try M.find y tenv with Not_found -> [y]) ys))
+    | AppDir _ -> e (* don't flatten the args of external function *)
     | LetTuple (xts, y, e) ->
       (* yは平坦化されたタプルなので、これを1要素ずつにほどくためのLetTupleを一度挿入する。
        * その後、元々のLetTupleをletのチェーンにする。*)
@@ -61,61 +66,75 @@ let flatten (Prog (fundefs, e)) =
       let ts' = flatten_type ts in
       let tmpvars = List.map (fun t -> (Id.gentmp t, t)) ts' in
       let (e, newtenv, newenv) = helper xts tmpvars e tenv env in
-      LetTuple (tmpvars, y, inner_ e newtenv newenv)
+      LetTuple (tmpvars, y, flatten_ e newtenv newenv)
     | _ -> e
+  in flatten_ e M.empty M.empty
+
+let flatten_args (f : fundef) =
+  let { name = xt; args = yts; formal_fv = zs; body = e } = f in
+  let rec inner_ (args : (Id.t * Type.t) list) e =
+    match args with
+    | [] -> ([], e)
+    | (y, Type.Tuple ts) :: xargs ->
+      let ts' = flatten_type ts in
+      let yl = List.map Id.gentmp ts' in
+      let (xargs', e') = inner_ xargs e in
+      ((List.combine yl ts') @ xargs', Let ((y, Type.Tuple ts'), Tuple yl, e'))
+    | (y, t) :: xargs ->
+      let (xargs', e') = inner_ xargs e in
+      ((y, t) :: xargs', e')
   in
-  let newfundefs =
-    List.map
-      (fun { name = xt; args = yts; formal_fv = fvs; body = e } ->
-         { name = xt; args = yts; formal_fv = fvs; body = inner_ e M.empty M.empty }) fundefs in
-  let newe = inner_ e M.empty M.empty in
-  Prog (newfundefs, newe)
+  let (yts', e') = inner_ yts e in
+  { name = xt; args = yts'; formal_fv = zs; body = e' }
 
 let rec effect e =
   match e with
   | Let(_, e1, e2) | IfEq(_, _, e1, e2) | IfLE(_, _, e1, e2) -> effect e1 || effect e2
   | MakeCls (_, _, e) | LetTuple(_, _, e) -> effect e
-  | AppCls _ | AppDir _ -> true
+  | AppCls _ | AppDir _ | Put _ -> true
   | _ -> false
 
 (* 使われない変数を削除 *)
-let rec elim_ e tenv =
-  match e with
-  | IfEq(x, y, e1, e2) -> IfEq(x, y, elim_ e1 tenv, elim_ e2 tenv)
-  | IfLE(x, y, e1, e2) -> IfLE(x, y, elim_ e1 tenv, elim_ e2 tenv)
-  | Let ((x, t), Var y, e2) ->
-    elim_ (Closure.id_subst e2 x y) tenv
-  | Let ((x, t), Tuple ys, e2) ->
-    let e2' = elim_ e2 (M.add x ys tenv) in
-    if S.mem x (fv e2') then Let ((x, t), Tuple ys, e2') else e2'
-  | Let ((x, t), e1, e2) ->
-    let e1' = elim_ e1 tenv in
-    let e2' = elim_ e2 tenv in
-    if effect e1' || S.mem x (fv e2') then Let((x, t), e1', e2') else
-      (Format.eprintf "eliminating variable %s@." x;
-       e2')
-  | MakeCls (xt, c, e) -> MakeCls (xt, c, elim_ e tenv)
-  | LetTuple (xts, y, e) when M.mem y tenv ->
-    List.fold_left2
-      (fun e' xt z -> Let (xt, Var(z), e'))
-      (elim_ e tenv)
-      xts
-      (M.find y tenv)
-  | LetTuple (xts, y, e) ->
-    let xs = List.map fst xts in
-    let e' = elim_ e tenv in
-    let live = fv e' in
-    if List.exists (fun x -> S.mem x live) xs then LetTuple(xts, y, e') else
-      (Format.eprintf "eliminating variables %s@." (Id.pp_list xs);
-       e')
-  | _ -> e
+let elim e =
+  let rec elim_ e tenv =
+    match e with
+    | IfEq(x, y, e1, e2) -> IfEq(x, y, elim_ e1 tenv, elim_ e2 tenv)
+    | IfLE(x, y, e1, e2) -> IfLE(x, y, elim_ e1 tenv, elim_ e2 tenv)
+    | Let ((x, t), Var y, e2) ->
+      elim_ (Closure.id_subst e2 x y) tenv
+    | Let ((x, t), Tuple ys, e2) ->
+      let e2' = elim_ e2 (M.add x ys tenv) in
+      (match S.mem x (fv e2') with
+       | true -> Let ((x, t), Tuple ys, e2')
+       | false -> e2')
+    | Let ((x, t), e1, e2) ->
+      let e1' = elim_ e1 tenv in
+      let e2' = elim_ e2 tenv in
+      (match effect e1' || S.mem x (fv e2') with
+       | true -> Let((x, t), e1', e2')
+       | false -> (Format.eprintf "eliminating variable %s@." x; e2'))
+    | MakeCls (xt, c, e) -> MakeCls (xt, c, elim_ e tenv)
+    | LetTuple (xts, y, e) when M.mem y tenv ->
+      List.fold_left2
+        (fun e' xt z -> Let (xt, Var(z), e'))
+        (elim_ e tenv)
+        xts
+        (M.find y tenv)
+    | LetTuple (xts, y, e) ->
+      let xs = List.map fst xts in
+      let e' = elim_ e tenv in
+      let live = fv e' in
+      if List.exists (fun x -> S.mem x live) xs then LetTuple(xts, y, e') else
+        (Format.eprintf "eliminating variables %s@." (Id.pp_list xs);
+         e')
+    | _ -> e
+  in elim_ e M.empty
 
-let elim (Prog (fundefs, e)) =
-  let newfundefs = List.map
+let f (Prog (fundefs, e)) =
+  let fundefs' = List.map flatten_args fundefs in
+  let funnames = List.map (fun f -> fst f.name) fundefs' in
+  let fundefs' = List.map
       (fun { name = xt; args = yts; formal_fv = zts; body = e } ->
-         { name = xt; args = yts; formal_fv = zts; body = elim_ e M.empty }) fundefs in
-  let newe = elim_ e M.empty in
-  Prog (newfundefs, newe)
-
-let f p =
-  elim (elim (flatten p))
+         { name = xt; args = yts; formal_fv = zts; body = elim (elim (flatten e funnames)) }) fundefs' in
+  let e' = elim (elim (flatten e funnames)) in
+  Prog (fundefs', e')
