@@ -1,6 +1,8 @@
 open Closure
 
-(* lを先頭からn番目以内にあるものとそれ以降のものとに分ける *)
+(* lを先頭からn番目以内にあるものとそれ以降のものとに分ける
+ * ex) sep 2 [1;2;3;4;5] -> ([1;2], [3;4;5])
+ *     sep 4 [1;2;3] -> ([1;2;3], []) *)
 let rec sep (n : int) (l : 'a list) =
   match n with
   | 0 -> ([], l)
@@ -8,15 +10,17 @@ let rec sep (n : int) (l : 'a list) =
     | [] -> ([], [])
     | x :: xl -> let t = sep (n - 1) xl in (x :: (fst t), snd t)
 
+(* Type.Tupleを含む場合は取り除いてフラットにする *)
+(* ex) [Float; Tuple [Int; Int]] -> [Float; Int; Int] *)
 let rec flatten_type (t : Type.t list) =
   match t with
   | [] -> []
-  | (Tuple t') :: xt -> flatten_type (t' @ xt)
+  | (Tuple t') :: xt -> flatten_type (t' @ xt) (* tupleのネストに対応 *)
   | t' :: xt -> t' :: (flatten_type xt)
 
-(* tmpvars: 平坦化されたタプルの中身 *)
-(* LetTuple (xts, _, tail) を複数のletに分割 *)
+(* タプル平坦化の補助関数, LetTuple (xts, _, tail) を複数のletに分割 *)
 let rec helper (xts : (Id.t * Type.t) list) (tmpvars : (Id.t * Type.t) list) (tail : t) (tenv : (Id.t list) M.t) (env : Type.t M.t) =
+  (* tmpvars: 平坦化されたタプルの中身を1つずつ指す変数 *)
   let tenv' = ref tenv in
   let env' = ref env in
   let rec inner_ xts tmpvars tail =
@@ -36,8 +40,10 @@ let rec helper (xts : (Id.t * Type.t) list) (tmpvars : (Id.t * Type.t) list) (ta
               Let ((x, t), Var x', inner_ xtl tmpvars' tail)))
   in (inner_ xts tmpvars tail, !tenv', !env')
 
+(* タプル平坦化 *)
 let flatten (e : t) (funnames : Id.l list) =
   let rec flatten_ (e : t) (tenv : (Id.t list) M.t) (env : Type.t M.t) =
+    (* tenv: tupleだとわかっている変数(key)と、その内容(binding)のリスト *)
     match e with
     | IfEq (x, y, e1, e2) -> IfEq (x, y, flatten_ e1 tenv env, flatten_ e2 tenv env)
     | IfLE (x, y, e1, e2) -> IfLE (x, y, flatten_ e1 tenv env, flatten_ e2 tenv env)
@@ -57,11 +63,12 @@ let flatten (e : t) (funnames : Id.l list) =
     | AppCls (x, ys) ->
       AppCls (x, List.concat (List.map (fun y -> try M.find y tenv with Not_found -> [y]) ys))
     | AppDir (l, ys) when List.mem l funnames ->
+      (* 関数は単相なので、タプルは全部ほどいてよい *)
       AppDir (l, List.concat (List.map (fun y -> try M.find y tenv with Not_found -> [y]) ys))
-    | AppDir _ -> e (* don't flatten the args of external function *)
+    | AppDir _ -> e (* タプルを外部関数に渡す場合は平坦化しない *)
     | LetTuple (xts, y, e) ->
       (* yは平坦化されたタプルなので、これを1要素ずつにほどくためのLetTupleを一度挿入する。
-       * その後、元々のLetTupleをletのチェーンにする。*)
+       * その後、元々のLetTupleをlet .... in let ... in の形に変形する。*)
       let ts = List.map snd xts in
       let ts' = flatten_type ts in
       let tmpvars = List.map (fun t -> (Id.gentmp t, t)) ts' in
@@ -70,8 +77,9 @@ let flatten (e : t) (funnames : Id.l list) =
     | _ -> e
   in flatten_ e M.empty M.empty
 
+(* 関数の引数に含まれるタプルを全てほどく *)
 let flatten_args (f : fundef) =
-  let { name = xt; args = yts; formal_fv = zs; body = e } = f in
+  let { name = (x, t); args = yts; formal_fv = zs; body = e } = f in
   let rec inner_ (args : (Id.t * Type.t) list) e =
     match args with
     | [] -> ([], e)
@@ -85,8 +93,11 @@ let flatten_args (f : fundef) =
       ((y, t) :: xargs', e')
   in
   let (yts', e') = inner_ yts e in
-  { name = xt; args = yts'; formal_fv = zs; body = e' }
+  (* 関数の型が変わることになるので変えておく *)
+  let t' = match t with Type.Fun (xs, y) -> Type.Fun (List.map snd yts', y) | _ -> assert false in
+  { name = (x, t'); args = yts'; formal_fv = zs; body = e' }
 
+(* 副作用があるかどうか(emit.mlを参考) *)
 let rec effect e =
   match e with
   | Let(_, e1, e2) | IfEq(_, _, e1, e2) | IfLE(_, _, e1, e2) -> effect e1 || effect e2
@@ -94,13 +105,13 @@ let rec effect e =
   | AppCls _ | AppDir _ | Put _ -> true
   | _ -> false
 
-(* 使われない変数を削除 *)
+(* 不要部分式削除(emit.mlを参考) & 不要なタプルを削除 *)
 let elim e =
   let rec elim_ e tenv =
     match e with
     | IfEq(x, y, e1, e2) -> IfEq(x, y, elim_ e1 tenv, elim_ e2 tenv)
     | IfLE(x, y, e1, e2) -> IfLE(x, y, elim_ e1 tenv, elim_ e2 tenv)
-    | Let ((x, t), Var y, e2) ->
+    | Let ((x, t), Var y, e2) -> (* 変数をrenameしているだけなので不要 *)
       elim_ (Closure.id_subst e2 x y) tenv
     | Let ((x, t), Tuple ys, e2) ->
       let e2' = elim_ e2 (M.add x ys tenv) in
@@ -115,26 +126,36 @@ let elim e =
        | false -> (Format.eprintf "eliminating variable %s@." x; e2'))
     | MakeCls (xt, c, e) -> MakeCls (xt, c, elim_ e tenv)
     | LetTuple (xts, y, e) when M.mem y tenv ->
+      (* let a = (x, y) in ... let (b, c) = a in ... などの場合、LetTupleをLetに変換する。
+       * これにより不要定義(LET x = Var yなど)が生じる可能性があるためelimを2回呼ぶ必要がある *)
       List.fold_left2
         (fun e' xt z -> Let (xt, Var(z), e'))
         (elim_ e tenv)
         xts
         (M.find y tenv)
-    | LetTuple (xts, y, e) ->
+    | LetTuple (xts, y, e) -> (* yが配列からGetしたタプルである場合はtenvにないため必要 *)
       let xs = List.map fst xts in
       let e' = elim_ e tenv in
-      let live = fv e' in
-      if List.exists (fun x -> S.mem x live) xs then LetTuple(xts, y, e') else
-        (Format.eprintf "eliminating variables %s@." (Id.pp_list xs);
-         e')
+      (match List.exists (fun x -> S.mem x (fv e')) xs with
+       | true -> LetTuple(xts, y, e')
+       | false -> (Format.eprintf "eliminating variables %s@." (Id.pp_list xs); e'))
     | _ -> e
-  in elim_ e M.empty
+  in elim_ (elim_ e M.empty) M.empty
 
 let f (Prog (fundefs, e)) =
-  let fundefs' = List.map flatten_args fundefs in
-  let funnames = List.map (fun f -> fst f.name) fundefs' in
+  let fundefs = List.map flatten_args fundefs in
+  let funnames = List.map (fun f -> fst f.name) fundefs in
   let fundefs' = List.map
       (fun { name = xt; args = yts; formal_fv = zts; body = e } ->
-         { name = xt; args = yts; formal_fv = zts; body = elim (elim (flatten e funnames)) }) fundefs' in
-  let e' = elim (elim (flatten e funnames)) in
-  Prog (fundefs', e')
+         { name = xt; args = yts; formal_fv = zts; body = flatten e funnames }) fundefs in
+  let e' = flatten e funnames in
+  print_endline "------------After Nested Tuple Flattening-----------";
+  print_prog (Prog (fundefs', e'));
+  let fundefs'' = List.map
+      (fun { name = xt; args = yts; formal_fv = zts; body = e } ->
+         { name = xt; args = yts; formal_fv = zts; body = elim (flatten e funnames) }) fundefs' in
+  let e'' = elim e' in
+  print_endline "------------After Tuple Elimination-----------";
+  let p = Prog (fundefs'', e'') in
+  print_prog p;
+  p

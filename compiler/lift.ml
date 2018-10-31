@@ -74,22 +74,23 @@ let rec expandArg (e : KNormal.t) (fs : (Id.t * (Id.t * Type.t) list) list) (env
   | Let ((x, t), e1, e2) ->
     let newenv = M.add x t env in
     Let ((x, t), (expandArg e1 fs env), (expandArg e2 fs newenv))
-  | LetRec ({name = (x, t); args = yts; body = e1}, e2) ->
+  | LetRec ({ name = (x, t); args = yts; body = e1 }, e2) ->
     let newenv_e1 = M.add x t (List.fold_left (fun e (y, t) -> M.add y t e) env yts) in
     let e1 = expandArg e1 fs (M.add x t newenv_e1) in
     let var_args = List.map fst yts in
     let fvs = S.diff (fvs e1) (S.of_list (x :: var_args)) in
     (match S.is_empty fvs with
      | true ->
-       LetRec ({name = (x, t); args = yts; body = e1}, expandArg e2 fs (M.add x t env))
+       LetRec ({ name = (x, t); args = yts; body = e1 }, expandArg e2 fs (M.add x t env))
      | false ->
-       let newargs = List.map (fun x -> (x, M.find x env)) (S.elements fvs) in
-       print_string ("[Lift] found free vars in " ^ x ^ ": ");
-       Id.print_tlist (List.map fst newargs);
-       (* 再帰関数の場合は(x, newargs)の情報がe1で必要 *)
-       let newe1 = expandArg e1 ((x, newargs) :: fs) (M.add x t env) in
-       let newe2 = expandArg e2 ((x, newargs) :: fs) (M.add x t env) in
-       KNormal.LetRec ({ name = (x, t); args = yts @ newargs; body = newe1 }, newe2))
+       let exargs = List.map (fun x -> (x, M.find x env)) (S.elements fvs) in
+       Format.eprintf "[Lift] found free vars in %s: " x;
+       Id.print_tlist (List.map fst exargs);
+       (* 再帰関数の場合は(x, exargs)の情報がe1で必要 *)
+       let newe1 = expandArg e1 ((x, exargs) :: fs) (M.add x t env) in
+       let newe2 = expandArg e2 ((x, exargs) :: fs) (M.add x t env) in
+       let newt = match t with Type.Fun (xs, y) -> Type.Fun (xs @ (List.map snd exargs), y) | _ -> assert false in
+       KNormal.LetRec ({ name = (x, newt); args = yts @ exargs; body = newe1 }, newe2))
   | LetTuple (l, e1, e2) ->
     let newenv = List.fold_left (fun m (x, t) -> M.add x t m) env l in
     LetTuple (l, e1, expandArg e2 fs newenv)

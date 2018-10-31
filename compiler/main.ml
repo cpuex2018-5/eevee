@@ -39,11 +39,9 @@ let lexbuf outchan l = (* compile the buffer and put it to outchan (caml2html: m
   let e4 = Alpha.f e3 in
   let e5 = iter !limit e4 in
   let e6 = Closure.f e5 in
-  print_endline "-----------Closure.prog-----------------";
+  print_endline "-----------After Closure.f-----------------";
   Closure.print_prog e6;
   let e6 = TupleOpt.f e6 in
-  print_endline "-----------After TupleOpt---------------";
-  Closure.print_prog e6;
   let e7 = Virtual.f e6 in
   let e8 = Simm.f e7 in
   let e9 = RegAlloc.f e8 in
