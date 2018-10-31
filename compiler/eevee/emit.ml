@@ -68,7 +68,6 @@ let rec g buf = function (* 命令列のアセンブリ生成 (caml2html: emit_g
     g buf (dest, e)
 and g' buf e =
   (* 末尾でなかったら計算結果をdestにセット (caml2html: emit_nontail) *)
-  print_stackmap ();
   match e with
   | NonTail(_), Nop -> ()
   | NonTail(x), Li(i) when -32768 <= i && i < 32768 -> Printf.bprintf buf "\tli\t%s, %d\n" (reg x) i

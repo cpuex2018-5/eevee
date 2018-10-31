@@ -58,7 +58,7 @@ let rec str_of_t ?(no_indent = false) ?(endline = "\n") (exp : t) (depth : int) 
   | AppDir (Id.L(e1), e2) -> indent ^ e1 ^ " " ^ String.concat " " e2 ^ endline
   | Tuple e -> (indent ^ "( ") ^ String.concat ", " e ^ " )" ^ endline
   | LetTuple (l, e1, e2) -> indent ^ "LET (" ^ (String.concat ", " (List.map fst l)) ^ ") = " ^ e1 ^ " IN\n" ^
-                            indent ^ (str_of_t e2 depth)
+                            (str_of_t e2 depth)
   | Get (e1, e2) -> indent ^ e1 ^ "[ " ^ e2 ^ " ]" ^ endline
   | Put (e1, e2, e3) -> indent ^ e1 ^ "[ " ^ e2 ^ " ] <- " ^ e3 ^ endline
   | ExtArray Id.L(e) -> indent ^ e
@@ -74,6 +74,33 @@ let rec string_of_prog (Prog (fundefs, e)) =
 
 let print_t (exp : t) = print_string (string_of_t exp)
 let print_prog p = print_string (string_of_prog p)
+
+let rec id_subst (e : t) (a : Id.t) (b : Id.t) : t =
+  let subst_ x = if x = a then b else x in
+  match e with
+  | Neg e   -> Neg (subst_ e)
+  | Add (e1, e2)  -> Add  (subst_ e1, subst_ e2)
+  | Sub (e1, e2)  -> Sub  (subst_ e1, subst_ e2)
+  | FNeg e        -> FNeg (subst_ e)
+  | FAdd (e1, e2) -> FAdd (subst_ e1, subst_ e2)
+  | FSub (e1, e2) -> FSub (subst_ e1, subst_ e2)
+  | FMul (e1, e2) -> FMul (subst_ e1, subst_ e2)
+  | FDiv (e1, e2) -> FDiv (subst_ e1, subst_ e2)
+  | IfEq (e1, e2, et, ef) -> IfEq (subst_ e1, subst_ e2, id_subst et a b, id_subst ef a b)
+  | IfLE (e1, e2, et, ef) -> IfLE (subst_ e1, subst_ e2, id_subst et a b, id_subst ef a b)
+  | Let ((x, t), e1, e2) ->
+    (* Note: after alpha-conversion, variable names won't collapse and x <> a is guaranteed *)
+    Let ((x, t), id_subst e1 a b, id_subst e2 a b)
+  | Var x -> Var (subst_ x)
+  | MakeCls ((x, t), { entry = l; actual_fv = zs }, e) ->
+    MakeCls (((subst_ x), t), { entry = l; actual_fv = (List.map subst_ zs) }, id_subst e a b)
+  | AppCls (e1, e2) -> AppCls (subst_ e1, List.map subst_ e2)
+  | AppDir (e1, e2) -> AppDir (e1, List.map subst_ e2)
+  | Tuple e -> Tuple (List.map subst_ e)
+  | LetTuple (l, e1, e2) -> LetTuple (List.map (fun (x, t) -> (subst_ x, t)) l, subst_ e1, id_subst e2 a b)
+  | Get (e1, e2) -> Get (subst_ e1, subst_ e2)
+  | Put (e1, e2, e3) -> Put (subst_ e1, subst_ e2, subst_ e3)
+  | _ -> e
 
 let rec fv = function
   | Unit | Int(_) | Float(_) | ExtArray(_) -> S.empty

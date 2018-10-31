@@ -71,4 +71,40 @@ let flatten (Prog (fundefs, e)) =
   let newe = inner_ e M.empty M.empty in
   Prog (newfundefs, newe)
 
-let f p = flatten p
+let rec effect e =
+  match e with
+  | Let(_, e1, e2) | IfEq(_, _, e1, e2) | IfLE(_, _, e1, e2) -> effect e1 || effect e2
+  | MakeCls (_, _, e) | LetTuple(_, _, e) -> effect e
+  | AppCls _ | AppDir _ -> true
+  | _ -> false
+
+let rec elim_ e =
+  match e with
+  | IfEq(x, y, e1, e2) -> IfEq(x, y, elim_ e1, elim_ e2)
+  | IfLE(x, y, e1, e2) -> IfLE(x, y, elim_ e1, elim_ e2)
+  | Let ((x, t), Var y, e2) ->
+    Closure.id_subst e2 x y
+  | Let ((x, t), e1, e2) ->
+    let e1' = elim_ e1 in
+    let e2' = elim_ e2 in
+    if effect e1' || S.mem x (fv e2') then Let((x, t), e1', e2') else
+      (Format.eprintf "eliminating variable %s@." x;
+       e2')
+  | MakeCls (xt, c, e) -> MakeCls (xt, c, elim_ e)
+  | LetTuple(xts, y, e) ->
+    let xs = List.map fst xts in
+    let e' = elim_ e in
+    let live = fv e' in
+    if List.exists (fun x -> S.mem x live) xs then LetTuple(xts, y, e') else
+      (Format.eprintf "eliminating variables %s@." (Id.pp_list xs);
+       e')
+  | _ -> e
+
+let elim (Prog (fundefs, e)) =
+  let newfundefs = List.map
+      (fun { name = xt; args = yts; formal_fv = zts; body = e } ->
+         { name = xt; args = yts; formal_fv = zts; body = elim_ e }) fundefs in
+  let newe = elim_ e in
+  Prog (newfundefs, newe)
+
+let f p = elim (flatten p)

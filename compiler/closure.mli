@@ -33,3 +33,4 @@ val fv : t -> S.t
 val f : KNormal.t -> prog
 val print_prog : prog -> unit
 val print_t : t -> unit
+val id_subst : t -> Id.t -> Id.t -> t
