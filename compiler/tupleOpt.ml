@@ -18,6 +18,9 @@ let rec flatten_type (t : Type.t list) =
   | (Tuple t') :: xt -> flatten_type (t' @ xt) (* tupleのネストに対応 *)
   | t' :: xt -> t' :: (flatten_type xt)
 
+let rec is_same_type (t : Type.t list) =
+  List.for_all (fun x -> x = (List.hd t)) (List.tl t)
+
 (* タプル平坦化の補助関数, LetTuple (xts, _, tail) を複数のletに分割 *)
 let rec helper (xts : (Id.t * Type.t) list) (tmpvars : (Id.t * Type.t) list) (tail : t) (tenv : (Id.t list) M.t) (env : Type.t M.t) =
   (* tmpvars: 平坦化されたタプルの中身を1つずつ指す変数 *)
@@ -56,6 +59,21 @@ let flatten (e : t) (funnames : Id.l list) =
       let newtenv = M.add x newys tenv in
       let newenv = M.add x t env in
       Let ((x, t), Tuple newys, flatten_ e2 newtenv newenv)
+(*
+    | Let ((x, t), AppDir (L("min_caml_create_array"), [n; init]), e2) when M.mem init tenv ->
+      let tuple_content = M.find init tenv in
+      (match is_same_type (List.map (fun x -> M.find x env) tuple_content) with
+       | false -> e
+       | true ->
+         let tuple_len = List.length tuple_content in
+         let tuple_len_var = Id.gentmp Type.Int in
+         let array_len_var = Id.gentmp Type.Int in
+         (* TODO: Mul命令を実装しないとこれは難しい *)
+         Let ((tuple_len_var, Type.Int), Int tuple_len,
+              Let ((array_len_var, Type.Int), Mul (tuple_len, n),
+                   Let ((x, t), AppDir (L("min_caml_create_array"), [array_len_var; List.hd tuple_content]),
+                        array_helper n tuple_len tuple_content))))
+*)
     | Let ((x, t), e1, e2) ->
       Let ((x, t), flatten_ e1 tenv env, flatten_ e2 tenv (M.add x t env))
     | MakeCls ((x, t), c, e) ->
