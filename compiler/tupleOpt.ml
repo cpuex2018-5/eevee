@@ -165,15 +165,6 @@ let f (Prog (fundefs, e)) =
   let funnames = List.map (fun f -> fst f.name) fundefs in
   let fundefs' = List.map
       (fun { name = xt; args = yts; formal_fv = zts; body = e } ->
-         { name = xt; args = yts; formal_fv = zts; body = flatten e funnames }) fundefs in
-  let e' = flatten e funnames in
-  print_endline "------------After Nested Tuple Flattening-----------";
-  print_prog (Prog (fundefs', e'));
-  let fundefs'' = List.map
-      (fun { name = xt; args = yts; formal_fv = zts; body = e } ->
-         { name = xt; args = yts; formal_fv = zts; body = elim (flatten e funnames) }) fundefs' in
-  let e'' = elim e' in
-  print_endline "------------After Tuple Elimination-----------";
-  let p = Prog (fundefs'', e'') in
-  print_prog p;
-  p
+         { name = xt; args = yts; formal_fv = zts; body = elim (flatten e funnames) }) fundefs in
+  let e' = elim (flatten e funnames) in
+  Prog (fundefs', e')
