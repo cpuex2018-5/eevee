@@ -470,7 +470,7 @@ BinGen::Inst BinGen::Convert(std::string input) {
     else if (mnemo == "la") {
         assert(2 == arg.size());
         uint32_t tmp = MyStoi(arg[1]);
-        ret1 = auipc(arg[0], ((tmp >> 12) + (tmp >> 11) & 0x1) & 0xfffff);
+        ret1 = auipc(arg[0], ((tmp >> 12) + ((tmp >> 11) & 0x1)) & 0xfffff);
         nline_++;
         ret2 = op_imm("addi", arg[0], arg[0], tmp & 0xfff);
     }
@@ -479,7 +479,7 @@ BinGen::Inst BinGen::Convert(std::string input) {
         assert(2 == arg.size());
         uint32_t tmp = MyStoi(arg[1]);
         if (tmp > (1 << 11) - 1) {
-            ret1 = lui(arg[0], ((tmp >> 12) + (tmp >> 11) & 0x1) & 0xfffff);
+            ret1 = lui(arg[0], ((tmp >> 12) + ((tmp >> 11) & 0x1)) & 0xfffff);
             nline_++;
             ret2 = op_imm("addi", arg[0], arg[0], tmp & 0xfff);
         } else {
