@@ -18,11 +18,16 @@ let rec may_have_side_effect (exp : KNormal.t) : bool =
 (* Equality of KNotmal.t *)
 let rec eq_t (e1 : KNormal.t) (e2 : KNormal.t) : bool =
   match (e1, e2) with
-  | IfEq(e11, e12, e1t, e1f), IfEq(e21, e22, e2t, e2f) -> e11 = e21 && e12 = e22 && (eq_t e1t e2t) && (eq_t e1f e2f)
-  | IfLE(e11, e12, e1t, e1f), IfLE(e21, e22, e2t, e2f) -> e11 = e21 && e12 = e22 && (eq_t e1t e2t) && (eq_t e1f e2f)
-  | Let((x1, t1), e11, e12), Let((x2, t2), e21, e22)   -> eq_t e11 e21 && eq_t e12 (KNormal.id_subst e22 x2 x1)
-  | LetRec(f1, e1'), LetRec(f2, e2')                   -> f1 = f2 && (eq_t e1' e2')
-  | LetTuple(l1, e11, e12), LetTuple(l2, e21, e22)     -> l1 = l2 && e11 = e21 && eq_t e12 e22
+  | IfEq(e11, e12, e1t, e1f), IfEq(e21, e22, e2t, e2f) ->
+    e11 = e21 && e12 = e22 && (eq_t e1t e2t) && (eq_t e1f e2f)
+  | IfLE(e11, e12, e1t, e1f), IfLE(e21, e22, e2t, e2f) ->
+    e11 = e21 && e12 = e22 && (eq_t e1t e2t) && (eq_t e1f e2f)
+  | Let((x1, t1), e11, e12), Let((x2, t2), e21, e22) ->
+    eq_t e11 e21 && eq_t e12 (KNormal.id_subst e22 x2 x1)
+  | LetRec(f1, e1'), LetRec(f2, e2') ->
+    f1 = f2 && (eq_t e1' e2')
+  | LetTuple(l1, e11, e12), LetTuple(l2, e21, e22) ->
+    l1 = l2 && e11 = e21 && eq_t e12 e22
   | _ -> e1 = e2
 
 (* essential part of the common subexpression elimination *)
@@ -35,14 +40,12 @@ let rec g (env : letenv) (exp : KNormal.t) : KNormal.t =
   | Let((x, t), e1, e2) ->
     let e1 = g env e1 in
     (match List.find_opt (fun (e, _) -> eq_t e e1) env with
-     | Some (e, y) ->
-       (* before applying the elimination, make sure that the formula doesn't have any side effects *)
-       (match may_have_side_effect e1 with
-        | true  -> Let((x, t), e1, g env e2)
-        | false -> Let((x, t), Var y, g env e2))
+     | Some (e, y) ->Let((x, t), Var y, g env e2)
      | None ->
        (* 'e1' is unknown -> register it to the 'env' *)
-       Let((x, t), e1, g ((e1, x) :: env) e2))
+       (match may_have_side_effect e1 with
+        | true  -> Let ((x, t), e1, g env e2)
+        | false -> Let ((x, t), e1, g ((e1, x) :: env) e2)))
   | LetRec(f', e) -> LetRec(f', (g env e))
   | LetTuple(l, e1, e2) -> LetTuple(l, e1, (g env e2))
   | _ -> exp
