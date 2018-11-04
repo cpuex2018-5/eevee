@@ -50,6 +50,8 @@ int main(int argc,char **argv){
   load(sim,fp);
   Op *op = (Op *)malloc(sizeof(Op));
   exec(sim,op);
+  free(op);
+  op=NULL;
   fclose(fp);
   destroy(sim);
   free(sim);
