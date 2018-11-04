@@ -131,19 +131,19 @@ and g' buf e =
   (* 末尾だったら計算結果を%a0か%fa0にセットしてリターン (caml2html: emit_tailret) *)
   | Tail, (Nop | Stw _ | Stfd _ | Comment _ | Save _ as exp) ->
     g' buf (NonTail(Id.gentmp Type.Unit), exp);
-    Printf.bprintf buf "\tj\t%s\n" !retlabel;
+    Printf.bprintf buf "\tb\t%s\n" !retlabel;
   | Tail, (Li _ | SetL _ | Mv _ | Neg _ | Add _ | Sub _ | Slw _ | Lwz _ as exp) ->
     g' buf (NonTail(regs.(0)), exp);
-    Printf.bprintf buf "\tj\t%s\n" !retlabel;
+    Printf.bprintf buf "\tb\t%s\n" !retlabel;
   | Tail, (FLi _ | FMv _ | FNeg _ | FAdd _ | FSub _ | FMul _ | FDiv _ | Lfd _ as exp) ->
     g' buf (NonTail(fregs.(0)), exp);
-    Printf.bprintf buf "\tj\t%s\n" !retlabel;
+    Printf.bprintf buf "\tb\t%s\n" !retlabel;
   | Tail, (Restore(x) as exp) ->
     (match locate x with
      | [i] -> g' buf (NonTail(regs.(0)), exp)
      | [i; j] when i + 1 = j -> g' buf (NonTail(fregs.(0)), exp)
      | _ -> assert false);
-    Printf.bprintf buf "\tj\t%s\n" !retlabel;
+    Printf.bprintf buf "\tb\t%s\n" !retlabel;
 
     (* IF内がfalseの場合にjump *)
   | Tail, IfEq(x, V(y), e1, e2) ->
@@ -223,11 +223,11 @@ and g' buf e =
     g'_args buf [(f, reg_cl)] iargs fargs;
     Printf.bprintf buf "\tlw\tra, 0(%s)\n" (reg reg_cl);
     Printf.bprintf buf "\tjr\tra\n";
-    Printf.bprintf buf "\tj\t%s\n" !retlabel
+    Printf.bprintf buf "\tb\t%s\n" !retlabel
   | Tail, CallDir(Id.L(f), iargs, fargs) ->
     g'_args buf [] iargs fargs;
     Printf.bprintf buf "\tcall\t%s\n" f;
-    Printf.bprintf buf "\tj\t%s\n" !retlabel
+    Printf.bprintf buf "\tb\t%s\n" !retlabel
   | NonTail(a), CallCls(f, iargs, fargs) ->
     g'_args buf [(f, reg_cl)] iargs fargs;
     Printf.bprintf buf "\tlw\tra, 0(%s)\n" (reg reg_cl); (* set closure address to %ra *)

@@ -27,7 +27,7 @@ yloop_xloop_iloop.43:
 	bne	a0, zero, beq_else.122
 	li	a0, 1
 	call	min_caml_print_int
-	j	yloop_xloop_iloop.43_ret
+	b	yloop_xloop_iloop.43_ret
 beq_else.122:
 	fsub.s	fa2, fa2, fa3
 	fadd.s	fa2, fa2, fa4
@@ -46,11 +46,11 @@ beq_else.122:
 	fmv.s	fa2, fa0
 	fmv.s	fa0, ft11
 	call	yloop_xloop_iloop.43
-	j	yloop_xloop_iloop.43_ret
+	b	yloop_xloop_iloop.43_ret
 bne_else.123:
 	li	a0, 0
 	call	min_caml_print_int
-	j	yloop_xloop_iloop.43_ret
+	b	yloop_xloop_iloop.43_ret
 yloop_xloop_iloop.43_ret:
 	lw	ra, 8(sp)
 	lw	fp, 4(sp)
@@ -63,7 +63,7 @@ yloop_xloop.51:
 	addi	fp, sp, 28
 	li	t6, 400
 	blt	a0, t6, bge_else.124
-	j	yloop_xloop.51_ret
+	b	yloop_xloop.51_ret
 bge_else.124:
 	sw	a0, 0(sp)
 	sw	a1, 4(sp)
@@ -94,7 +94,7 @@ bge_else.124:
 	addi	a0, a0, 1
 	lw	a1, 4(sp)
 	call	yloop_xloop.51
-	j	yloop_xloop.51_ret
+	b	yloop_xloop.51_ret
 yloop_xloop.51_ret:
 	lw	ra, 24(sp)
 	lw	fp, 20(sp)
@@ -107,7 +107,7 @@ yloop.54:
 	addi	fp, sp, 16
 	li	t6, 400
 	blt	a0, t6, bge_else.126
-	j	yloop.54_ret
+	b	yloop.54_ret
 bge_else.126:
 	sw	a0, 0(sp)
 	call	min_caml_print_newline
@@ -117,7 +117,7 @@ bge_else.126:
 	lw	a0, 0(sp)
 	addi	a0, a0, 1
 	call	yloop.54
-	j	yloop.54_ret
+	b	yloop.54_ret
 yloop.54_ret:
 	lw	ra, 12(sp)
 	lw	fp, 8(sp)

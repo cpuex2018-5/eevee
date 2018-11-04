@@ -43,6 +43,7 @@ min_caml_print_int:
 	lw	s1, 8(sp)
 	lw	ra, 4(sp)
 	lw	fp, 0(sp)
+	addi	sp, sp, 12
 	jr	ra
 min_caml_div_rem:
 # a0 <- a0 / a1, a1 <- a0 mod a1 (引数a0, a1は共に正)
@@ -86,7 +87,14 @@ min_caml_sqrt:
 	jr	ra
 
 min_caml_float_of_int: # int -> float
-# TODO
+	fli	ft0, L_itof
+	li	t1, 1258291200
+	or	fa0, a0, t1
+	fsub.s	fa0, fa0, ft0
+	jr	ra
 
 min_caml_int_of_float: # float -> int
 # TODO
+
+	.data
+L_itof:	1258291200	# 8388608.0

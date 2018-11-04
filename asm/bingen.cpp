@@ -558,7 +558,7 @@ BinGen::Inst BinGen::Convert(std::string input) {
         std::string tmp_reg = "t6";
         ret1 = lui(tmp_reg, (imm >> 12) & 0xfffff);
         nline_++;
-        ret2 = flw(arg[0], tmp_reg, imm & 0xfff);
+        ret2 = op_imm("addi", arg[0], tmp_reg, imm & 0xfff);
     }
 
     else {
