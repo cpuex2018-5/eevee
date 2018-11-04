@@ -1,0 +1,1 @@
+../../compiler/shootout/mandelbrot.s

@@ -76,13 +76,7 @@ $ ./main -d target/fib.s
 See [Wiki](https://github.com/cpuex2018-5/eevee/wiki/eevee-ISA-extension).
 
 ### Pseudo-instructions
-
-* `la`
-* `li`, `mv`, `neg`
-* `bge`, `ble`
-* `j`, `jr`, `ret`, `call`
-* `b` : 無条件にbranch
-    * `b offset` = `bge zero, zero, offset`
+See [Wiki](https://github.com/cpuex2018-5/eevee/wiki/eevee-ISA-extension).
 
 ### その他, 更新logなど
 * ファイルの先頭の

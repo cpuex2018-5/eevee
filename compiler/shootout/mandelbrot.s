@@ -1,14 +1,9 @@
 	.data
-l.106:	 # 0.000000
-	.word	0
-l.105:	 # 1.000000
-	.word	1065353216
-l.104:	 # 1.500000
-	.word	1069547520
-l.103:	 # 400.000000
-	.word	1137180672
-l.102:	 # 4.000000
-	.word	1082130432
+l.106:	 0	# 0.000000
+l.105:	 1065353216	# 1.000000
+l.104:	 1069547520	# 1.500000
+l.103:	 1137180672	# 400.000000
+l.102:	 1082130432	# 4.000000
 	.text
 	.globl _min_caml_start
 _min_caml_start: # main entry point
@@ -61,8 +56,7 @@ beq_else.122:
 	fmul.s	fa2, fa0, fa0
 	fmul.s	fa3, fa1, fa1
 	fadd.s	fa4, fa2, fa3
-	lui	t6, %hi(l.102)
-	flw	fa6, %lo(l.102)(t6)
+	fli	fa6, l.102
 	fle.s	t6, fa4, fa6
 	beq	t6, zero, bne_else.124
 	lw	a0, 8(sp)
@@ -92,31 +86,23 @@ bge_else.125:
 	sw	a1, 4(sp)
 	call	min_caml_float_of_int
 	call	dbl.40
-	lui	t6, %hi(l.103)
-	flw	fa1, %lo(l.103)(t6)
+	fli	fa1, l.103
 	fdiv.s	fa0, fa0, fa1
-	lui	t6, %hi(l.104)
-	flw	fa1, %lo(l.104)(t6)
+	fli	fa1, l.104
 	fsub.s	fa0, fa0, fa1
 	lw	a0, 4(sp)
 	fsw	fa0, 8(sp)
 	call	min_caml_float_of_int
 	call	dbl.40
-	lui	t6, %hi(l.103)
-	flw	fa1, %lo(l.103)(t6)
+	fli	fa1, l.103
 	fdiv.s	fa0, fa0, fa1
-	lui	t6, %hi(l.105)
-	flw	fa1, %lo(l.105)(t6)
+	fli	fa1, l.105
 	fsub.s	fa5, fa0, fa1
 	li	a0, 1000
-	lui	t6, %hi(l.106)
-	flw	fa0, %lo(l.106)(t6)
-	lui	t6, %hi(l.106)
-	flw	fa1, %lo(l.106)(t6)
-	lui	t6, %hi(l.106)
-	flw	fa2, %lo(l.106)(t6)
-	lui	t6, %hi(l.106)
-	flw	fa3, %lo(l.106)(t6)
+	fli	fa0, l.106
+	fli	fa1, l.106
+	fli	fa2, l.106
+	fli	fa3, l.106
 	flw	fa4, 8(sp)
 	call	yloop_xloop_iloop.42
 	lw	a0, 0(sp)

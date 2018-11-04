@@ -92,8 +92,11 @@ class BinGen {
         bool is_verbose_;
         bool is_debug_;
         bool is_ascii_;
+
+        bool data_mode_ = false;
         std::ofstream ofs_;
         std::map<std::string, int> label_map_;
+        std::map<std::string, int> data_map_;
         const std::map<std::string, int> regmap_;
         const std::map<std::string, int> fregmap_;
 

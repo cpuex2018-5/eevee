@@ -1,0 +1,6 @@
+*.o
+main
+test
+*.dSYM/
+*.asm
+*.bin

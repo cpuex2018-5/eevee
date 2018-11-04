@@ -77,8 +77,7 @@ and g' buf e =
     Printf.bprintf buf "\tlui\t%s, %d\n" r n;
     Printf.bprintf buf "\tori\t%s, %s, %d\n" r r m
   | NonTail(x), FLi(Id.L(l)) ->
-    Printf.bprintf buf "\tlui\t%s, %%hi(%s)\n" (reg reg_tmp) l;
-    Printf.bprintf buf "\tflw\t%s, %%lo(%s)(%s)\n" (reg x) l (reg reg_tmp)
+    Printf.bprintf buf "\tfli\t%s, %s\n" (reg x) l
   | NonTail(x), SetL(Id.L(y)) ->
     Printf.bprintf buf "\tla\t%s, %s\n" (reg x) y
   | NonTail(x), Mv(y) when x = y -> ()
@@ -310,8 +309,8 @@ let f oc (Prog(data, fundefs, e)) =
      List.iter
        (fun (Id.L(x), d) ->
           (* Printf.fprintf oc "\t.align 3\n"; *)
-          Printf.fprintf oc "%s:\t # %f\n" x d;
-          Printf.fprintf oc "\t.word\t%ld\n" (castToInt d);
+          Printf.fprintf oc "%s:\t %ld\t# %f\n" x (castToInt d) d;
+          (* Printf.fprintf oc "\t.word\t%ld\n" (castToInt d); *)
           (* Printf.fprintf oc "\t.long\t%ld\n" (getlo d)*))
        data);
   Printf.fprintf oc "\t.text\n";

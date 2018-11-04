@@ -298,8 +298,19 @@ void BinGen::ReadLabels(std::string input) {
     if (mnemo.back() != ':') {
         // The input wasn't a label.
 
+        // start reading data table
+        if (mnemo == ".data") {
+            data_mode_ = true;
+            return;
+        }
+
+        if (mnemo == ".text") {
+            data_mode_ = false;
+            return;
+        }
+
         // Some pseudo-instructions will expand to two instrs
-        if (mnemo == "la" || mnemo == "ret" || mnemo == "call") {
+        if (mnemo == "la" || mnemo == "ret" || mnemo == "call" || mnemo == "fli") {
             nline_ += 2;
             return;
         }
@@ -310,7 +321,7 @@ void BinGen::ReadLabels(std::string input) {
         }
 
         // Don't count these markers
-        if (mnemo == ".file" || mnemo == ".option" || mnemo == ".text" || mnemo == ".align" ||
+        if (mnemo == ".file" || mnemo == ".option" || mnemo == ".align" ||
             mnemo == ".globl" || mnemo == ".type" || mnemo == ".size" || mnemo == ".ident") {
             std::fprintf(stderr, "Note: |%s| was ignored\n", input.c_str());
             return;
@@ -324,6 +335,12 @@ void BinGen::ReadLabels(std::string input) {
         return;
     }
     mnemo.pop_back();
+
+    if (data_mode_) {
+        data_map_[mnemo] = std::stoi(arg[0]);
+        return;
+    }
+
     std::cerr << "[INFO] new label " << mnemo << " registered at " << nline_ << std::endl;
     label_map_[mnemo] = nline_;
 }
@@ -379,7 +396,7 @@ BinGen::Inst BinGen::Convert(std::string input) {
         return Inst(0, 0);
 
     if (mnemo == ".file" || mnemo == ".option" || mnemo == ".text" || mnemo == ".align" ||
-        mnemo == ".globl" || mnemo == ".type" || mnemo == ".size" || mnemo == ".ident")
+        mnemo == ".globl" || mnemo == ".type" || mnemo == ".size" || mnemo == ".ident" || mnemo == ".data")
         return Inst(0, 0);
 
     // Comment
@@ -457,6 +474,11 @@ BinGen::Inst BinGen::Convert(std::string input) {
         ret1 = fsw(arg[0], rs, offset);
     }
 
+    else if (mnemo == "feq.s" || mnemo == "flt.s" || mnemo == "fle.s") {
+        assert(3 == arg.size());
+        ret1 = f_cmp(mnemo, arg[0], arg[1], arg[2]);
+    }
+
     else if (mnemo == "fsqrt.s" || mnemo == "fabs.s" || mnemo == "fneg.s" || mnemo == "fmv.s" || mnemo == "finv.s") {
         assert(2 == arg.size());
         ret1 = f_op2(mnemo, arg[0], arg[1]);
@@ -527,8 +549,17 @@ BinGen::Inst BinGen::Convert(std::string input) {
         // その結果2 ^ 12を超える場合は下位20bitをわたす
         ret1 = auipc("x6", ((imm >> 12) + ((imm >> 11) & 1)) & 0xfffff);
         nline_++;
-        ret2 = jalr("x1", "x6", imm &  0xfff);
-   }
+        ret2 = jalr("x1", "x6", imm & 0xfff);
+    }
+
+    else if (mnemo == "fli") {
+        assert(2 == arg.size());
+        uint32_t imm = data_map_[arg[1]];
+        std::string tmp_reg = "t6";
+        ret1 = lui(tmp_reg, (imm >> 12) & 0xfffff);
+        nline_++;
+        ret2 = flw(arg[0], tmp_reg, imm & 0xfff);
+    }
 
     else {
         std::cout << "No such instructions: " << input << std::endl;
