@@ -36,3 +36,6 @@ bytemark/Makefile
 
 raytracer/
 min-rt/
+
+*.out
+*.ppm

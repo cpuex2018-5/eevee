@@ -1,7 +1,6 @@
 open Asm
 
-external gethi : float -> int32 = "gethi"
-external getlo : float -> int32 = "getlo"
+external castToInt : float -> int32 = "castToInt"
 
 let stackset : S.t ref = ref S.empty (* Set of variables already 'Saved' (caml2html: emit_stackset) *)
 let stackmap : Id.t list ref = ref [] (* Positions of variables in the stack which are already 'Saved' (caml2html: emit_stackmap) *)
@@ -78,8 +77,8 @@ and g' buf e =
     Printf.bprintf buf "\tlui\t%s, %d\n" r n;
     Printf.bprintf buf "\tori\t%s, %s, %d\n" r r m
   | NonTail(x), FLi(Id.L(l)) ->
-    Printf.bprintf buf "\tla\t%s, %s\n" (reg reg_tmp) l;
-    Printf.bprintf buf "\tflw\t%s, 0(%s)\n" (reg x) (reg reg_tmp)
+    Printf.bprintf buf "\tlui\t%s, %%hi(%s)\n" (reg reg_tmp) l;
+    Printf.bprintf buf "\tflw\t%s, %%lo(%s)(%s)\n" (reg x) l (reg reg_tmp)
   | NonTail(x), SetL(Id.L(y)) ->
     Printf.bprintf buf "\tla\t%s, %s\n" (reg x) y
   | NonTail(x), Mv(y) when x = y -> ()
@@ -148,12 +147,12 @@ and g' buf e =
     Printf.bprintf buf "\tj\t%s\n" !retlabel;
 
     (* IF内がfalseの場合にjump *)
-    (* TODO: 比較するものの一方が0のときは一命令減らせる *)
   | Tail, IfEq(x, V(y), e1, e2) ->
     g'_tail_if buf x y e1 e2 "beq" "bne"
   | Tail, IfEq(x, C(y), e1, e2) ->
     (match y with
      | 0 ->
+       (* 比較するものの一方が0のときは一命令減らせる *)
        g'_tail_if buf x "zero" e1 e2 "beq" "bne"
      | _ ->
        Printf.bprintf buf "\tli\t%s, %d\n" (reg reg_tmp) y;
@@ -177,14 +176,13 @@ and g' buf e =
        Printf.bprintf buf "\tli\t%s, %d\n" (reg reg_tmp) y;
        g'_tail_if buf x reg_tmp e1 e2 "bge" "blt")
   | Tail, IfFEq(x, y, e1, e2) ->
-    (* TODO: Floating用に直す *)
     (* Store the comparison result in reg_tmp (integer register!) *)
-    Printf.bprintf buf "\tfeq.s\t%s, %s, %s\n" reg_tmp x y;
-    (* x = y -> reg_tmpが1 -> beq reg_tmp zero で分岐しない *)
+    Printf.bprintf buf "\tfeq.s\t%s, %s, %s\n" (reg reg_tmp) (reg x) (reg y);
+    (* reg_tmp = 0 -> not equal -> 分岐する *)
     g'_tail_if buf reg_tmp "zero" e1 e2 "bne" "beq"
   | Tail, IfFLE(x, y, e1, e2) ->
-    Printf.bprintf buf "\tfle.s\t%s, %s, %s\n" reg_tmp x y;
-    (* x <= y -> reg_tmpが1 -> beq reg_tmp zero で分岐しない *)
+    Printf.bprintf buf "\tfle.s\t%s, %s, %s\n" (reg reg_tmp) (reg x) (reg y);
+    (* reg_tmp = 0 -> x > y -> 分岐する *)
     g'_tail_if buf reg_tmp "zero" e1 e2 "bne" "beq"
   | NonTail(z), IfEq(x, V(y), e1, e2) ->
     g'_non_tail_if buf (NonTail(z)) x y e1 e2 "beq" "bne"
@@ -214,10 +212,10 @@ and g' buf e =
        Printf.bprintf buf "\tli\t%s, %d\n" (reg reg_tmp) y;
        g'_non_tail_if buf (NonTail(z)) x reg_tmp e1 e2 "bge" "blt")
   | NonTail(z), IfFEq(x, y, e1, e2) ->
-    Printf.bprintf buf "\tfeq.s\t%s, %s, %s\n" reg_tmp x y;
+    Printf.bprintf buf "\tfeq.s\t%s, %s, %s\n" (reg reg_tmp) (reg x) (reg y);
     g'_non_tail_if buf (NonTail(z)) reg_tmp "zero" e1 e2 "bne" "beq"
   | NonTail(z), IfFLE(x, y, e1, e2) ->
-    Printf.bprintf buf "\tfle.s\t%s, %s, %s\n" reg_tmp x y;
+    Printf.bprintf buf "\tfle.s\t%s, %s, %s\n" (reg reg_tmp) (reg x) (reg y);
     g'_non_tail_if buf (NonTail(z)) reg_tmp "zero" e1 e2 "bne" "beq"
 
   (* INFO: caller-save regs: ra, t*, a* / callee-save regs: sp, fp, s* *)
@@ -308,17 +306,17 @@ let h oc { name = Id.L(x); args = _; fargs = _; body = e; ret = _ } =
 let f oc (Prog(data, fundefs, e)) =
   Format.eprintf "generating assembly...@.";
   if data <> [] then
-    (Printf.fprintf oc "\t.data\n\t.literal8\n";
+    (Printf.fprintf oc "\t.data\n";
      List.iter
        (fun (Id.L(x), d) ->
-          Printf.fprintf oc "\t.align 3\n";
+          (* Printf.fprintf oc "\t.align 3\n"; *)
           Printf.fprintf oc "%s:\t # %f\n" x d;
-          Printf.fprintf oc "\t.long\t%ld\n" (gethi d);
-          Printf.fprintf oc "\t.long\t%ld\n" (getlo d))
+          Printf.fprintf oc "\t.word\t%ld\n" (castToInt d);
+          (* Printf.fprintf oc "\t.long\t%ld\n" (getlo d)*))
        data);
   Printf.fprintf oc "\t.text\n";
   Printf.fprintf oc "\t.globl _min_caml_start\n";
-  Printf.fprintf oc "\t.align 2\n";
+  (* Printf.fprintf oc "\t.align 2\n"; *)
   Printf.fprintf oc "_min_caml_start: # main entry point\n";
   Printf.fprintf oc "\taddi\tsp, sp, -8\n";
   (* Printf.fprintf oc "\tsw\tra, 4(sp)\n"; *) (* returnしないので *)
