@@ -10,13 +10,13 @@ class BinGen {
     public:
         typedef std::pair<uint32_t, uint32_t> Inst;
 
-        BinGen(std::ofstream ofs, bool is_verbose, bool is_debug, bool is_ascii);
+        BinGen(std::ofstream ofs, std::ofstream debugofs, bool is_verbose, bool is_debug, bool is_ascii);
 
         // 1周目
         void ReadLabels(std::string input);
 
         // 1周目のあとに呼ぶ
-        void ClearNline_();
+        void OnReadLabelsCompleted();
 
         // 2周目
         void Main(std::string input);
@@ -95,8 +95,8 @@ class BinGen {
 
         bool data_mode_ = false;
         std::ofstream ofs_;
+        std::ofstream debugofs_;
         std::map<std::string, int> label_map_;
-        std::map<std::string, int> data_map_;
         const std::map<std::string, int> regmap_;
         const std::map<std::string, int> fregmap_;
 

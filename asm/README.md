@@ -40,10 +40,13 @@ $ ./main -v target/fib.s
     0000 0000 0000 0101 0000 0111 1001 0011
 ```
 
-* `-d` : debug mode (pcの値を先頭につけたアセンブリをstdoutに表示)
+* `-d` : debug mode (pcの値を先頭につけたアセンブリを[入力].asmに出力)
 
 ```
-$ ./main -d target/fib.s
+$ ./main -d target/fib.s  # target/fib.asm will be generated
+```
+
+```
 	_min_caml_start: # main entry point
 (   0)		addi	sp, sp, -8
 (   4)		sw	ra, 4(sp)

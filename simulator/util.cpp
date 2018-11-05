@@ -21,6 +21,16 @@ void print_binary(int val){
   printf("\n");
 }
 
+std::string to_string(uint32_t inst) {
+    std::string str;
+    for (int i = 0; i < 32; i++) {
+        str.push_back(((inst >> (31 - i)) & 0x1)? '1' : '0');
+        if (i % 4 == 3) str.push_back(' ');
+    }
+    assert(str.size() == 40);
+    return str;
+}
+
 void floatToBinary(float f){
   union {float f; unsigned int i;}u ;
   u.f = f;

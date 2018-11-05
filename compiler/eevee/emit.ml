@@ -304,15 +304,6 @@ let h oc { name = Id.L(x); args = _; fargs = _; body = e; ret = _ } =
 
 let f oc (Prog(data, fundefs, e)) =
   Format.eprintf "generating assembly...@.";
-  if data <> [] then
-    (Printf.fprintf oc "\t.data\n";
-     List.iter
-       (fun (Id.L(x), d) ->
-          (* Printf.fprintf oc "\t.align 3\n"; *)
-          Printf.fprintf oc "%s:\t %ld\t# %f\n" x (castToInt d) d;
-          (* Printf.fprintf oc "\t.word\t%ld\n" (castToInt d); *)
-          (* Printf.fprintf oc "\t.long\t%ld\n" (getlo d)*))
-       data);
   Printf.fprintf oc "\t.text\n";
   Printf.fprintf oc "\t.globl _min_caml_start\n";
   (* Printf.fprintf oc "\t.align 2\n"; *)
@@ -337,3 +328,12 @@ let f oc (Prog(data, fundefs, e)) =
   List.iter (fun fundef -> h oc fundef) fundefs;
   Printf.fprintf oc "end:\n";
   Printf.fprintf oc "\tj\tend\n";
+  if data <> [] then
+    (Printf.fprintf oc "\t.data\n";
+     List.iter
+       (fun (Id.L(x), d) ->
+          (* Printf.fprintf oc "\t.align 3\n"; *)
+          Printf.fprintf oc "%s:\t# %f\n" x d;
+          Printf.fprintf oc "\t.word\t%ld\n" (castToInt d);
+          (* Printf.fprintf oc "\t.long\t%ld\n" (getlo d)*))
+       data);
