@@ -12,7 +12,12 @@ void print_regs(Simulator *sim){
 
 void print_fregs(Simulator *sim){
   for(int i=0;i<32;i++){
-    fprintf(stdout,"fReg %02d(%7s):  D:%f\n",i,fRegs[i],sim->f_registers[i]);
+    if (isnan(sim->f_registers[i])) {
+      std::string str = to_string(sim->f_registers[i]);
+      fprintf(stdout,"fReg %02d(%7s):  D:%s\n",i,fRegs[i],str.c_str());
+    } else {
+      fprintf(stdout,"fReg %02d(%7s):  D:%f\n",i,fRegs[i],sim->f_registers[i]);
+    }
   }
 }
 

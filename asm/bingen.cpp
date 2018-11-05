@@ -12,6 +12,9 @@
 // round mode (dummy)
 #define RM 0b000
 
+// simulatorのMEM_SIZE
+#define MEM_SIZE 0x100010
+
 BinGen::BinGen(std::ofstream ofs, bool is_verbose, bool is_debug, bool is_ascii)
   : is_verbose_(is_verbose),
     is_debug_(is_debug),
@@ -336,7 +339,7 @@ void BinGen::ReadLabels(std::string input) {
     }
     mnemo.pop_back();
 
-    std::cerr << "[INFO] new label " << mnemo << " registered at " << nline_ << std::endl;
+    std::cerr << "[INFO] new label " << mnemo << " registered at " << nline_ * 4 << std::endl;
     label_map_[mnemo] = nline_;
 }
 
@@ -567,7 +570,7 @@ BinGen::Inst BinGen::Convert(std::string input) {
     else if (mnemo == "fli") {
         // Note: t6レジスタが潰される
         assert(2 == arg.size());
-        uint32_t imm = MyStoi(arg[1]);
+        uint32_t imm = MyStoi(arg[1]) + nline_ * 4 + MEM_SIZE;
         std::string tmp_reg = "t6";
         ret1 = lui(tmp_reg, (imm >> 12) & 0xfffff);
         nline_++;
@@ -600,7 +603,7 @@ void BinGen::Main(std::string input) {
     if (inst.first == 0 && inst.second == -1) return;
 
     if (is_verbose_) {
-        std::cout << "(pc " << old_nline * 4 << "):" << input << std::endl << "    ";
+        std::cout << "(pc " << old_nline * 4 << "):" << input << std::endl;
         PrintInst(inst);
         std::cout << std::endl;
     }

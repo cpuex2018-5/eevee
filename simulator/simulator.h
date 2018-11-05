@@ -50,6 +50,7 @@ Op *decode_io(unsigned int inst,Op *op);
 unsigned int get_binary(unsigned int,int,int);
 void usage();
 void print_binary(int);
+std::string to_string(uint32_t);
 void floatToBinary(float f);
 void disas(unsigned int,unsigned int,Op *);
 bool skip(char);
