@@ -479,19 +479,19 @@ void exec(Simulator *sim,Op *op){
         else if(op->funct7 == 0b1010000 && op->funct3 == 0b010){
           //feq.s
           if(sim->f_registers[op->rs1] == sim->f_registers[op->rs2]){
-            sim->f_registers[op->rd] = 1;
+            sim->registers[op->rd] = 1;
           }
           else{
-            sim->f_registers[op->rd] = 0;
+            sim->registers[op->rd] = 0;
           }
         }
         else if(op->funct7 == 0b1010000 && op->funct3 == 0b000){
           //fle.s
           if(sim->f_registers[op->rs1] <= sim->f_registers[op->rs2]){
-            sim->f_registers[op->rd] = 1;
+            sim->registers[op->rd] = 1;
           }
           else{
-            sim->f_registers[op->rd] = 0;
+            sim->registers[op->rd] = 0;
           }
         }
         else if(op->funct7 == 0b0010000 && op->rs2 == 0b00000 && op->funct3 == 0b000){
