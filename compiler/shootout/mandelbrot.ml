@@ -14,7 +14,7 @@ let rec yloop y =
             let zi2 = zi *. zi in
             if zr2 +. zi2 > 2.0 *. 2.0 then print_int 0 else
               iloop (i - 1) zr zi zr2 zi2 cr ci in
-        iloop 1000 0.0 0.0 0.0 0.0 cr ci;
+        iloop 100 0.0 0.0 0.0 0.0 cr ci;
         xloop (x + 1) y in
     print_newline ();
     xloop 0 y;
