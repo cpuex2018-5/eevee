@@ -105,14 +105,12 @@ void exec(Simulator *sim,Op *op){
     memset(op,0,sizeof(Op));
     switch(opcode){
       case 0b0110111:
-        //検証済み
         //lui
         decode_u(inst,op);
         sim->registers[op->rd] =(op->imm << 12);
         sim -> pc = sim -> pc + 4;
         break;
       case 0b0010111:
-        //検証済み
         //auipc
         decode_u(inst,op);
         sim->registers[op->rd]=(op->imm << 12)+ sim -> pc;
@@ -194,7 +192,6 @@ void exec(Simulator *sim,Op *op){
         }
         break;
       case 0b0000011:
-        //検証済み
         //lb,lh,lw,lbu,lhu
         decode_i(inst,op);
         s_imm = (op->imm) | ((op->imm & 0x800) ? 0xFFFFF800:0); //sign extension
@@ -228,7 +225,6 @@ void exec(Simulator *sim,Op *op){
         sim -> pc = sim -> pc + 4;
         break;
       case 0b0100011:
-        //検証済み
         //sb,sh,sw
         decode_s(inst,op);
         s_imm = (op->imm) | ((op->imm & 0x800) ? 0xFFFFF800:0); //sign extension
@@ -395,19 +391,9 @@ void exec(Simulator *sim,Op *op){
         break;
       case 0b0000111:
         //flw
-        //riscv-spec-vには明示されてないけど符号拡張しとく
         decode_i(inst,op);
         s_imm = (op->imm) | ((op->imm & 0x800) ? 0xFFFFF800:0);
         address = sim -> registers[op->rs1] + s_imm;
-        /*
-        std::cout << address << std::endl;
-        print_binary((unsigned int)sim->data_memory[address]);
-        print_binary((unsigned int)sim->data_memory[address+1]<<8);
-        print_binary((unsigned int)sim->data_memory[address+2]<<16);
-        print_binary((unsigned int)sim->data_memory[address+3]<<24); //これらは正しい
-        print_binary(((unsigned int)sim->data_memory[address+3]<<24)+((unsigned int)sim->data_memory[address+2]<<16)
-                                        + ((unsigned int)sim->data_memory[address+1]<<8)+((unsigned int)sim->data_memory[address]));
-        */
         union {float f_f;unsigned int f_i;} u1;
         if (address < MEM_SIZE) {
             u1.f_i = ((unsigned int)sim->data_memory[address+3]<<24)+((unsigned int)sim->data_memory[address+2]<<16)
@@ -418,12 +404,7 @@ void exec(Simulator *sim,Op *op){
             u1.f_i = (sim->text_memory[address]<<24) | (sim->text_memory[address+1]<<16) | (sim->text_memory[address+2]<<8) | sim->text_memory[address+3];
         }
         if(op->funct3 == 0b010){
-          /*
-          sim -> f_registers[op->rd] = ((unsigned int)sim->data_memory[address+3]<<24)+((unsigned int)sim->data_memory[address+2]<<16)
-                                        + ((unsigned int)sim->data_memory[address+1]<<8)+((unsigned int)sim->data_memory[address]);
-          */
           sim -> f_registers[op->rd] = u1.f_f;
-          //floatToBinary(sim->f_registers[op->rd]);
         }
         else{
           fprintf(stderr,"Unknown instruction\n");
@@ -437,12 +418,6 @@ void exec(Simulator *sim,Op *op){
         address = sim->registers[op->rs1] + s_imm;
         union {float f_f;unsigned int f_i;} u2;
         u2.f_f = sim->f_registers[op->rs2];
-        /*
-        print_binary(get_binary(u2.f_i,0,8));
-        print_binary(get_binary(u2.f_i,8,16));
-        print_binary(get_binary(u2.f_i,16,24));
-        print_binary(get_binary(u2.f_i,24,32));
-        */
         if(op->funct3 == 0b010){
           sim -> data_memory[address] = get_binary(u2.f_i,0,8);
           sim -> data_memory[address+1] = get_binary(u2.f_i,8,16);
@@ -519,8 +494,6 @@ void exec(Simulator *sim,Op *op){
         fprintf(stderr,"unknown instruction %x at pc = %lu\n", inst, sim->pc);
         sim->pc = sim -> pc + 4;
     }
-    //free(op);
-    //op=NULL;
     sim->registers[0]=0;
   }
 
