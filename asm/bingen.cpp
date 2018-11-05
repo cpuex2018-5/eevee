@@ -15,11 +15,12 @@
 // simulatorのMEM_SIZE
 #define MEM_SIZE 0x100010
 
-BinGen::BinGen(std::ofstream ofs, bool is_verbose, bool is_debug, bool is_ascii)
+BinGen::BinGen(std::ofstream ofs, std::ofstream debugofs, bool is_verbose, bool is_debug, bool is_ascii)
   : is_verbose_(is_verbose),
     is_debug_(is_debug),
     is_ascii_(is_ascii),
     ofs_(std::move(ofs)),
+    debugofs_(std::move(debugofs)),
     regmap_(create_regmap()),
     fregmap_(create_fregmap()) {}
 
@@ -593,10 +594,11 @@ void BinGen::Main(std::string input) {
     BinGen::Inst inst(Convert(input));
 
     if (is_debug_) {
-        if (inst.first == 0 && inst.second == -1) // not an instruction or a data
-            std::printf("\t%s\n", input.c_str());
-        else
-            std::printf("(%4d)\t%s\n", old_nline * 4, input.c_str());
+        if (inst.first == 0 && inst.second == -1) { // not an instruction or a data
+            debugofs_ << "\t" << input << std::endl;
+        } else {
+            debugofs_ << "(" << old_nline * 4 << ")\t" << input << std::endl;
+        }
     }
 
     // not an instruction or a data

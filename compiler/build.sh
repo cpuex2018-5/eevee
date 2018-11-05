@@ -22,8 +22,8 @@ BINNAME=${FILENAME/\.ml/\.bin}
 
 if [ $# -eq 1 ]; then
     ./../asm/main $ASMNAME
-    echo "generated " $ASMNAME " and " $BINNAME
 else
-    ./../asm/main $FLAG $ASMNAME > ${FILENAME/\.ml/\.asm}
-    echo "generated " $ASMNAME ", " $BINNAME " and " ${FILENAME/\.ml/\.asm}
+    ./../asm/main $FLAG $ASMNAME
 fi
+
+echo "generated " $ASMNAME " and " $BINNAME "

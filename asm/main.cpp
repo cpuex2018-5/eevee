@@ -53,8 +53,9 @@ int main(int argc, char* argv[])
 
     std::string outfile(infile.begin(), infile.end() - 2);
     std::ofstream ofs(outfile + ".bin");
+    std::ofstream debugofs(outfile + ".asm");
     std::string str;
-    BinGen bingen(std::move(ofs), is_verbose, is_debug, is_ascii);
+    BinGen bingen(std::move(ofs), std::move(debugofs), is_verbose, is_debug, is_ascii);
 
     // Round 1: Skim through the assembly code and get the position of each label
     while (getline(ifs, str))
