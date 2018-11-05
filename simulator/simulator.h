@@ -6,6 +6,7 @@
 #include<string>
 #include<iostream>
 #include<cmath>
+#include<assert.h>
 extern const unsigned int MEM_SIZE;
 extern const unsigned int STACK_POS;
 
