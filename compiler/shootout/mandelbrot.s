@@ -18,8 +18,8 @@ yloop_xloop_iloop.43:
 	sw	fp, 4(sp)
 	addi	fp, sp, 12
 	bne	a0, zero, beq_else.122
-	li	a0, 49	# '1'
-	w	a0
+	li	a0, 1
+	call	min_caml_print_int
 	b	yloop_xloop_iloop.43_ret
 beq_else.122:
 	fsub.s	fa2, fa2, fa3
@@ -41,8 +41,8 @@ beq_else.122:
 	call	yloop_xloop_iloop.43
 	b	yloop_xloop_iloop.43_ret
 bne_else.123:
-	li	a0, 48	# '0'
-	w	a0
+	li	a0, 0
+	call	min_caml_print_int
 	b	yloop_xloop_iloop.43_ret
 yloop_xloop_iloop.43_ret:
 	lw	ra, 8(sp)
