@@ -65,7 +65,7 @@ int main(int argc, char* argv[])
     while (getline(lib, str))
         bingen.ReadLabels(str);
 
-    bingen.ClearNline_();
+    bingen.OnReadLabelsCompleted();
     ifs.clear();
     ifs.seekg(0, std::ios::beg);
     lib.clear();

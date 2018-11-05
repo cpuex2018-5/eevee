@@ -286,8 +286,9 @@ void BinGen::WriteDataInAscii(uint32_t data) {
     ofs_ << str << std::endl;
 }
 
-void BinGen::ClearNline_(){
+void BinGen::OnReadLabelsCompleted(){
     nline_ = 0;
+    data_mode_ = false;
 }
 
 void BinGen::ReadLabels(std::string input) {
@@ -295,19 +296,18 @@ void BinGen::ReadLabels(std::string input) {
     std::vector<std::string> arg;
     Parse(input, mnemo, arg);
 
+    if (mnemo == ".text") {
+        data_mode_ = false;
+        return;
+    }
+
+    if (mnemo == ".data") {
+        data_mode_ = true;
+        return;
+    }
+
     if (mnemo.back() != ':') {
         // The input wasn't a label.
-
-        // start reading data table
-        if (mnemo == ".data") {
-            data_mode_ = true;
-            return;
-        }
-
-        if (mnemo == ".text") {
-            data_mode_ = false;
-            return;
-        }
 
         // Some pseudo-instructions will expand to two instrs
         if (mnemo == "la" || mnemo == "ret" || mnemo == "call" || mnemo == "fli") {
@@ -323,7 +323,7 @@ void BinGen::ReadLabels(std::string input) {
         // Don't count these markers
         if (mnemo == ".file" || mnemo == ".option" || mnemo == ".align" ||
             mnemo == ".globl" || mnemo == ".type" || mnemo == ".size" || mnemo == ".ident") {
-            std::fprintf(stderr, "Note: |%s| was ignored\n", input.c_str());
+            std::fprintf(stderr, "[INFO] |%s| was ignored\n", input.c_str());
             return;
         }
 
@@ -335,11 +335,6 @@ void BinGen::ReadLabels(std::string input) {
         return;
     }
     mnemo.pop_back();
-
-    if (data_mode_) {
-        data_map_[mnemo] = std::stoi(arg[0]);
-        return;
-    }
 
     std::cerr << "[INFO] new label " << mnemo << " registered at " << nline_ << std::endl;
     label_map_[mnemo] = nline_;
@@ -391,20 +386,37 @@ BinGen::Inst BinGen::Convert(std::string input) {
     uint32_t ret1, ret2;
     ret1 = ret2 = 0;
 
+    if (mnemo == ".text") {
+        data_mode_ = false;
+        return Inst(0, -1);
+    }
+
+    if (mnemo == ".data") {
+        data_mode_ = true;
+        return Inst(0, -1);
+    }
+
     // Skip the labels.
     if (mnemo.back() == ':')
-        return Inst(0, 0);
+        return Inst(0, -1);
 
-    if (mnemo == ".file" || mnemo == ".option" || mnemo == ".text" || mnemo == ".align" ||
-        mnemo == ".globl" || mnemo == ".type" || mnemo == ".size" || mnemo == ".ident" || mnemo == ".data")
-        return Inst(0, 0);
+    if (mnemo == ".file" || mnemo == ".option" || mnemo == ".align" ||
+        mnemo == ".globl" || mnemo == ".type" || mnemo == ".size" || mnemo == ".ident")
+        return Inst(0, -1);
 
     // Comment
     if (mnemo == "")
-        return Inst(0, 0);
+        return Inst(0, -1);
+
+    // data
+    if (mnemo == ".word") {
+        assert(data_mode_);
+        assert(1 == arg.size());
+        ret1 = MyStoi(arg[0]);
+    }
 
     // RV32I basic instructions ==============================================================
-    if (mnemo == "lui") {
+    else if (mnemo == "lui") {
         assert(2 == arg.size());
         ret1 = lui(arg[0], MyStoi(arg[1]));
     }
@@ -553,17 +565,19 @@ BinGen::Inst BinGen::Convert(std::string input) {
     }
 
     else if (mnemo == "fli") {
+        // Note: t6レジスタが潰される
         assert(2 == arg.size());
-        uint32_t imm = data_map_[arg[1]];
+        uint32_t imm = MyStoi(arg[1]);
         std::string tmp_reg = "t6";
         ret1 = lui(tmp_reg, (imm >> 12) & 0xfffff);
         nline_++;
-        ret2 = op_imm("addi", arg[0], tmp_reg, imm & 0xfff);
+        ret2 = flw(arg[0], tmp_reg, (imm & 0xfff));
+        // ret2 = op_imm("addi", arg[0], tmp_reg, imm & 0xfff);
     }
 
     else {
-        std::cout << "No such instructions: " << input << std::endl;
-        return Inst(0, 0);
+        fprintf(stderr, "No such instructions: %s\n", input.c_str());
+        return Inst(0, -1);
     }
 
     BinGen::Inst ret(ret1, ret2);
@@ -576,14 +590,14 @@ void BinGen::Main(std::string input) {
     BinGen::Inst inst(Convert(input));
 
     if (is_debug_) {
-        if (inst.first == 0)
+        if (inst.first == 0 && inst.second == -1) // not an instruction or a data
             std::printf("\t%s\n", input.c_str());
         else
             std::printf("(%4d)\t%s\n", old_nline * 4, input.c_str());
     }
 
-    // error
-    if (inst.first == 0) return;
+    // not an instruction or a data
+    if (inst.first == 0 && inst.second == -1) return;
 
     if (is_verbose_) {
         std::cout << "(pc " << old_nline * 4 << "):" << input << std::endl << "    ";

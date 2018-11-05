@@ -409,8 +409,14 @@ void exec(Simulator *sim,Op *op){
                                         + ((unsigned int)sim->data_memory[address+1]<<8)+((unsigned int)sim->data_memory[address]));
         */
         union {float f_f;unsigned int f_i;} u1;
-        u1.f_i = ((unsigned int)sim->data_memory[address+3]<<24)+((unsigned int)sim->data_memory[address+2]<<16)
-                                        + ((unsigned int)sim->data_memory[address+1]<<8)+((unsigned int)sim->data_memory[address]);
+        try {
+            u1.f_i = ((unsigned int)sim->data_memory[address+3]<<24)+((unsigned int)sim->data_memory[address+2]<<16)
+                + ((unsigned int)sim->data_memory[address+1]<<8)+((unsigned int)sim->data_memory[address]);
+        }
+        catch (...) {
+            address = sim -> pc + s_imm;
+            u1.f_i = (sim->text_memory[address]<<24) | (sim->text_memory[address+1]<<16) | (sim->text_memory[address+2]<<8) | sim->text_memory[address+3];
+        }
         if(op->funct3 == 0b010){
           /*
           sim -> f_registers[op->rd] = ((unsigned int)sim->data_memory[address+3]<<24)+((unsigned int)sim->data_memory[address+2]<<16)
@@ -510,7 +516,7 @@ void exec(Simulator *sim,Op *op){
         sim->pc = sim->pc+4;
         break;
       default:
-        fprintf(stderr,"unknown instruction\n");
+        fprintf(stderr,"unknown instruction %x at pc = %lu\n", inst, sim->pc);
         sim->pc = sim -> pc + 4;
     }
     //free(op);

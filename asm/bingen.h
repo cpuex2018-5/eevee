@@ -16,7 +16,7 @@ class BinGen {
         void ReadLabels(std::string input);
 
         // 1周目のあとに呼ぶ
-        void ClearNline_();
+        void OnReadLabelsCompleted();
 
         // 2周目
         void Main(std::string input);
@@ -96,7 +96,6 @@ class BinGen {
         bool data_mode_ = false;
         std::ofstream ofs_;
         std::map<std::string, int> label_map_;
-        std::map<std::string, int> data_map_;
         const std::map<std::string, int> regmap_;
         const std::map<std::string, int> fregmap_;
 

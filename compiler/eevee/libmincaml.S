@@ -1,3 +1,4 @@
+	.text
 # ============= beginning of libmincaml.S ===============
 min_caml_print_byte:
 # a0の下位8bitに出力したい文字のasciiコードが入っている
@@ -89,7 +90,10 @@ min_caml_sqrt:
 min_caml_float_of_int: # int -> float
 	fli	ft0, L_itof
 	li	t1, 1258291200
-	or	fa0, a0, t1
+	or	a0, a0, t1
+# TODO: integer -> floating レジスタ間のmv (fmv.w.x) がほしいかもしれない...
+	sw	a0, -4(sp)
+	flw	fa0, -4(sp)
 	fsub.s	fa0, fa0, ft0
 	jr	ra
 
