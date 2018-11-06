@@ -84,8 +84,6 @@ class BinGen {
         // |imm|がラベルの場合は対応する値を返し、即値ならstoiして返す　
         uint32_t MyStoi(std::string imm);
 
-        bool is_sep(char c);
-
         // Number of instructions read so far.
         int nline_ = 0;
 

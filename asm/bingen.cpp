@@ -24,6 +24,376 @@ BinGen::BinGen(std::ofstream ofs, std::ofstream debugofs, bool is_verbose, bool 
     regmap_(create_regmap()),
     fregmap_(create_fregmap()) {}
 
+void BinGen::ReadLabels(std::string input) {
+    std::string mnemo;
+    std::vector<std::string> arg;
+    Parse(input, mnemo, arg);
+
+    if (mnemo == ".text") {
+        data_mode_ = false;
+        return;
+    }
+
+    if (mnemo == ".data") {
+        data_mode_ = true;
+        return;
+    }
+
+    if (mnemo.back() != ':') {
+        // The input wasn't a label.
+
+        // Some pseudo-instructions will expand to two instrs
+        if (mnemo == "la" || mnemo == "ret" || mnemo == "call" || mnemo == "fli") {
+            nline_ += 2;
+            return;
+        }
+
+        if (mnemo == "li" && MyStoi(arg[1]) > (1 << 11) - 1) {
+            nline_ += 2;
+            return;
+        }
+
+        // Don't count these markers
+        if (mnemo == ".file" || mnemo == ".option" || mnemo == ".align" ||
+            mnemo == ".globl" || mnemo == ".type" || mnemo == ".size" || mnemo == ".ident") {
+            std::fprintf(stderr, "[INFO] |%s| was ignored\n", input.c_str());
+            return;
+        }
+
+        // Don't count comments
+        if (mnemo == "")
+            return;
+
+        nline_++;
+        return;
+    }
+    mnemo.pop_back();
+    std::cerr << "[INFO] new label " << mnemo << " registered at " << nline_ * 4 << std::endl;
+    label_map_[mnemo] = nline_;
+}
+
+void BinGen::OnReadLabelsCompleted(){
+    nline_ = 0;
+    data_mode_ = false;
+}
+
+void BinGen::Main(std::string input) {
+    int old_nline = nline_;
+    BinGen::Inst inst(Convert(input));
+
+    if (is_debug_) {
+        if (inst.first == 0 && inst.second == ~0) { // not an instruction or a data
+            debugofs_ << "\t" << input << std::endl;
+        } else {
+            debugofs_ << "(" << old_nline * 4 << ")\t" << input << std::endl;
+        }
+    }
+
+    // not an instruction or a data
+    if (inst.first == 0 && inst.second == ~0) return;
+
+    if (is_verbose_) {
+        std::cout << "(pc " << old_nline * 4 << "):" << input << std::endl;
+        PrintInst(inst);
+        std::cout << std::endl;
+    }
+
+    if (is_ascii_) {
+        WriteDataInAscii(inst.first);
+        if (inst.second == ~0) return;
+        WriteDataInAscii(inst.second);
+        return;
+    }
+
+    WriteDataInBinary(inst.first);
+    if (inst.second == ~0) return;
+    WriteDataInBinary(inst.second);
+}
+
+void BinGen::Finish() {
+    if (is_ascii_) {
+        WriteDataInAscii(0);
+        return;
+    }
+    WriteDataInBinary(0);
+    ofs_.close();
+}
+
+// dirty...
+void BinGen::Parse(std::string input, std::string &mnemo, std::vector<std::string> &arg) {
+    auto is_sep = [](char c){ return (c == ' ' || c == '\t' || c == '\0' || c == '#' || c == ','); };
+    int curr_pos = 0;
+    int start_pos = 0;
+    while (input[curr_pos] == ' ' || input[curr_pos] == '\t') curr_pos++;
+    if (input[curr_pos] == '\0' || input[curr_pos] == '#') return;
+
+    // mnemonic (or label)
+    start_pos = curr_pos;
+    while (!is_sep(input[curr_pos])) curr_pos++;
+    mnemo = input.substr(start_pos, curr_pos - start_pos);
+    while (input[curr_pos] == ' ' || input[curr_pos] == '\t') curr_pos++;
+    if (input[curr_pos] == '\0' || input[curr_pos] == '#') return;
+
+    // arg[0]
+    start_pos = curr_pos;
+    while (!is_sep(input[curr_pos])) curr_pos++;
+    arg.push_back(input.substr(start_pos, curr_pos - start_pos));
+    while (input[curr_pos] == ' ' || input[curr_pos] == '\t' || input[curr_pos] == ',') curr_pos++;
+    if (input[curr_pos] == '\0' || input[curr_pos] == '#') return;
+
+    // arg[1]
+    start_pos = curr_pos;
+    while (!is_sep(input[curr_pos])) curr_pos++;
+    arg.push_back(input.substr(start_pos, curr_pos - start_pos));
+    while (input[curr_pos] == ' ' || input[curr_pos] == '\t' || input[curr_pos] == ',') curr_pos++;
+    if (input[curr_pos] == '\0' || input[curr_pos] == '#') return;
+
+    // arg[2]
+    start_pos = curr_pos;
+    while (!is_sep(input[curr_pos])) curr_pos++;
+    arg.push_back(input.substr(start_pos, curr_pos - start_pos));
+}
+
+void BinGen::ParseOffset(std::string arg, std::string* reg, uint32_t* offset) {
+    size_t pos_lpar = arg.find("(");
+    size_t pos_rpar = arg.find(")");
+    *offset = std::stoi(arg.substr(0, pos_lpar));
+    *reg = arg.substr(pos_lpar + 1, (pos_rpar - pos_lpar - 1));
+}
+
+BinGen::Inst BinGen::Convert(std::string input) {
+    std::string mnemo;
+    std::vector<std::string> arg;
+    Parse(input, mnemo, arg);
+    uint32_t ret1, ret2;
+    ret1 = ret2 = 0;
+
+    if (mnemo == ".text") {
+        data_mode_ = false;
+        return Inst(0, ~0);
+    }
+
+    if (mnemo == ".data") {
+        data_mode_ = true;
+        return Inst(0, ~0);
+    }
+
+    // Labels
+    if (mnemo.back() == ':')
+        return Inst(0, ~0);
+
+    if (mnemo == ".file" || mnemo == ".option" || mnemo == ".align" ||
+        mnemo == ".globl" || mnemo == ".type" || mnemo == ".size" || mnemo == ".ident")
+        return Inst(0, ~0);
+
+    // Comment
+    if (mnemo == "")
+        return Inst(0, ~0);
+
+    // Data
+    if (mnemo == ".word") {
+        assert(data_mode_);
+        assert(1 == arg.size());
+        ret1 = MyStoi(arg[0]);
+    }
+
+    // RV32I basic instructions ==============================================================
+    else if (mnemo == "lui") {
+        assert(2 == arg.size());
+        ret1 = lui(arg[0], MyStoi(arg[1]));
+    }
+    else if (mnemo == "auipc") {
+        assert(2 == arg.size());
+        ret1 = auipc(arg[0], MyStoi(arg[1]));
+    }
+    else if (mnemo == "jal") {
+        assert(2 == arg.size());
+        ret1 = jal(arg[0], MyStoi(arg[1]));
+    }
+    else if (mnemo == "jalr") {
+        assert(3 == arg.size());
+        ret1 = jalr(arg[0], arg[1], MyStoi(arg[2]));
+    }
+    else if (mnemo == "beq" || mnemo == "bne" || mnemo == "blt" || mnemo == "bge" || mnemo == "bltu") {
+        assert(3 == arg.size());
+        ret1 = branch(mnemo,arg[0],arg[1], MyStoi(arg[2]));
+
+    }
+    else if (mnemo == "lb" || mnemo == "lh" || mnemo == "lw" || mnemo == "lbu" || mnemo == "lhu") {
+        assert(2 == arg.size());
+        std::string rs1; uint32_t offset;
+        ParseOffset(arg[1], &rs1, &offset);
+        ret1 = load(mnemo, arg[0], rs1, offset);
+    }
+
+    else if (mnemo == "sb" || mnemo == "sh" || mnemo == "sw") {
+        assert(2 == arg.size());
+        std::string rs1; uint32_t offset;
+        ParseOffset(arg[1], &rs1, &offset);
+        ret1 = store(mnemo, arg[0], rs1, offset);
+    }
+
+    else if (mnemo == "addi" || mnemo == "slti" || mnemo == "sltiu" || mnemo == "xori" || mnemo == "ori" || mnemo == "andi") {
+        assert(3 == arg.size());
+        ret1 = op_imm(mnemo, arg[0], arg[1], MyStoi(arg[2]));
+    }
+    else if (mnemo == "slli" || mnemo == "srli" || mnemo == "srai") {
+        assert(3 == arg.size());
+        ret1 = (op_imm_shift(mnemo, arg[0], arg[1], MyStoi(arg[2])));
+    }
+    else if (mnemo == "add" || mnemo == "sub" || mnemo == "sll" || mnemo == "slt" || mnemo == "sltu" || mnemo == "xor" ||
+        mnemo == "srl" || mnemo == "sra" || mnemo == "or" || mnemo == "and") {
+        assert(3 == arg.size());
+        ret1 = op(mnemo, arg[0], arg[1], arg[2]);
+    }
+
+    // I/O instructions (temporary) ==========================================================
+    else if (mnemo == "w" || mnemo == "r") {
+        assert(1 == arg.size());
+        ret1 = io(mnemo, arg[0]);
+    }
+
+    // Floating-point instructions ===========================================================
+    else if (mnemo == "flw") {
+        assert(2 == arg.size());
+        std::string rs; uint32_t offset;
+        ParseOffset(arg[1], &rs, &offset);
+        ret1 = flw(arg[0], rs, offset);
+    }
+
+    else if (mnemo == "fsw") {
+        assert(2 == arg.size());
+        std::string rs; uint32_t offset;
+        ParseOffset(arg[1], &rs, &offset);
+        ret1 = fsw(arg[0], rs, offset);
+    }
+
+    else if (mnemo == "feq.s" || mnemo == "flt.s" || mnemo == "fle.s") {
+        assert(3 == arg.size());
+        ret1 = f_cmp(mnemo, arg[0], arg[1], arg[2]);
+    }
+
+    else if (mnemo == "fsqrt.s" || mnemo == "fabs.s" || mnemo == "fneg.s" || mnemo == "fmv.s" || mnemo == "finv.s") {
+        assert(2 == arg.size());
+        ret1 = f_op2(mnemo, arg[0], arg[1]);
+    }
+    else if (mnemo == "fadd.s" || mnemo == "fsub.s" || mnemo == "fmul.s" || mnemo == "fdiv.s") {
+        assert(3 == arg.size());
+        ret1 = f_op3(mnemo, arg[0], arg[1], arg[2]);
+    }
+
+    // Pseudo-instructions ===================================================================
+    else if (mnemo == "la") {
+        assert(2 == arg.size());
+        uint32_t tmp = MyStoi(arg[1]);
+        ret1 = auipc(arg[0], ((tmp >> 12) + ((tmp >> 11) & 0x1)) & 0xfffff);
+        nline_++;
+        ret2 = op_imm("addi", arg[0], arg[0], tmp & 0xfff);
+    }
+
+    else if (mnemo == "li") {
+        assert(2 == arg.size());
+        uint32_t tmp = MyStoi(arg[1]);
+        if (tmp > (1 << 11) - 1) {
+            ret1 = lui(arg[0], ((tmp >> 12) + ((tmp >> 11) & 0x1)) & 0xfffff);
+            nline_++;
+            ret2 = op_imm("addi", arg[0], arg[0], tmp & 0xfff);
+        } else {
+            ret1 = op_imm("addi", arg[0], "zero", tmp);
+        }
+    }
+
+    else if (mnemo == "mv") {
+        assert(2 == arg.size());
+        ret1 = op_imm("addi", arg[0], arg[1], 0);
+    }
+    else if (mnemo == "neg") {
+        assert(2 == arg.size());
+        ret1 = op("sub", arg[0], "zero", arg[1]);
+    }
+    else if (mnemo == "bgt") {
+        assert(3 == arg.size());
+        ret1 = branch("blt", arg[1], arg[0], MyStoi(arg[2]));
+    }
+    else if (mnemo == "ble") {
+        assert(3 == arg.size());
+        ret1 = branch("bge", arg[1], arg[0], MyStoi(arg[2]));
+    }
+    else if (mnemo == "b") {
+        assert(1 == arg.size());
+        // これはbeqでもよい
+        ret1 = branch("bge", "zero", "zero", MyStoi(arg[0]));
+    }
+    else if (mnemo == "j") {
+        assert(1 == arg.size());
+        ret1 = jal("x0", MyStoi(arg[0]));
+    }
+    else if (mnemo == "jr") {
+        assert(1 == arg.size());
+        ret1 = jalr("zero", arg[0], 0);
+    }
+    else if (mnemo == "ret") {
+        assert(0 == arg.size());
+        ret1 = jalr("x0", "x1", 0u);
+    }
+    else if (mnemo == "call") {
+        assert(1 == arg.size());
+        uint32_t imm = MyStoi(arg[0]);
+        // jalrが符号拡張するため、下から12bit目が1の場合はauipcに渡す即値に1を足す
+        // その結果2 ^ 12を超える場合は下位20bitをわたす
+        ret1 = auipc("x6", ((imm >> 12) + ((imm >> 11) & 1)) & 0xfffff);
+        nline_++;
+        ret2 = jalr("x1", "x6", imm & 0xfff);
+    }
+
+    else if (mnemo == "fli") {
+        // Note: t6レジスタが潰される
+        assert(2 == arg.size());
+        uint32_t imm = MyStoi(arg[1]) + nline_ * 4 + MEM_SIZE;
+        std::string tmp_reg = "t6";
+        ret1 = lui(tmp_reg, (imm >> 12) & 0xfffff);
+        nline_++;
+        ret2 = flw(arg[0], tmp_reg, (imm & 0xfff));
+    }
+
+    else {
+        fprintf(stderr, "No such instructions: %s\n", input.c_str());
+        return Inst(0, -1);
+    }
+
+    BinGen::Inst ret(ret1, ret2);
+    nline_++;
+    return ret;
+}
+
+// 01の列にする(4桁ごとに空白)
+std::string BinGen::ToString(uint32_t inst) {
+    std::string str;
+    for (int i = 0; i < 32; i++) {
+        str.push_back(((inst >> (31 - i)) & 0x1)? '1' : '0');
+        if (i % 4 == 3) str.push_back(' ');
+    }
+    assert(str.size() == 40);
+    return str;
+}
+
+std::string BinGen::InstToString(Inst inst) {
+    if (inst.first == 0)
+        return "";
+    else if (inst.second == ~0)
+        return ToString(inst.first);
+    else
+        return ToString(inst.first) + "    " + ToString(inst.second);
+}
+
+void BinGen::PrintInt(uint32_t inst) {
+    std::cout << ToString(inst) << std::endl;
+}
+
+void BinGen::PrintInst(Inst inst) {
+    std::cout << InstToString(inst) << std::endl;
+}
+
 uint32_t BinGen::lui (std::string rd, uint32_t imm) {
     CheckImmediate(imm, 20, "lui");
     Fields fields;
@@ -272,365 +642,6 @@ uint32_t BinGen::f_cmp(std::string mnemo, std::string rd, std::string frs1, std:
     return Pack(fields);
 }
 
-void BinGen::WriteDataInBinary(uint32_t data) {
-    unsigned char d[4];
-    d[0] = data >> 24;
-    d[1] = data >> 16;
-    d[2] = data >> 8;
-    d[3] = data;
-    ofs_.write((char *)d, 4);
-}
-
-void BinGen::WriteDataInAscii(uint32_t data) {
-    std::string str;
-    for (int i = 0; i < 32; i++) {
-        str.push_back(((data >> (31 - i)) & 0x1)? '1' : '0');
-    }
-    assert(str.size() == 32);
-    ofs_ << str << std::endl;
-}
-
-void BinGen::OnReadLabelsCompleted(){
-    nline_ = 0;
-    data_mode_ = false;
-}
-
-void BinGen::ReadLabels(std::string input) {
-    std::string mnemo;
-    std::vector<std::string> arg;
-    Parse(input, mnemo, arg);
-
-    if (mnemo == ".text") {
-        data_mode_ = false;
-        return;
-    }
-
-    if (mnemo == ".data") {
-        data_mode_ = true;
-        return;
-    }
-
-    if (mnemo.back() != ':') {
-        // The input wasn't a label.
-
-        // Some pseudo-instructions will expand to two instrs
-        if (mnemo == "la" || mnemo == "ret" || mnemo == "call" || mnemo == "fli") {
-            nline_ += 2;
-            return;
-        }
-
-        if (mnemo == "li" && MyStoi(arg[1]) > (1 << 11) - 1) {
-            nline_ += 2;
-            return;
-        }
-
-        // Don't count these markers
-        if (mnemo == ".file" || mnemo == ".option" || mnemo == ".align" ||
-            mnemo == ".globl" || mnemo == ".type" || mnemo == ".size" || mnemo == ".ident") {
-            std::fprintf(stderr, "[INFO] |%s| was ignored\n", input.c_str());
-            return;
-        }
-
-        // Don't count comments
-        if (mnemo == "")
-            return;
-
-        nline_++;
-        return;
-    }
-    mnemo.pop_back();
-
-    std::cerr << "[INFO] new label " << mnemo << " registered at " << nline_ * 4 << std::endl;
-    label_map_[mnemo] = nline_;
-}
-
-bool BinGen::is_sep(char c) {
-    return (c == ' ' || c == '\t' || c == '\0' || c == '#' || c == ',');
-}
-
-// dirty...
-void BinGen::Parse(std::string input, std::string &mnemo, std::vector<std::string> &arg) {
-    int curr_pos = 0;
-    int start_pos = 0;
-    while (input[curr_pos] == ' ' || input[curr_pos] == '\t') curr_pos++;
-    if (input[curr_pos] == '\0' || input[curr_pos] == '#') return;
-
-    // mnemonic (or label)
-    start_pos = curr_pos;
-    while (!is_sep(input[curr_pos])) curr_pos++;
-    mnemo = input.substr(start_pos, curr_pos - start_pos);
-    while (input[curr_pos] == ' ' || input[curr_pos] == '\t') curr_pos++;
-    if (input[curr_pos] == '\0' || input[curr_pos] == '#') return;
-
-    // arg[0]
-    start_pos = curr_pos;
-    while (!is_sep(input[curr_pos])) curr_pos++;
-    arg.push_back(input.substr(start_pos, curr_pos - start_pos));
-    while (input[curr_pos] == ' ' || input[curr_pos] == '\t' || input[curr_pos] == ',') curr_pos++;
-    if (input[curr_pos] == '\0' || input[curr_pos] == '#') return;
-
-    // arg[1]
-    start_pos = curr_pos;
-    while (!is_sep(input[curr_pos])) curr_pos++;
-    arg.push_back(input.substr(start_pos, curr_pos - start_pos));
-    while (input[curr_pos] == ' ' || input[curr_pos] == '\t' || input[curr_pos] == ',') curr_pos++;
-    if (input[curr_pos] == '\0' || input[curr_pos] == '#') return;
-
-    // arg[2]
-    start_pos = curr_pos;
-    while (!is_sep(input[curr_pos])) curr_pos++;
-    arg.push_back(input.substr(start_pos, curr_pos - start_pos));
-}
-
-BinGen::Inst BinGen::Convert(std::string input) {
-    // Parse the input.
-    std::string mnemo;
-    std::vector<std::string> arg;
-    Parse(input, mnemo, arg);
-    uint32_t ret1, ret2;
-    ret1 = ret2 = 0;
-
-    if (mnemo == ".text") {
-        data_mode_ = false;
-        return Inst(0, -1);
-    }
-
-    if (mnemo == ".data") {
-        data_mode_ = true;
-        return Inst(0, -1);
-    }
-
-    // Skip the labels.
-    if (mnemo.back() == ':')
-        return Inst(0, -1);
-
-    if (mnemo == ".file" || mnemo == ".option" || mnemo == ".align" ||
-        mnemo == ".globl" || mnemo == ".type" || mnemo == ".size" || mnemo == ".ident")
-        return Inst(0, -1);
-
-    // Comment
-    if (mnemo == "")
-        return Inst(0, -1);
-
-    // data
-    if (mnemo == ".word") {
-        assert(data_mode_);
-        assert(1 == arg.size());
-        ret1 = MyStoi(arg[0]);
-    }
-
-    // RV32I basic instructions ==============================================================
-    else if (mnemo == "lui") {
-        assert(2 == arg.size());
-        ret1 = lui(arg[0], MyStoi(arg[1]));
-    }
-    else if (mnemo == "auipc") {
-        assert(2 == arg.size());
-        ret1 = auipc(arg[0], MyStoi(arg[1]));
-    }
-    else if (mnemo == "jal") {
-        assert(2 == arg.size());
-        ret1 = jal(arg[0], MyStoi(arg[1]));
-    }
-    else if (mnemo == "jalr") {
-        assert(3 == arg.size());
-        ret1 = jalr(arg[0], arg[1], MyStoi(arg[2]));
-    }
-    else if (mnemo == "beq" || mnemo == "bne" || mnemo == "blt" || mnemo == "bge" || mnemo == "bltu") {
-        assert(3 == arg.size());
-        ret1 = branch(mnemo,arg[0],arg[1], MyStoi(arg[2]));
-
-    }
-    else if (mnemo == "lb" || mnemo == "lh" || mnemo == "lw" || mnemo == "lbu" || mnemo == "lhu") {
-        assert(2 == arg.size());
-        std::string rs1; uint32_t offset;
-        ParseOffset(arg[1], &rs1, &offset);
-        ret1 = load(mnemo, arg[0], rs1, offset);
-    }
-
-    else if (mnemo == "sb" || mnemo == "sh" || mnemo == "sw") {
-        assert(2 == arg.size());
-        std::string rs1; uint32_t offset;
-        ParseOffset(arg[1], &rs1, &offset);
-        ret1 = store(mnemo, arg[0], rs1, offset);
-    }
-
-    else if (mnemo == "addi" || mnemo == "slti" || mnemo == "sltiu" || mnemo == "xori" || mnemo == "ori" || mnemo == "andi") {
-        assert(3 == arg.size());
-        ret1 = op_imm(mnemo, arg[0], arg[1], MyStoi(arg[2]));
-    }
-    else if (mnemo == "slli" || mnemo == "srli" || mnemo == "srai") {
-        assert(3 == arg.size());
-        ret1 = (op_imm_shift(mnemo, arg[0], arg[1], MyStoi(arg[2])));
-    }
-    else if (mnemo == "add" || mnemo == "sub" || mnemo == "sll" || mnemo == "slt" || mnemo == "sltu" || mnemo == "xor" ||
-        mnemo == "srl" || mnemo == "sra" || mnemo == "or" || mnemo == "and") {
-        assert(3 == arg.size());
-        ret1 = op(mnemo, arg[0], arg[1], arg[2]);
-    }
-
-    // I/O instructions (temporary) ==========================================================
-    else if (mnemo == "w" || mnemo == "r") {
-        assert(1 == arg.size());
-        ret1 = io(mnemo, arg[0]);
-    }
-
-    // Floating-point instructions ===========================================================
-    else if (mnemo == "flw") {
-        assert(2 == arg.size());
-        std::string rs; uint32_t offset;
-        ParseOffset(arg[1], &rs, &offset);
-        ret1 = flw(arg[0], rs, offset);
-    }
-
-    else if (mnemo == "fsw") {
-        assert(2 == arg.size());
-        std::string rs; uint32_t offset;
-        ParseOffset(arg[1], &rs, &offset);
-        ret1 = fsw(arg[0], rs, offset);
-    }
-
-    else if (mnemo == "feq.s" || mnemo == "flt.s" || mnemo == "fle.s") {
-        assert(3 == arg.size());
-        ret1 = f_cmp(mnemo, arg[0], arg[1], arg[2]);
-    }
-
-    else if (mnemo == "fsqrt.s" || mnemo == "fabs.s" || mnemo == "fneg.s" || mnemo == "fmv.s" || mnemo == "finv.s") {
-        assert(2 == arg.size());
-        ret1 = f_op2(mnemo, arg[0], arg[1]);
-    }
-    else if (mnemo == "fadd.s" || mnemo == "fsub.s" || mnemo == "fmul.s" || mnemo == "fdiv.s") {
-        assert(3 == arg.size());
-        ret1 = f_op3(mnemo, arg[0], arg[1], arg[2]);
-    }
-
-    // Pseudo-instructions ===================================================================
-    else if (mnemo == "la") {
-        assert(2 == arg.size());
-        uint32_t tmp = MyStoi(arg[1]);
-        ret1 = auipc(arg[0], ((tmp >> 12) + ((tmp >> 11) & 0x1)) & 0xfffff);
-        nline_++;
-        ret2 = op_imm("addi", arg[0], arg[0], tmp & 0xfff);
-    }
-
-    else if (mnemo == "li") {
-        assert(2 == arg.size());
-        uint32_t tmp = MyStoi(arg[1]);
-        if (tmp > (1 << 11) - 1) {
-            ret1 = lui(arg[0], ((tmp >> 12) + ((tmp >> 11) & 0x1)) & 0xfffff);
-            nline_++;
-            ret2 = op_imm("addi", arg[0], arg[0], tmp & 0xfff);
-        } else {
-            ret1 = op_imm("addi", arg[0], "zero", tmp);
-        }
-    }
-
-    else if (mnemo == "mv") {
-        assert(2 == arg.size());
-        ret1 = op_imm("addi", arg[0], arg[1], 0);
-    }
-    else if (mnemo == "neg") {
-        assert(2 == arg.size());
-        ret1 = op("sub", arg[0], "zero", arg[1]);
-    }
-    else if (mnemo == "bgt") {
-        assert(3 == arg.size());
-        ret1 = branch("blt", arg[1], arg[0], MyStoi(arg[2]));
-    }
-    else if (mnemo == "ble") {
-        assert(3 == arg.size());
-        ret1 = branch("bge", arg[1], arg[0], MyStoi(arg[2]));
-    }
-    else if (mnemo == "b") {
-        assert(1 == arg.size());
-        // これはbeqでもよい
-        ret1 = branch("bge", "zero", "zero", MyStoi(arg[0]));
-    }
-    else if (mnemo == "j") {
-        assert(1 == arg.size());
-        ret1 = jal("x0", MyStoi(arg[0]));
-    }
-    else if (mnemo == "jr") {
-        assert(1 == arg.size());
-        ret1 = jalr("zero", arg[0], 0);
-    }
-    else if (mnemo == "ret") {
-        assert(0 == arg.size());
-        ret1 = jalr("x0", "x1", 0u);
-    }
-    else if (mnemo == "call") {
-        assert(1 == arg.size());
-        uint32_t imm = MyStoi(arg[0]);
-        // jalrが符号拡張するため、下から12bit目が1の場合はauipcに渡す即値に1を足す
-        // その結果2 ^ 12を超える場合は下位20bitをわたす
-        ret1 = auipc("x6", ((imm >> 12) + ((imm >> 11) & 1)) & 0xfffff);
-        nline_++;
-        ret2 = jalr("x1", "x6", imm & 0xfff);
-    }
-
-    else if (mnemo == "fli") {
-        // Note: t6レジスタが潰される
-        assert(2 == arg.size());
-        uint32_t imm = MyStoi(arg[1]) + nline_ * 4 + MEM_SIZE;
-        std::string tmp_reg = "t6";
-        ret1 = lui(tmp_reg, (imm >> 12) & 0xfffff);
-        nline_++;
-        ret2 = flw(arg[0], tmp_reg, (imm & 0xfff));
-        // ret2 = op_imm("addi", arg[0], tmp_reg, imm & 0xfff);
-    }
-
-    else {
-        fprintf(stderr, "No such instructions: %s\n", input.c_str());
-        return Inst(0, -1);
-    }
-
-    BinGen::Inst ret(ret1, ret2);
-    nline_++;
-    return ret;
-}
-
-void BinGen::Main(std::string input) {
-    int old_nline = nline_;
-    BinGen::Inst inst(Convert(input));
-
-    if (is_debug_) {
-        if (inst.first == 0 && inst.second == -1) { // not an instruction or a data
-            debugofs_ << "\t" << input << std::endl;
-        } else {
-            debugofs_ << "(" << old_nline * 4 << ")\t" << input << std::endl;
-        }
-    }
-
-    // not an instruction or a data
-    if (inst.first == 0 && inst.second == -1) return;
-
-    if (is_verbose_) {
-        std::cout << "(pc " << old_nline * 4 << "):" << input << std::endl;
-        PrintInst(inst);
-        std::cout << std::endl;
-    }
-
-    if (is_ascii_) {
-        WriteDataInAscii(inst.first);
-        if (inst.second == 0) return;
-        WriteDataInAscii(inst.second);
-        return;
-    }
-
-    WriteDataInBinary(inst.first);
-    if (inst.second == 0) return;
-    WriteDataInBinary(inst.second);
-}
-
-void BinGen::Finish() {
-    if (is_ascii_) {
-        WriteDataInAscii(0);
-        return;
-    }
-    WriteDataInBinary(0);
-    ofs_.close();
-}
-
 uint32_t BinGen::Pack(Fields fields) {
     uint32_t ret = 0;
     for (auto itr = fields.rbegin();itr != fields.rend();++itr) {
@@ -650,11 +661,22 @@ void BinGen::CheckImmediate(uint32_t imm, int range, std::string func_name) {
     }
 }
 
-void BinGen::ParseOffset(std::string arg, std::string* reg, uint32_t* offset) {
-    size_t pos_lpar = arg.find("(");
-    size_t pos_rpar = arg.find(")");
-    *offset = std::stoi(arg.substr(0, pos_lpar));
-    *reg = arg.substr(pos_lpar + 1, (pos_rpar - pos_lpar - 1));
+void BinGen::WriteDataInBinary(uint32_t data) {
+    unsigned char d[4];
+    d[0] = data >> 24;
+    d[1] = data >> 16;
+    d[2] = data >> 8;
+    d[3] = data;
+    ofs_.write((char *)d, 4);
+}
+
+void BinGen::WriteDataInAscii(uint32_t data) {
+    std::string str;
+    for (int i = 0; i < 32; i++) {
+        str.push_back(((data >> (31 - i)) & 0x1)? '1' : '0');
+    }
+    assert(str.size() == 32);
+    ofs_ << str << std::endl;
 }
 
 uint32_t BinGen::MyStoi(std::string imm) {
@@ -670,34 +692,6 @@ uint32_t BinGen::MyStoi(std::string imm) {
         }
         return (label_map_[imm] - nline_) * 4;
     }
-}
-
-// 01の列にする(4桁ごとに空白)
-std::string BinGen::ToString(uint32_t inst) {
-    std::string str;
-    for (int i = 0; i < 32; i++) {
-        str.push_back(((inst >> (31 - i)) & 0x1)? '1' : '0');
-        if (i % 4 == 3) str.push_back(' ');
-    }
-    assert(str.size() == 40);
-    return str;
-}
-
-std::string BinGen::InstToString(Inst inst) {
-    if (inst.first == 0)
-        return "";
-    else if (inst.second == 0)
-        return ToString(inst.first);
-    else
-        return ToString(inst.first) + "    " + ToString(inst.second);
-}
-
-void BinGen::PrintInt(uint32_t inst) {
-    std::cout << ToString(inst) << std::endl;
-}
-
-void BinGen::PrintInst(Inst inst) {
-    std::cout << InstToString(inst) << std::endl;
 }
 
 void print_binary(int val){
