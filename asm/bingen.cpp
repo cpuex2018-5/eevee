@@ -100,13 +100,13 @@ void BinGen::Main(std::string input) {
 
     if (is_ascii_) {
         WriteDataInAscii(inst.first);
-        if (inst.second == ~0) return;
+        if (inst.second == 0) return;
         WriteDataInAscii(inst.second);
         return;
     }
 
     WriteDataInBinary(inst.first);
-    if (inst.second == ~0) return;
+    if (inst.second == 0) return;
     WriteDataInBinary(inst.second);
 }
 
