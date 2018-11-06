@@ -20,7 +20,7 @@ fib.10:
 	addi	fp, sp, 20
 	li	t6, 1
 	bgt	a0, t6, ble_else.24
-	j	fib.10_ret
+	b	fib.10_ret
 ble_else.24:
 	addi	a1, a0, -1
 	sw	a0, 0(sp)
@@ -33,7 +33,7 @@ ble_else.24:
 	call	fib.10
 	lw	a1, 4(sp)
 	add	a0, a1, a0
-	j	fib.10_ret
+	b	fib.10_ret
 fib.10_ret:
 	lw	ra, 16(sp)
 	lw	fp, 12(sp)
