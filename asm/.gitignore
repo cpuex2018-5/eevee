@@ -4,3 +4,4 @@ test
 *.dSYM/
 *.asm
 *.bin
+output
