@@ -88,10 +88,10 @@ min_caml_sqrt:
 	jr	ra
 
 min_caml_float_of_int: # int -> float
-	fli	ft0, L_itof
-	li	t1, 1258291200
+	fli	ft0, L0
+	li	t1, 1258291200  # 0x4b000000
 	bge	a0, zero, .float_of_int_pos
-# minusの場合
+# negativeの場合
 	neg	a0, a0
 	add	a0, a0, t1
 	sw	a0, -4(sp)
@@ -108,8 +108,30 @@ min_caml_float_of_int: # int -> float
 	jr	ra
 
 min_caml_int_of_float: # float -> int
-# TODO
+	fli	ft0, L1
+	fle.s	t1, ft0, fa0
+	beq	zero, t1, .int_of_float_neg
+# positiveの場合
+	fli	ft0, L0
+	fadd.s	fa0, fa0, ft0
+	fsw	fa0, -4(sp)
+	lw	a0, -4(sp)
+	li	t1, 1258291200
+	sub	a0, a0, t1
+	jr	ra
+.int_of_float_neg:
+	fabs.s	fa0, fa0
+	fli	ft0, L0
+	fadd.s	fa0, fa0, ft0
+	fsw	fa0, -4(sp)
+	lw	a0, -4(sp)
+	li	t1, 1258291200
+	sub	a0, a0, t1
+	neg	a0, a0
+	jr	ra
 
 	.data
-L_itof:	# 8388608.0
+L0:	# 8388608.0
 	.word	1258291200
+L1:	# 0.0
+	.word	0
