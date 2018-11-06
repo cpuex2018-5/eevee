@@ -255,10 +255,10 @@ void disas(unsigned int inst,unsigned int opcode,Op *dbgop){
         fprintf(stdout,"fsqrt %s,%s",fRegs[dbgop->rd],fRegs[dbgop->rs1]);
       }
       else if(dbgop->funct7 == 0b1010000 && dbgop->funct3 == 0b010){
-        fprintf(stdout,"feq %s,%s,%s",fRegs[dbgop->rd],fRegs[dbgop->rs1],fRegs[dbgop->rs2]);
+        fprintf(stdout,"feq %s,%s,%s",Regs[dbgop->rd],fRegs[dbgop->rs1],fRegs[dbgop->rs2]);
       }
       else if(dbgop->funct7 == 0b1010000 && dbgop->funct3 == 0b000){
-        fprintf(stdout,"fle %s,%s,%s",fRegs[dbgop->rd],fRegs[dbgop->rs1],fRegs[dbgop->rs2]);
+        fprintf(stdout,"fle %s,%s,%s",Regs[dbgop->rd],fRegs[dbgop->rs1],fRegs[dbgop->rs2]);
       }
       else if(dbgop->funct7 == 0b0010000 && dbgop->rs2 == 0b00000 && dbgop->funct3 == 0b000){
         fprintf(stdout,"fmv %s,%s",fRegs[dbgop->rd],fRegs[dbgop->rs1]);
