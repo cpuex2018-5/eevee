@@ -87,6 +87,12 @@ and g' buf e =
   | NonTail(x), Add(y, C(z)) -> Printf.bprintf buf "\taddi\t%s, %s, %d\n" (reg x) (reg y) z
   | NonTail(x), Sub(y, V(z)) -> Printf.bprintf buf "\tsub\t%s, %s, %s\n" (reg x) (reg y) (reg z)
   | NonTail(x), Sub(y, C(z)) -> Printf.bprintf buf "\taddi\t%s, %s, %d\n" (reg x) (reg y) (-1 * z)
+  | NonTail(x), Mul(y, V(z)) -> Printf.bprintf buf "\tmul\t%s, %s, %s\n" (reg x) (reg y) (reg z)    (* アセンブラ非対応 *)
+  | NonTail(x), Mul(y, C(z)) when z = 4 -> Printf.bprintf buf "\tslli\t%s, %s, 2\n" (reg x) (reg y) (* built-in *)
+  | NonTail(x), Mul(y, C(z)) -> Printf.bprintf buf "\tmuli\t%s, %s, %d\n" (reg x) (reg y) z         (* アセンブラ非対応 *)
+  | NonTail(x), Div(y, V(z)) -> Printf.bprintf buf "\tdiv\t%s, %s, %s\n" (reg x) (reg y) (reg z)    (* アセンブラ非対応 *)
+  | NonTail(x), Div(y, C(z)) when z = 2 -> Printf.bprintf buf "\tsrai\t%s, %s, 1\n" (reg x) (reg y) (* built-in *)
+  | NonTail(x), Div(y, C(z)) -> Printf.bprintf buf "\tdivi\t%s, %s, %d\n" (reg x) (reg y) z         (* アセンブラ非対応 *)
   | NonTail(x), Slw(y, V(z)) -> Printf.bprintf buf "\tsll\t%s, %s, %s\n" (reg x) (reg y) (reg z)
   | NonTail(x), Slw(y, C(z)) -> Printf.bprintf buf "\tslli\t%s, %s, %d\n" (reg x) (reg y) z
   | NonTail(x), Lwz(y, V(z)) ->
@@ -132,7 +138,7 @@ and g' buf e =
   | Tail, (Nop | Stw _ | Stfd _ | Comment _ | Save _ as exp) ->
     g' buf (NonTail(Id.gentmp Type.Unit), exp);
     Printf.bprintf buf "\tb\t%s\n" !retlabel;
-  | Tail, (Li _ | SetL _ | Mv _ | Neg _ | Add _ | Sub _ | Slw _ | Lwz _ as exp) ->
+  | Tail, (Li _ | SetL _ | Mv _ | Neg _ | Add _ | Sub _ | Mul _ | Div _ | Slw _ | Lwz _ as exp) ->
     g' buf (NonTail(regs.(0)), exp);
     Printf.bprintf buf "\tb\t%s\n" !retlabel;
   | Tail, (FLi _ | FMv _ | FNeg _ | FAdd _ | FSub _ | FMul _ | FDiv _ | Lfd _ as exp) ->
@@ -306,10 +312,8 @@ let f oc (Prog(data, fundefs, e)) =
   Format.eprintf "generating assembly...@.";
   Printf.fprintf oc "\t.text\n";
   Printf.fprintf oc "\t.globl _min_caml_start\n";
-  (* Printf.fprintf oc "\t.align 2\n"; *)
   Printf.fprintf oc "_min_caml_start: # main entry point\n";
   Printf.fprintf oc "\taddi\tsp, sp, -8\n";
-  (* Printf.fprintf oc "\tsw\tra, 4(sp)\n"; *) (* returnしないので *)
   Printf.fprintf oc "\tsw\tfp, 0(sp)\n";
   Printf.fprintf oc "\taddi\tfp, sp, 8\n";
   Printf.fprintf oc "#\tmain program starts\n";
@@ -319,8 +323,6 @@ let f oc (Prog(data, fundefs, e)) =
   g buf (NonTail("_R_0"), e);
   Buffer.output_buffer oc buf;
   Printf.fprintf oc "#\tmain program ends\n";
-  (* Printf.fprintf oc "\tli\ta5, 0\n";
-     Printf.fprintf oc "\tmv\ta0, a5\n"; *) (* return 0はいらないはず？ *)
   Printf.fprintf oc "\tlw\tra, 4(sp)\n";
   Printf.fprintf oc "\tlw\tfp, 0(sp)\n";
   Printf.fprintf oc "\taddi\tsp, sp, 8\n";
@@ -332,8 +334,6 @@ let f oc (Prog(data, fundefs, e)) =
     (Printf.fprintf oc "\t.data\n";
      List.iter
        (fun (Id.L(x), d) ->
-          (* Printf.fprintf oc "\t.align 3\n"; *)
           Printf.fprintf oc "%s:\t# %f\n" x d;
-          Printf.fprintf oc "\t.word\t%ld\n" (castToInt d);
-          (* Printf.fprintf oc "\t.long\t%ld\n" (getlo d)*))
+          Printf.fprintf oc "\t.word\t%ld\n" (castToInt d))
        data);

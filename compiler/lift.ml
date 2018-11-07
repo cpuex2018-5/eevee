@@ -42,14 +42,10 @@ let rec eta (e : KNormal.t) : KNormal.t =
 (* collect free variables in e *)
 let rec fvs (e : KNormal.t) : S.t =
   match e with
-  | Neg x -> S.singleton x
-  | Add (x, y)  -> S.of_list [x; y]
-  | Sub (x, y)  -> S.of_list [x; y]
-  | FNeg x      -> S.singleton x
-  | FAdd (x, y) -> S.of_list [x; y]
-  | FSub (x, y) -> S.of_list [x; y]
-  | FMul (x, y) -> S.of_list [x; y]
-  | FDiv (x, y) -> S.of_list [x; y]
+  | Unit | Int _ | Float _ | ExtArray _ -> S.empty
+  | Neg x | FNeg x -> S.singleton x
+  | Add (x, y) | Sub (x, y) | Mul (x, y) | Div (x, y) -> S.of_list [x; y]
+  | FAdd (x, y) | FSub (x, y) | FMul (x, y) | FDiv (x, y) -> S.of_list [x; y]
   | IfEq (x, y, e1, e2)  -> S.add x (S.add y (S.union (fvs e1) (fvs e2)))
   | IfLE (x, y, e1, e2)  -> S.add x (S.add y (S.union (fvs e1) (fvs e2)))
   | Let ((x, _), e1, e2) -> S.remove x (S.union (fvs e1) (fvs e2))
@@ -64,7 +60,6 @@ let rec fvs (e : KNormal.t) : S.t =
   | Get (a, i) -> S.of_list [a; i]
   | Put (a, i, x) -> S.of_list [a; i; x]
   | ExtFunApp (f, x) -> S.of_list x
-  | _ -> S.empty
 
 (* bind free variables in functions *)
 let rec expandArg (e : KNormal.t) (fs : (Id.t * (Id.t * Type.t) list) list) (env : Type.t M.t) : KNormal.t =

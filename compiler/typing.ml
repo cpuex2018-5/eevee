@@ -96,7 +96,7 @@ let rec g env e =
     | Neg(e, p) ->
       unify Type.Int (g env e) p;
       Type.Int
-    | Add(e1, e2, p) | Sub(e1, e2, p) ->
+    | Add(e1, e2, p) | Sub(e1, e2, p) | Mul(e1, e2, p) | Div(e1, e2, p) ->
       unify Type.Int (g env e1) p;
       unify Type.Int (g env e2) p;
       Type.Int

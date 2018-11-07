@@ -9,6 +9,8 @@ type t =
   | Neg of t * pos
   | Add of t * t * pos
   | Sub of t * t * pos
+  | Mul of t * t * pos
+  | Div of t * t * pos
   | FNeg of t * pos
   | FAdd of t * t * pos
   | FSub of t * t * pos
@@ -45,6 +47,8 @@ let rec string_of_t ?(do_indent = true) ?(endline = "\n") (exp : t) (depth : int
   | Neg (e, _) -> prefix ^ "NEG\n" ^ (string_of_t e (depth + 1))
   | Add (e1, e2, _)  -> prefix ^ "ADD\n" ^ (string_of_t e1 (depth + 1)) ^ (string_of_t e2 (depth + 1))
   | Sub (e1, e2, _)  -> prefix ^ "SUB\n" ^ (string_of_t e1 (depth + 1)) ^ (string_of_t e2 (depth + 1))
+  | Mul (e1, e2, _)  -> prefix ^ "MUL\n" ^ (string_of_t e1 (depth + 1)) ^ (string_of_t e2 (depth + 1))
+  | Div (e1, e2, _)  -> prefix ^ "DIV\n" ^ (string_of_t e1 (depth + 1)) ^ (string_of_t e2 (depth + 1))
   | FNeg (e, _)      -> prefix ^ "FNEG\n" ^ (string_of_t e (depth + 1))
   | FAdd (e1, e2, _) -> prefix ^ "FADD\n" ^ (string_of_t e1 (depth + 1)) ^ (string_of_t e2 (depth + 1))
   | FSub (e1, e2, _) -> prefix ^ "FSUB\n" ^ (string_of_t e1 (depth + 1)) ^ (string_of_t e2 (depth + 1))

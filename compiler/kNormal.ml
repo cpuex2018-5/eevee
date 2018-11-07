@@ -7,6 +7,8 @@ type t = (* formula after K-normalization (caml2html: knormal_t) *)
   | Neg of Id.t
   | Add of Id.t * Id.t
   | Sub of Id.t * Id.t
+  | Mul of Id.t * Id.t
+  | Div of Id.t * Id.t
   | FNeg of Id.t
   | FAdd of Id.t * Id.t
   | FSub of Id.t * Id.t
@@ -37,6 +39,8 @@ let string_of_t (exp : t) =
     | Neg e   -> indent ^ "NEG " ^ e ^ endline
     | Add (e1, e2)  -> indent ^ "ADD " ^ e1 ^ " " ^ e2 ^ endline
     | Sub (e1, e2)  -> indent ^ "SUB " ^ e1 ^ " " ^ e2 ^ endline
+    | Mul (e1, e2)  -> indent ^ "MUL " ^ e1 ^ " " ^ e2 ^ endline
+    | Div (e1, e2)  -> indent ^ "DIV " ^ e1 ^ " " ^ e2 ^ endline
     | FNeg e        -> indent ^ "FNEG " ^ e ^ endline
     | FAdd (e1, e2) -> indent ^ "FADD " ^ e1 ^ " " ^ e2 ^ endline
     | FSub (e1, e2) -> indent ^ "FSUB " ^ e1 ^ " " ^ e2 ^ endline
@@ -73,7 +77,7 @@ let print_t (exp : t) =
 let rec fv = function (* free variable (caml2html: knormal_fv) *)
   | Unit | Int(_) | Float(_) | ExtArray(_) -> S.empty
   | Neg(x) | FNeg(x) -> S.singleton x
-  | Add(x, y) | Sub(x, y) | FAdd(x, y) | FSub(x, y) | FMul(x, y) | FDiv(x, y) | Get(x, y) -> S.of_list [x; y]
+  | Add(x, y) | Sub(x, y) | Mul(x, y) | Div(x, y) | FAdd(x, y) | FSub(x, y) | FMul(x, y) | FDiv(x, y) | Get(x, y) -> S.of_list [x; y]
   | IfEq(x, y, e1, e2) | IfLE(x, y, e1, e2) -> S.add x (S.add y (S.union (fv e1) (fv e2)))
   | Let((x, t), e1, e2) -> S.union (fv e1) (S.remove x (fv e2))
   | Var(x) -> S.singleton x
@@ -92,6 +96,8 @@ let rec id_subst (e : t) (a : Id.t) (b : Id.t) : t =
   | Neg e   -> Neg (subst_ e)
   | Add (e1, e2)  -> Add  (subst_ e1, subst_ e2)
   | Sub (e1, e2)  -> Sub  (subst_ e1, subst_ e2)
+  | Mul (e1, e2)  -> Mul  (subst_ e1, subst_ e2)
+  | Div (e1, e2)  -> Div  (subst_ e1, subst_ e2)
   | FNeg e        -> FNeg (subst_ e)
   | FAdd (e1, e2) -> FAdd (subst_ e1, subst_ e2)
   | FSub (e1, e2) -> FSub (subst_ e1, subst_ e2)
@@ -142,6 +148,14 @@ let rec g (env : Type.t M.t) (exp : Syntax.t) : t * Type.t = (* where K-normaliz
     insert_let (g env e1)
       (fun x -> insert_let (g env e2)
           (fun y -> Sub(x, y), Type.Int))
+  | Syntax.Mul(e1, e2, _) ->
+    insert_let (g env e1)
+      (fun x -> insert_let (g env e2)
+          (fun y -> Mul(x, y), Type.Int))
+  | Syntax.Div(e1, e2, _) ->
+    insert_let (g env e1)
+      (fun x -> insert_let (g env e2)
+          (fun y -> Div(x, y), Type.Int))
   | Syntax.FNeg(e, _) ->
     insert_let (g env e)
       (fun x -> FNeg(x), Type.Float)
