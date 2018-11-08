@@ -15,10 +15,10 @@ unsigned int fsub(unsigned char *ovf,float x1_f,float x2_f){
 
   unsigned int s1 = get_binary(u1.f_i,31,32); //1bit
   unsigned int s2 = ~get_binary(u2.f_i,31,32); //1bit
-  unsigned int e1 = get_binary(u1.f_i,22,31); //8bit
-  unsigned int e2 = get_binary(u2.f_i,22,31); //8bit
-  unsigned int m1 = get_binary(u1.f_i,0,22); //23bit
-  unsigned int m2 = get_binary(u1.f_i,0,22); //23bit
+  unsigned int e1 = get_binary(u1.f_i,23,31); //8bit
+  unsigned int e2 = get_binary(u2.f_i,23,31); //8bit
+  unsigned int m1 = get_binary(u1.f_i,0,23); //23bit
+  unsigned int m2 = get_binary(u1.f_i,0,23); //23bit
 
   unsigned int m1a = (e1==0) ? 0 : ((1<<23)+m1); //25bit
   unsigned int m2a = (e2==0) ? 0 : ((1<<23)+m2); //25bit
