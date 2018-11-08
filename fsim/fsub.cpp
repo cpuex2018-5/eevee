@@ -2,7 +2,7 @@
 #include "./fsim.h"
 using namespace std;
 
-unsigned int fadd(unsigned char *ovf,float x1_f,float x2_f){
+unsigned int fsub(unsigned char *ovf,float x1_f,float x2_f){
   union{ unsigned int f_i;float f_f;} u1,u2;
   u1.f_f = x1_f;
   u2.f_f = x2_f;
