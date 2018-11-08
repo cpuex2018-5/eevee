@@ -1,6 +1,6 @@
 #include "./fsim.h"
 
-unsigned int fabs(float x){
+unsigned int eeveefabs(float x){
   union {unsigned int f_i;float f_f;} u;
   u.f_f = x;
   unsigned int y;
