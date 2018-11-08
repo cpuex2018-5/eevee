@@ -1,6 +1,6 @@
 #include "./fsim.h"
 
-unsigned int fmul(float x1,float x2){
+float fmul(float x1,float x2){
   union {unsigned int f_i;float f_f;} u1,u2;
   u1.f_f = x1;
   u2.f_f = x2;
@@ -42,5 +42,8 @@ unsigned int fmul(float x1,float x2){
   unsigned int my = zero_flag ? 0 : mout;
 
   unsigned int y = (sy<<31) + (ey<<23) + my;
-  return y;
+  float result;
+  u1.f_i = y;
+  result = u1.f_f;
+  return result;
 }

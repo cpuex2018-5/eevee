@@ -1,11 +1,14 @@
 #include "./fsim.h"
 
-unsigned int fabs(float x){
+float fabs(float x){
   union {unsigned int f_i;float f_f;} u;
   u.f_f = x;
   unsigned int y;
-  y = 0b10000000000000000000000000000000 + get_binary(u.f_i,0,31);
-  return y;
+  float result;
+  y = get_binary(u.f_i,0,31);
+  u.f_i = y;
+  result = u.f_f;
+  return result;
 }
 
 unsigned int fisneg(float x){
@@ -53,14 +56,16 @@ unsigned int fless(float x1,float x2){
   else{
     y = (get_binary(u2.f_i,0,31) < get_binary(u1.f_i,0,31));
   }
-
   return y;
 }
 
-unsigned int fneg(float x){
+float fneg(float x){
   union {unsigned int f_i;float f_f;} u;
   u.f_f = x;
   unsigned int s = ~get_binary(u.f_i,31,32);
   unsigned int y = (s<<31)+get_binary(u.f_i,0,31);
-  return y;
+  float result;
+  u.f_i = y;
+  result = u.f_f;
+  return result;
 }

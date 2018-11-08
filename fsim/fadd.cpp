@@ -2,7 +2,7 @@
 #include "./fsim.h"
 using namespace std;
 
-unsigned int fadd(unsigned char *ovf,float x1_f,float x2_f){
+float fadd(unsigned char *ovf,float x1_f,float x2_f){
   union{ unsigned int f_i;float f_f;} u1,u2;
   u1.f_f = x1_f;
   u2.f_f = x2_f;
@@ -119,7 +119,7 @@ unsigned int fadd(unsigned char *ovf,float x1_f,float x2_f){
   }
 
   unsigned int y;
-
+  float result;
   if(e1==255 && e2 != 255){
     y = (s1<<31)+(0b11111111<<23)+(nzm1<<22)+get_binary(m1,0,22);
   }
@@ -142,7 +142,8 @@ unsigned int fadd(unsigned char *ovf,float x1_f,float x2_f){
     y = (sy<<31) + (get_binary(ey,0,8)<<23)+get_binary(my,0,23);
   }
   *ovf = (e1<255 && e2 <255 && flag2 == 1) ? 1:0;
-
-  return y;
+  u1.f_i = y;
+  result = u1.f_f;
+  return result;
 }
 
