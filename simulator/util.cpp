@@ -38,7 +38,7 @@ void floatToBinary(float f){
     printf("%d ",((u.i>>j)&0x1));
   }
   printf("\n");
-  printf("%20f",f);
+  printf("%20f\n",f);
 }
 
 bool skip(char c){

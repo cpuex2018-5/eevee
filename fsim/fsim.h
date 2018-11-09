@@ -1,9 +1,13 @@
+#include<stdio.h>
 #include<iostream>
 using namespace std;
 
 //util.cpp
 unsigned int get_binary(unsigned int,int,int);
-
+void floatToBinary(float);
+unsigned long long get_binary(unsigned long long,int,int);
+void print_binary(unsigned int);
+void print_binary(unsigned long long);
 //fadd.cpp
 float fadd(unsigned char *,float,float);
 //fmul.cpp

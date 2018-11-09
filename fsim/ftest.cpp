@@ -1,6 +1,7 @@
 #include "./fsim.h"
 int main(){
   //unsigned char p = 0;
+  
   cout << fisneg(-1.2) << endl;
   cout << fisneg(1.2) << endl;
   cout << fabs(1.2) << endl;
@@ -12,6 +13,11 @@ int main(){
   cout << fispos(-1.25) << endl;
   cout << fispos(1.25) << endl;
   cout << fiszero(0.0) << endl;
+  
   cout << fiszero(-1.25) << endl;
+  cout << fmul(1.2,1.2) << endl;
+  cout << fmul(-1.2,-1.2) << endl;
+  cout << fmul(1.3,-1.3) << endl;
+  //cout << fadd(&p,1.2,1.2) << endl;
   return 0;
 }
