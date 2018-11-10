@@ -9,11 +9,11 @@ unsigned long long get_binary(unsigned long long,int,int);
 void print_binary(unsigned int);
 void print_binary(unsigned long long);
 //fadd.cpp
-float fadd(unsigned char *,float,float);
+float fadd(float,float);
 //fmul.cpp
 float fmul(float,float);
 //fsub.cpp
-float fsub(unsigned char*,float,float);
+float fsub(float,float);
 //futil.cpp
 float fabs(float);
 unsigned int fisneg(float);

@@ -1,11 +1,8 @@
 #include "./fsim.h"
-#include<iostream>
-using namespace std;
 float fmul(float x1,float x2){
   union {unsigned int f_i;float f_f;} u1,u2;
   u1.f_f = x1;
   u2.f_f = x2;
-
   unsigned int s1 = get_binary(u1.f_i,31,32); //1bit
   unsigned int s2 = get_binary(u2.f_i,31,32); //1bit
   unsigned int e1 = get_binary(u1.f_i,23,31); //8bit
