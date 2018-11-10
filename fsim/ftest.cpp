@@ -1,6 +1,5 @@
 #include "./fsim.h"
 int main(){
-  /*
   cout << fisneg(-1.2) << endl;
   cout << fisneg(1.2) << endl;
   cout << fabs(1.2) << endl;
@@ -20,9 +19,21 @@ int main(){
   cout << fadd(1.2,1.2) << endl;
   cout << fmul(0.0,1.3) << endl;
   cout << fadd(0.0,1.32) << endl;
-  */
+  
   //cout << fadd(-1.3,10.3) << endl;
-  cout << fadd(10.3,-1.5) << endl;
-  cout << fsub(10.3,1.6) << endl;
+  //cout << fadd(10.3,-1.5) << endl;
+  //cout << fsub(10.3,1.6) << endl;
+  //cout << fsqrt(6) << endl;
+  //cout << fsqrt(0) << endl;
+  //cout << fsqrt(2.38) << endl;
+  //cout << finv(2) << endl;
+  //cout << finv(-2) << endl;
+  //cout << finv(0.5) << endl;
+  cout << finv(-0.324) << endl;
+  cout << finv(0.324) << endl;
+  cout << finv(0) << endl;
+  cout << fdiv(2,1) << endl;
+  cout << fdiv(-23.451,31.35) << endl;
+  cout << fdiv(1146408,364913) << endl;
   return 0;
 }

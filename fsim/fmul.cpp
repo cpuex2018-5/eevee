@@ -24,7 +24,7 @@ float fmul(float x1,float x2){
   unsigned int m1a = (1<<23)+m1; //25bit
   unsigned int m2a = (1<<23)+m2; //25bit
  
-  unsigned long long mmul = get_binary((unsigned long long)m1a*m2a,0,49); //49bit
+  unsigned long long mmul = get_binary((unsigned long long)m1a*(unsigned long long)m2a,0,49); //49bit
   unsigned int rise = (unsigned int)get_binary(mmul,47,48);
 
   unsigned int mout = rise ? (unsigned int)get_binary(mmul,24,47) : (unsigned int)get_binary(mmul,23,46);
@@ -35,8 +35,6 @@ float fmul(float x1,float x2){
   unsigned int my = zero_flag ? 0 : mout;
 
   unsigned int y = (sy<<31) + (ey<<23) + my;
-  float result;
   u1.f_i = y;
-  result = u1.f_f;
-  return result;
+  return u1.f_f;
 }

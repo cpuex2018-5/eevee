@@ -21,3 +21,9 @@ unsigned int fispos(float);
 unsigned int fiszero(float);
 unsigned int fless(float,float);
 float fneg(float);
+//fsqrt.cpp
+float fsqrt(float);
+//finv.cpp
+float finv(float);
+//fdiv.cpp
+float fdiv(float,float);

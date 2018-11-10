@@ -62,7 +62,6 @@ float fadd(float x1_f,float x2_f){
   
   unsigned int y = state1 ? u2.f_i : (state2 ? u1.f_i : tmp);
   u1.f_i = y;
-  float result = u1.f_f;
-  return result;
+  return u1.f_f;
 }
 
