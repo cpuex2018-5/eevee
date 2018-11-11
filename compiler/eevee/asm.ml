@@ -24,6 +24,8 @@ and exp = (* 一つ一つの命令に対応する式 (caml2html: sparcasm_exp) *
   | FSub of Id.t * Id.t
   | FMul of Id.t * Id.t
   | FDiv of Id.t * Id.t
+  | FAbs of Id.t
+  | FSqrt of Id.t
   | Lfd of Id.t * id_or_imm (* Load Floating-Point Double D-form *)
   | Stfd of Id.t * Id.t * id_or_imm (* Store Floating-Point Double D-form *)
   | Comment of string
@@ -75,7 +77,7 @@ let rec remove_and_uniq xs = function
 let fv_id_or_imm = function V(x) -> [x] | _ -> []
 let rec fv_exp = function
   | Nop | Li(_) | FLi(_) | SetL(_) | Comment(_) | Restore(_) -> []
-  | Mv(x) | Neg(x) | FMv(x) | FNeg(x) | Save(x, _) -> [x]
+  | Mv(x) | Neg(x) | FMv(x) | FNeg(x) | Save(x, _) | FAbs(x) | FSqrt(x) -> [x]
   | Add(x, y') | Sub(x, y') | Mul(x, y') | Div(x, y') | Slw(x, y') | Lfd(x, y') | Lwz(x, y') -> x :: fv_id_or_imm y'
   | Stw(x, y, z') | Stfd(x, y, z') -> x :: y :: fv_id_or_imm z'
   | FAdd(x, y) | FSub(x, y) | FMul(x, y) | FDiv(x, y) -> [x; y]

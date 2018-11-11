@@ -71,8 +71,8 @@ and g' buf e =
   | NonTail(_), Nop -> ()
   | NonTail(x), Li(i) when -32768 <= i && i < 32768 -> Printf.bprintf buf "\tli\t%s, %d\n" (reg x) i
   | NonTail(x), Li(i) ->
-    let n = i lsr 12 in
-    let m = i lxor (n lsl 12) in
+    let n = i lsr 11 in
+    let m = i lxor (n lsl 11) in
     let r = reg x in
     Printf.bprintf buf "\tlui\t%s, %d\n" r n;
     Printf.bprintf buf "\tori\t%s, %s, %d\n" r r m
@@ -111,6 +111,8 @@ and g' buf e =
   | NonTail(x), FSub(y, z) -> Printf.bprintf buf "\tfsub.s\t%s, %s, %s\n" (reg x) (reg y) (reg z)
   | NonTail(x), FMul(y, z) -> Printf.bprintf buf "\tfmul.s\t%s, %s, %s\n" (reg x) (reg y) (reg z)
   | NonTail(x), FDiv(y, z) -> Printf.bprintf buf "\tfdiv.s\t%s, %s, %s\n" (reg x) (reg y) (reg z)
+  | NonTail(x), FAbs(y) -> Printf.bprintf buf "\tfabs.s\t%s, %s\n" (reg x) (reg y)
+  | NonTail(x), FSqrt(y) -> Printf.bprintf buf "\tfsqrt.s\t%s, %s\n" (reg x) (reg y)
   | NonTail(x), Lfd(y, V(z)) ->
     Printf.bprintf buf "\tadd\t%s, %s, %s\n" (reg reg_tmp) (reg y) (reg z);
     Printf.bprintf buf "\tflw\t%s, 0(%s)\n" (reg x) (reg reg_tmp)
@@ -141,7 +143,7 @@ and g' buf e =
   | Tail, (Li _ | SetL _ | Mv _ | Neg _ | Add _ | Sub _ | Mul _ | Div _ | Slw _ | Lwz _ as exp) ->
     g' buf (NonTail(regs.(0)), exp);
     Printf.bprintf buf "\tb\t%s\n" !retlabel;
-  | Tail, (FLi _ | FMv _ | FNeg _ | FAdd _ | FSub _ | FMul _ | FDiv _ | Lfd _ as exp) ->
+  | Tail, (FLi _ | FMv _ | FNeg _ | FAdd _ | FSub _ | FMul _ | FDiv _ | FAbs _ | FSqrt _ | Lfd _ as exp) ->
     g' buf (NonTail(fregs.(0)), exp);
     Printf.bprintf buf "\tb\t%s\n" !retlabel;
   | Tail, (Restore(x) as exp) ->

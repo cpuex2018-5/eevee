@@ -47,6 +47,12 @@ let rec g env = function
       xts
       (findt y env)
   | LetTuple(xts, y, e) -> LetTuple(xts, y, g env e)
+(*
+  | App("min_caml_sqrt", [x]) when memf x env -> Float(sqrt (findf x env))
+  | App("min_caml_int_of_float", [x]) when memf x env -> Int(int_of_float (findf x env))
+  | App("min_caml_float_of_int", [x]) when memi x env -> Float(float_of_int (findi x env))
+  | App("min_caml_abs_float", [x]) when memf x env -> Float(abs_float (findf x env))
+*)
   | e -> e
 
 let f = g M.empty

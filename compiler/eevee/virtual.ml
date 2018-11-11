@@ -97,6 +97,8 @@ let rec g env = function (* 式の仮想マシンコード生成 (caml2html: vir
   | Closure.AppCls(x, ys) ->
     let (int, float) = separate (List.map (fun y -> (y, M.find y env)) ys) in
     Ans(CallCls(x, int, float))
+  | Closure.AppDir(Id.L("min_caml_abs_float"), [x]) -> Ans(FAbs(x))
+  | Closure.AppDir(Id.L("min_caml_sqrt"), [x]) -> Ans(FSqrt(x))
   | Closure.AppDir(Id.L(x), ys) ->
     let (int, float) = separate (List.map (fun y -> (y, M.find y env)) ys) in
     Ans(CallDir(Id.L(x), int, float))
