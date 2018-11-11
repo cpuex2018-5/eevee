@@ -20,8 +20,7 @@ min_caml_print_int:
 	bge	a0, zero, .print_int_L0
 	li	t1, 45
 	w	t1		# '-'
-	xori	a0, a0, -1
-	addi	a0, a0, 1	# neg
+	neg	a0, a0
 	li	s1, 0		# s1: 何桁あるかを数える
 .print_int_L0:
 # 出力すべき文字のasciiコードをstackに積んでいく
@@ -136,14 +135,14 @@ min_caml_sin:
 	fli	ft1, L_PI	# pi
 	fli	ft2, L_2	# 2.0
 	fle.s	s1, ft0, fa0	# s1: FLAG
-	not	s1, s1
+	xori	s1, s1, 1
 	fabs.s	fa0, fa0
 	call	.reduction_2pi
 	fle.s	t2, ft1, fa0	# pi <= A
 	beq	t2, zero, .sin_L0
 # if (A >= pi)
 	fsub.s	fa0, fa0, ft1
-	not	s1, s1
+	xori	s1, s1, 1
 .sin_L0:
 	fdiv.s	ft3, ft1, ft2	# ft3 = pi / 2
 	fle.s	t2, ft3, fa0	# pi / 2 <= A
@@ -186,14 +185,14 @@ min_caml_cos:
 	beq	t2, zero, .cos_L0
 # if (A >= pi)
 	fsub.s	fa0, fa0, ft1
-	not	s1, s1
+	xori	s1, s1, 1
 .cos_L0:
 	fdiv.s	ft3, ft1, ft2	# ft3 = pi / 2
 	fle.s	t2, ft3, fa0	# pi / 2 <= A
 	beq	t2, zero, .cos_L1
 # if (A >= pi / 2)
 	fsub.s	fa0, ft1, fa0
-	not	s1, s1
+	xori	s1, s1, 1
 .cos_L1:
 	fdiv.s	ft1, ft3, ft2	# ft1 = pi / 4 (piを上書き)
 	fle.s	t2, fa0, ft1	# A <= pi / 4
