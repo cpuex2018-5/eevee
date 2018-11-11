@@ -215,14 +215,6 @@ min_caml_cos:
 	addi	sp, sp, 8
 	jr	ra
 
-min_caml_abs_float:
-	fabs.s	fa0, fa0
-	jr	ra
-
-min_caml_sqrt:
-	fsqrt.s	fa0, fa0
-	jr	ra
-
 min_caml_float_of_int: # int -> float
 	fli	ft0, L_8388608
 	li	t1, 1258291200  # 0x4b000000
