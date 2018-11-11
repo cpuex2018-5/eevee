@@ -307,6 +307,10 @@ BinGen::Inst BinGen::Convert(std::string input) {
         assert(2 == arg.size());
         ret1 = op_imm("addi", arg[0], arg[1], 0);
     }
+    else if (mnemo == "not") {
+        assert(2 == arg.size());
+        ret1 = op_imm("xori", arg[0], arg[1], -1);
+    }
     else if (mnemo == "neg") {
         assert(2 == arg.size());
         ret1 = op("sub", arg[0], "zero", arg[1]);
