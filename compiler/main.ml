@@ -30,24 +30,24 @@ let rec iter n e = (* optimization (caml2html: main_iter) *)
 let lexbuf outchan l = (* compile the buffer and put it to outchan (caml2html: main_lexbuf) *)
   Id.counter := 0;
   Typing.extenv := M.empty;
-  let e0 = Parser.exp Lexer.token l in
-  let e1 = Typing.f e0 in
-  let e2 = KNormal.f e1 in
+  let e = Parser.exp Lexer.token l in
+  let e = Typing.f e in
+  let e = KNormal.f e in
   print_endline "-----------After KNormal.f--------------";
-  KNormal.print_t e2;
-  let e3 = Lift.f e2 in
-  let e4 = Alpha.f e3 in
-  let e5 = iter !limit e4 in
-  let e6 = Closure.f e5 in
+  (* KNormal.print_t e; *)
+  let e = Lift.f e in
+  let e = Alpha.f e in
+  let e = iter !limit e in
+  let e = Closure.f e in
   print_endline "-----------After Closure.f-----------------";
-  Closure.print_prog e6;
-  let e6 = TupleOpt.f e6 in
+  (* Closure.print_prog e; *)
+  let e = TupleOpt.f e in
   print_endline "-----------After TupleOpt.f-----------------";
-  Closure.print_prog e6;
-  let e7 = Virtual.f e6 in
-  let e8 = Simm.f e7 in
-  let e9 = RegAlloc.f e8 in
-  Emit.f outchan e9
+  (* Closure.print_prog e; *)
+  let e = Virtual.f e in
+  let e = Simm.f e in
+  let e = RegAlloc.f e in
+  Emit.f outchan e
 
 let string s = lexbuf stdout (Lexing.from_string s) (* compile a string and put it to stdout (caml2html: main_string) *)
 

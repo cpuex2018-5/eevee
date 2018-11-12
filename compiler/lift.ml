@@ -85,7 +85,9 @@ let rec expandArg (e : KNormal.t) (fs : (Id.t * (Id.t * Type.t) list) list) (env
        let newe1 = expandArg e1 ((x, exargs) :: fs) (M.add x t env) in
        let newe2 = expandArg e2 ((x, exargs) :: fs) (M.add x t env) in
        let newt = match t with Type.Fun (xs, y) -> Type.Fun (xs @ (List.map snd exargs), y) | _ -> assert false in
-       KNormal.LetRec ({ name = (x, newt); args = yts @ exargs; body = newe1 }, newe2))
+       match (List.length (yts @ exargs)) > 20 with
+       | false -> KNormal.LetRec ({ name = (x, newt); args = yts @ exargs; body = newe1 }, newe2)
+       | true -> KNormal.LetRec ({ name = (x, t); args = yts; body = e1 }, e2))
   | LetTuple (l, e1, e2) ->
     let newenv = List.fold_left (fun m (x, t) -> M.add x t m) env l in
     LetTuple (l, e1, expandArg e2 fs newenv)

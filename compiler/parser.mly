@@ -138,6 +138,8 @@ exp:
     { Put($1, $4, $7, get_pos ()) }
 | exp SEMICOLON exp
     { Let((Id.gentmp Type.Unit, Type.Unit), $1, $3, get_pos ()) }
+| exp SEMICOLON
+    { Let((Id.gentmp Type.Unit, Type.Unit), $1, Unit, get_pos ()) }
 | ARRAY_CREATE simple_exp simple_exp
     %prec prec_app
     { Array($2, $3, get_pos ()) }

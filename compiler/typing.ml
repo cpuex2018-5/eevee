@@ -130,6 +130,11 @@ let rec g env e =
       let env = M.add x t env in
       unify t (Type.Fun(List.map snd yts, g (M.add_list yts env) e1)) p;
       g env e2
+    | App(Var "create_array", [e1; e2], p) ->
+      unify Type.Int (g env e1) p;
+      let t = Type.gentyp () in
+      unify (g env e2) t p;
+      Type.Array(t)
     | App(e, es, p) ->
       let t = Type.gentyp () in
       unify (g env e) (Type.Fun(List.map (g env) es, t)) p;
@@ -162,6 +167,7 @@ let f e =
   extenv := M.add "cos" (Type.Fun([Float], Float)) !extenv;
   extenv := M.add "sqrt" (Type.Fun([Float], Float)) !extenv;
   extenv := M.add "abs_float" (Type.Fun([Float], Float)) !extenv;
+  extenv := M.add "create_array" (Type.Fun([Int; Int], Array(Int))) !extenv;
 (*
   (match deref_typ (g M.empty e) with
   | Type.Unit -> ()

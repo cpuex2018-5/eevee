@@ -1,6 +1,6 @@
 	.text
 # ============= beginning of libmincaml.S ===============
-min_caml_print_byte:
+min_caml_print_char:
 # a0の下位8bitに出力したい文字のasciiコードが入っている
 	w	a0
 	jr	ra
@@ -10,6 +10,8 @@ min_caml_print_newline:
 	li	t1, 10
 	w	t1
 	jr	ra
+
+# TODO: 桁数による最適化？
 min_caml_print_int:
 	addi	sp, sp, -12
 	sw	s1, 8(sp)
@@ -45,6 +47,100 @@ min_caml_print_int:
 	lw	fp, 0(sp)
 	addi	sp, sp, 12
 	jr	ra
+
+min_caml_read_int:
+# ' '(space)または'\n'で区切る
+	mv	a0, zero
+	li	t3, 32	# t3: space
+	li	t4, 10	# t4: '\n'
+	li	t2, 45	# t2: '-'
+.read_int_L0:	# skip spaces
+	r	t1	# t1: input
+	beq	t1, t3, .read_int_L0
+	beq	t1, t4, .read_int_L0
+	bne	t1, t2, .read_int_L2
+# negative number
+	r	t1
+.read_int_L1:
+	mv	t2, a0
+	slli	a0, a0, 3
+	add	a0, a0, t2
+	add	a0, a0, t2	# a0 *= 10
+	addi	t1, t1, -48
+	sub	a0, a0, t1
+	r	t1
+	beq	t1, t3, .read_int_end
+	beq	t1, t4, .read_int_end
+	b	.read_int_L1
+.read_int_L2:	# positive number
+	mv	t2, a0
+	slli	a0, a0, 3
+	add	a0, a0, t2
+	add	a0, a0, t2	# a0 *= 10
+	addi	t1, t1, -48
+	add	a0, a0, t1
+	r	t1
+	beq	t1, t3, .read_int_end
+	beq	t1, t4, .read_int_end
+	b	.read_int_L2
+.read_int_end:
+	jr	ra
+
+min_caml_read_float:
+# ' '(space)または'\n'で区切る
+# 小数点第1位までしかないことを前提にしている
+	addi	sp, sp, -4
+	sw	ra, 0(sp)
+	mv	a0, zero
+	li	t3, 32	# t3: space
+	li	t4, 10	# t4: '\n'
+	li	t5, 46	# t5: '.'
+	li	t2, 45	# t2: '-'
+.read_float_L0:	# skip spaces
+	r	t1	# t1: input
+	beq	t1, t3, .read_float_L0
+	beq	t1, t4, .read_float_L0
+	bne	t1, t2, .read_float_L2
+# negative number
+	r	t1
+.read_float_L1:
+	mv	t2, a0
+	slli	a0, a0, 3
+	add	a0, a0, t2
+	add	a0, a0, t2	# a0 *= 10
+	addi	t1, t1, -48
+	sub	a0, a0, t1
+	r	t1
+	beq	t1, t3, .read_float_end
+	beq	t1, t4, .read_float_end
+	bne	t1, t5, .read_float_L1
+	r	t1
+	b	.read_float_L1
+.read_float_L2:	# positive number
+	mv	t2, a0
+	slli	a0, a0, 3
+	add	a0, a0, t2
+	add	a0, a0, t2	# a0 *= 10
+	addi	t1, t1, -48
+	add	a0, a0, t1
+	r	t1
+	beq	t1, t3, .read_float_end
+	beq	t1, t4, .read_float_end
+	bne	t1, t5, .read_float_L2
+	r	t1
+	b	.read_float_L2
+.read_float_end:
+	call	min_caml_float_of_int
+	fli	ft0, L_10
+	fdiv.s	fa0, fa0, ft0
+	lw	ra, 0(sp)
+	addi	sp, sp, 4
+	jr	ra
+
+min_caml_floor:
+
+min_caml_create_array:
+
 min_caml_div_rem:
 # a0 <- a0 / a1, a1 <- a0 mod a1 (引数a0, a1は共に正)
 	li	t1, 0			# t1が商
@@ -57,6 +153,7 @@ min_caml_div_rem:
 	mv	a1, a0
 	mv	a0, t1
 	jr	ra
+
 min_caml_mul:
 # a0 <- a0 * a1
 	li	t1, 0
@@ -214,6 +311,9 @@ min_caml_cos:
 	addi	sp, sp, 8
 	jr	ra
 
+min_caml_atan:
+# TODO
+
 min_caml_float_of_int: # int -> float
 	fli	ft0, L_8388608
 	li	t1, 1258291200  # 0x4b000000
@@ -266,6 +366,8 @@ L_2:	# 2.0
 	.word	1073741824
 L_8388608:	# 8388608.0
 	.word	1258291200
+L_10:	# 10.0
+	.word	1092616192
 L_PI:	# 3.141593
 	.word	1078530011
 L_2PI:	# 6.283185

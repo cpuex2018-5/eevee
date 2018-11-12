@@ -381,8 +381,9 @@ void exec(Simulator *sim,Op *op){
           fwrite(iobuf,sizeof(char),1,sim->out);
         }
         else if(op->funct3 == 0b001){
-          char iobuf[1] = {(char)sim->registers[op->rd]};
-          fread(iobuf,sizeof(char),1,sim->in);
+          char iobuf;
+          fread(&iobuf,sizeof(char),1,sim->in);
+          sim->registers[op->rd] = (uint32_t)iobuf;
         }
         else{
           fprintf(stderr,"Unknown instruction\n");
