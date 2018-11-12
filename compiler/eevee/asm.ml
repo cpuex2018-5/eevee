@@ -63,7 +63,7 @@ let reg_fsw = fregs.(Array.length fregs - 1) (* temporary for swap *)
 let reg_sp = "%sp" (* stack pointer *)
 let reg_fp = "%fp" (* frame pointer *)
 let reg_link = "%ra" (* link register *)
-let reg_hp = "%hp" (* heap pointer *) (* TODO *)
+let reg_hp = "%gp" (* heap pointer *) (* TODO *)
 let reg_tmp = "%t6" (* [XX] ad hoc *)
 let is_reg x = (x.[0] = '%')
 

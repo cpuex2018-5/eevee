@@ -137,9 +137,25 @@ min_caml_read_float:
 	addi	sp, sp, 4
 	jr	ra
 
-min_caml_floor:
+min_caml_floor: # tenuki(tmp)
+	addi	sp, sp, -4
+	sw	ra, 0(sp)
+	call	min_caml_int_of_float
+	call	min_caml_float_of_int
+	lw	ra, 0(sp)
+	addi	sp, sp, 4
+	jr	ra
 
 min_caml_create_array:
+	mv	t1, zero
+	mv	t2, gp
+.create_array_L0:
+	sw	a1, 0(gp)
+	addi	gp, gp, 4
+	addi	t1, t1, 1
+	ble	t1, a0, .create_array_L0
+	mv	a0, t2
+	jr	ra
 
 min_caml_div_rem:
 # a0 <- a0 / a1, a1 <- a0 mod a1 (引数a0, a1は共に正)
