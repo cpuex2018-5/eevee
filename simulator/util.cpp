@@ -2,13 +2,6 @@
 
 extern const char *Regs[];
 extern const char *fRegs[];
-unsigned int get_binary(unsigned int n,int start,int end){
-  int len = end - start;
-  n = n << (32-end);
-  n = n >> (32-len);
-  return n;
-}
-
 void usage(){
   fprintf(stderr,"Usage: ./eevee_sim <file> [-d] [-h]\n");
 }

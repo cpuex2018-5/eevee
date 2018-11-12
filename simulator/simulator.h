@@ -48,7 +48,12 @@ Op *decode_b(unsigned int inst,Op *op);
 Op *decode_j(unsigned int inst,Op *op);
 Op *decode_io(unsigned int inst,Op *op);
 //util.c
-unsigned int get_binary(unsigned int,int,int);
+inline unsigned int get_binary(unsigned int n,int start,int end){
+int len = end - start;
+n = n << (32-end);
+n = n >> (32-len);
+return n;
+}
 void usage();
 void print_binary(int);
 std::string to_string(uint32_t);
