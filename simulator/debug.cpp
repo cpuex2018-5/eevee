@@ -54,6 +54,12 @@ void list_breakpoints(Simulator *sim){
   }
 }
 
+void delete_breakpoints(Simulator *sim){
+  for(unsigned int i=0;sim->breakpoints.size()>0;i++){
+    sim->breakpoints.erase(sim->breakpoints.begin());
+  }
+}
+
 void add_breakpoints(Simulator *sim,int v){
   if(v<0){
     fprintf(stdout,"Warning! you are setting a breakpoint outside text memory\n");
@@ -171,6 +177,26 @@ int debug_exec(Simulator *sim,std::vector<std::string> &dbginst){
     else{
       printf("(unknown)\n");
     }
+    return 0;
+  }
+  else if(dbginst[0] == "delete" && dbginst.size()==1){
+    delete_breakpoints(sim);
+    printf("breakpoints deleted\n");
+    return 0;
+  }
+  else if(dbginst[0] == "delete" && dbginst.size()==2){
+    int index = 0;
+    try{
+      index = std::stoi(dbginst[1],nullptr,10);
+    }
+    catch (...){
+      fprintf(stderr,"arguments must be an integer\n");
+    }
+    if(index < 0 || (unsigned int)index > sim->breakpoints.size()-1 || sim->breakpoints.size()==0){
+      fprintf(stderr,"invalid argument\n");
+      return 0;
+    }
+    sim->breakpoints.erase(sim->breakpoints.begin()+index);
     return 0;
   }
   else if(dbginst[0] == "b" && dbginst.size()==2){

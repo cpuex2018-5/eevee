@@ -70,17 +70,14 @@ void exec(Simulator *sim,Op *op){
     for(unsigned int i=0;i<sim->breakpoints.size();i++){
       if(sim->pc==sim->breakpoints[i]){
         fprintf(stdout,"break!!\n");
-        sim->breakpoints.erase(sim->breakpoints.begin()+i);
         debug_mode=1; //break
       }
     }
-
 
     if(debug_mode == 1){
       //for debug
       Op *dbgop = (Op *)malloc(sizeof(Op));
       fprintf(stdout,"current pc: %ld  inst_counter: %ld  sp:%d\n",sim->pc,inst_counter,sim->registers[2]);
-      //print_instr(sim);
       disas(inst,opcode,dbgop);
       while(1){
         std::string buffer;
@@ -101,7 +98,6 @@ void exec(Simulator *sim,Op *op){
       dbgop = NULL;
     }
 
-    //Op *op = (Op *)malloc(sizeof(Op));
     memset(op,0,sizeof(Op));
     switch(opcode){
       case 0b0110111:
@@ -127,7 +123,7 @@ void exec(Simulator *sim,Op *op){
         //jalr
         decode_i(inst,op);
         sim->registers[op->rd]=sim->pc + 4;
-        s_imm = ( op -> imm ) | ((op->imm & 0x800) ? 0xFFFFF800:0); //sign extend
+        s_imm = ( op -> imm ) | ((op->imm & 0x800) ? 0xFFFFF800:0); //sign extend 
         sim -> pc = (sim->registers[op->rs1] + s_imm);
         sim -> pc = (sim -> pc) &~ (0b1); //clear LSB
         break;
