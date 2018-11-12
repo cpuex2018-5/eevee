@@ -49,9 +49,8 @@ Op *decode_j(unsigned int inst,Op *op);
 Op *decode_io(unsigned int inst,Op *op);
 //util.c
 inline unsigned int get_binary(unsigned int n,int start,int end){
-int len = end - start;
 n = n << (32-end);
-n = n >> (32-len);
+n = n >> (32-(end-start));
 return n;
 }
 void usage();
