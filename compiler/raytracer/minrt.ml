@@ -107,10 +107,8 @@ let n_reflections = create_array 1 0 in
 let rec fispos x = x > 0.0 in
 let rec fisneg x = x < 0.0 in
 let rec fiszero x = (x = 0.0) in
-let rec fneg x = (-1.0) *. x in
 let rec fsqr x = x *. x in
 let rec fless a b = a < b in
-let rec fabs a = abs_float a in
 let rec fhalf a = a /. 2.0 in
 
 (*

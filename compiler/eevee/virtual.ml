@@ -98,6 +98,7 @@ let rec g env = function (* 式の仮想マシンコード生成 (caml2html: vir
     let (int, float) = separate (List.map (fun y -> (y, M.find y env)) ys) in
     Ans(CallCls(x, int, float))
   | Closure.AppDir(Id.L("min_caml_abs_float"), [x]) -> Ans(FAbs(x))
+  | Closure.AppDir(Id.L("min_caml_fabs"), [x]) -> Ans(FAbs(x))
   | Closure.AppDir(Id.L("min_caml_sqrt"), [x]) -> Ans(FSqrt(x))
   | Closure.AppDir(Id.L(x), ys) ->
     let (int, float) = separate (List.map (fun y -> (y, M.find y env)) ys) in
@@ -131,7 +132,7 @@ let rec g env = function (* 式の仮想マシンコード生成 (caml2html: vir
     (match M.find x env with
      | Type.Array(Type.Unit) -> Ans(Nop)
      | Type.Array(Type.Float) ->
-       Let((offset, Type.Int), Slw(y, C(3)),
+       Let((offset, Type.Int), Slw(y, C(2)),
            Ans(Lfd(x, V(offset))))
      | Type.Array(_) ->
        Let((offset, Type.Int), Slw(y, C(2)),
@@ -142,7 +143,7 @@ let rec g env = function (* 式の仮想マシンコード生成 (caml2html: vir
     (match M.find x env with
      | Type.Array(Type.Unit) -> Ans(Nop)
      | Type.Array(Type.Float) ->
-       Let((offset, Type.Int), Slw(y, C(3)),
+       Let((offset, Type.Int), Slw(y, C(2)),
            Ans(Stfd(z, x, V(offset))))
      | Type.Array(_) ->
        Let((offset, Type.Int), Slw(y, C(2)),

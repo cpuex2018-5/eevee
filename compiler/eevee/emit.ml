@@ -262,7 +262,7 @@ and g'_tail_if buf rs1 rs2 e1 e2 b bn = (* bはラベルに使うだけで命令
 and g'_non_tail_if buf dest rs1 rs2 e1 e2 b bn =
   let b_else = Id.genid (b ^ "_else") in
   let b_cont = Id.genid (b ^ "_cont") in
-  Printf.bprintf buf "\t%s\t%s, %s, %s\n" bn rs1 rs2 b_else;
+  Printf.bprintf buf "\t%s\t%s, %s, %s\n" bn (reg rs1) (reg rs2) b_else;
   let stackset_back = !stackset in
   g buf (dest, e1);
   let stackset1 = !stackset in

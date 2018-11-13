@@ -210,6 +210,9 @@ let rec g (env : Type.t M.t) (exp : Syntax.t) : t * Type.t = (* where K-normaliz
     let e2', t2 = g env' e2 in
     let e1', t1 = g (M.add_list yts env') e1 in
     LetRec({ name = (x, t); args = yts; body = e1' }, e2'), t2
+  | Syntax.App(Syntax.Var("fneg"), [e], _) ->
+    insert_let (g env e)
+      (fun x -> FNeg(x), Type.Float)
   | Syntax.App(Syntax.Var(f), e2s, _) when not (M.mem f env) ->
     (match M.find f !Typing.extenv with
      | Type.Fun(_, t) ->

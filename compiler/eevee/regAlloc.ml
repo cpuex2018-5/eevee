@@ -191,7 +191,7 @@ let h { name = Id.L(x); args = ys; fargs = zs; body = e; ret = t } = (* 関数�
   let (i, arg_regs, regenv) =
     List.fold_left
       (fun (i, arg_regs, regenv) y ->
-         Printf.printf "%s: i = %d\n" x i;
+         (* Printf.printf "%s: i = %d\n" x i; *)
          let r = regs.(i) in
          (i + 1,
           arg_regs @ [r],
@@ -202,7 +202,7 @@ let h { name = Id.L(x); args = ys; fargs = zs; body = e; ret = t } = (* 関数�
   let (d, farg_regs, regenv) =
     List.fold_left
       (fun (d, farg_regs, regenv) z ->
-         Printf.printf "d = %d\n" d;
+         (* Printf.printf "d = %d\n" d; *)
          let fr = fregs.(d) in
          (d + 1,
           farg_regs @ [fr],

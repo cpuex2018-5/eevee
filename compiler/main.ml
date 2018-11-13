@@ -35,7 +35,7 @@ let lexbuf outchan l = (* compile the buffer and put it to outchan (caml2html: m
   let e = KNormal.f e in
   print_endline "-----------After KNormal.f--------------";
   (* KNormal.print_t e; *)
-  let e = Lift.f e in
+  (* let e = Lift.f e in *)
   let e = Alpha.f e in
   let e = iter !limit e in
   let e = Closure.f e in
