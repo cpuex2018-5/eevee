@@ -87,7 +87,6 @@ let rec g env = function (* 式の仮想マシンコード生成 (caml2html: vir
         (4, e2')
         (fun y offset store_fv -> seq(Fsw(y, x, C(offset)), store_fv))
         (fun y _ offset store_fv -> seq(Sw(y, x, C(offset)), store_fv)) in
-    print_endline (string_of_int offset);
     Let((x, t), Mv(reg_hp),
         Let((reg_hp, Type.Int), Add(reg_hp, C(offset)),
             let z = Id.genid "l" in

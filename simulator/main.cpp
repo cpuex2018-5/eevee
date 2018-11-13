@@ -35,11 +35,11 @@ int main(int argc,char **argv){
     exit(1);
   }
 
-  FILE *in = fopen("input","rb");
+  FILE *in = fopen("contest_input.bin","rb");
   if(in==NULL){
     fprintf(stderr,"input file not found\n");
   }
-  FILE *out = fopen("output","wb");
+  FILE *out = fopen("output.ppm","wb");
   if(out==NULL){
     fprintf(stderr,"can not create output file\n");
   }

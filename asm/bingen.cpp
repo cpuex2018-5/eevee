@@ -83,7 +83,8 @@ void BinGen::Main(std::string input) {
 
     if (is_debug_) {
         if (inst.first == 0 && inst.second == ~0) { // not an instruction or a data
-            debugofs_ << "\t" << input << std::endl;
+            if (input[0] != '#')
+                debugofs_ << "\t" << input << std::endl;
         } else {
             debugofs_ << "(" << old_nline * 4 << ")\t" << input << std::endl;
         }
