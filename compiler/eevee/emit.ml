@@ -230,7 +230,7 @@ and g' buf e =
     (* TODO: tレジスタから使うようにする(?) *)
     g'_args buf [(f, reg_cl)] iargs fargs;
     Printf.bprintf buf "\tlw\tra, 0(%s)\n" (reg reg_cl);
-    Printf.bprintf buf "\tjr\tra\n";
+    Printf.bprintf buf "\tjalr\tra, ra, 0\n";
     Printf.bprintf buf "\tb\t%s\n" !retlabel
   | Tail, CallDir(Id.L(f), iargs, fargs) ->
     g'_args buf [] iargs fargs;
@@ -239,7 +239,7 @@ and g' buf e =
   | NonTail(a), CallCls(f, iargs, fargs) ->
     g'_args buf [(f, reg_cl)] iargs fargs;
     Printf.bprintf buf "\tlw\tra, 0(%s)\n" (reg reg_cl); (* set closure address to %ra *)
-    Printf.bprintf buf "\tjr\tra\n";
+    Printf.bprintf buf "\tjalr\tra, ra, 0\n";
     if List.mem a allregs && a <> regs.(0) then
       Printf.bprintf buf "\tmv\t%s, %s\n" (reg a) (reg regs.(0))
     else if List.mem a allfregs && a <> fregs.(0) then

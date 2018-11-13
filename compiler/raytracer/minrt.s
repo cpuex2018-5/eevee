@@ -1926,7 +1926,7 @@ beq_else.12090:
 	addi	a0, a0, 1
 	lw	t6, 0(sp)
 	lw	ra, 0(t6)
-	jr	ra
+	jalr	ra, ra, 0
 	b	read_object.2545_ret
 read_object.2545_ret:
 	lw	ra, 20(sp)
@@ -2027,7 +2027,7 @@ beq_else.12094:
 	addi	a0, a1, 1
 	lw	t6, 0(sp)
 	lw	ra, 0(t6)
-	jr	ra
+	jalr	ra, ra, 0
 	b	read_and_network.2553_ret
 read_and_network.2553_ret:
 	lw	ra, 20(sp)
@@ -2631,19 +2631,19 @@ solver.2597:
 	bne	a2, a6, beq_else.12133
 	mv	t6, a5
 	lw	ra, 0(t6)
-	jr	ra
+	jalr	ra, ra, 0
 	b	solver.2597_ret
 beq_else.12133:
 	li	a5, 2
 	bne	a2, a5, beq_else.12134
 	mv	t6, a3
 	lw	ra, 0(t6)
-	jr	ra
+	jalr	ra, ra, 0
 	b	solver.2597_ret
 beq_else.12134:
 	mv	t6, a4
 	lw	ra, 0(t6)
-	jr	ra
+	jalr	ra, ra, 0
 	b	solver.2597_ret
 solver.2597_ret:
 	lw	ra, 8(sp)
@@ -3092,7 +3092,7 @@ solver_fast.2620:
 	mv	a0, a7
 	mv	t6, a6
 	lw	ra, 0(t6)
-	jr	ra
+	jalr	ra, ra, 0
 	b	solver_fast.2620_ret
 beq_else.12188:
 	li	a1, 2
@@ -3101,14 +3101,14 @@ beq_else.12188:
 	mv	a0, a7
 	mv	t6, a4
 	lw	ra, 0(t6)
-	jr	ra
+	jalr	ra, ra, 0
 	b	solver_fast.2620_ret
 beq_else.12189:
 	mv	a1, a2
 	mv	a0, a7
 	mv	t6, a5
 	lw	ra, 0(t6)
-	jr	ra
+	jalr	ra, ra, 0
 	b	solver_fast.2620_ret
 solver_fast.2620_ret:
 	lw	ra, 8(sp)
@@ -3270,7 +3270,7 @@ solver_fast2.2638:
 	mv	a0, a6
 	mv	t6, a5
 	lw	ra, 0(t6)
-	jr	ra
+	jalr	ra, ra, 0
 	b	solver_fast2.2638_ret
 beq_else.12201:
 	li	a1, 2
@@ -3280,7 +3280,7 @@ beq_else.12201:
 	mv	t6, a3
 	mv	a2, a7
 	lw	ra, 0(t6)
-	jr	ra
+	jalr	ra, ra, 0
 	b	solver_fast2.2638_ret
 beq_else.12202:
 	mv	a1, a2
@@ -3288,7 +3288,7 @@ beq_else.12202:
 	mv	t6, a4
 	mv	a2, a7
 	lw	ra, 0(t6)
-	jr	ra
+	jalr	ra, ra, 0
 	b	solver_fast2.2638_ret
 solver_fast2.2638_ret:
 	lw	ra, 8(sp)
@@ -3826,7 +3826,7 @@ beq_cont.12239:
 	lw	t6, 4(sp)
 	mv	a1, a3
 	lw	ra, 0(t6)
-	jr	ra
+	jalr	ra, ra, 0
 	b	iter_setup_dirvec_constants.2650_ret
 ble_else.12237:
 	b	iter_setup_dirvec_constants.2650_ret
@@ -3847,7 +3847,7 @@ setup_dirvec_constants.2653:
 	lw	a2, 0(t6)
 	addi	a2, a2, -1
 	lw	ra, 0(t6)
-	jr	ra
+	jalr	ra, ra, 0
 	b	setup_dirvec_constants.2653_ret
 setup_dirvec_constants.2653_ret:
 	lw	ra, 8(sp)
@@ -3960,7 +3960,7 @@ beq_cont.12245:
 	lw	a0, 0(sp)
 	lw	t6, 4(sp)
 	lw	ra, 0(t6)
-	jr	ra
+	jalr	ra, ra, 0
 	b	setup_startp_constants.2655_ret
 ble_else.12243:
 	b	setup_startp_constants.2655_ret
@@ -3992,7 +3992,7 @@ setup_startp.2658:
 	lw	a0, 0(sp)
 	lw	t6, 4(sp)
 	lw	ra, 0(t6)
-	jr	ra
+	jalr	ra, ra, 0
 	b	setup_startp.2658_ret
 setup_startp.2658_ret:
 	lw	ra, 20(sp)
@@ -4203,7 +4203,7 @@ beq_else.12273:
 	lw	a1, 24(sp)
 	lw	t6, 28(sp)
 	lw	ra, 0(t6)
-	jr	ra
+	jalr	ra, ra, 0
 	b	check_all_inside.2680_ret
 beq_else.12274:
 	li	a0, 0
@@ -4287,7 +4287,7 @@ beq_else.12281:
 	lw	a1, 12(sp)
 	lw	t6, 16(sp)
 	lw	ra, 0(t6)
-	jr	ra
+	jalr	ra, ra, 0
 	b	shadow_check_and_group.2686_ret
 beq_else.12280:
 	fli	fa1, l.10223
@@ -4334,7 +4334,7 @@ beq_else.12280:
 	lw	a1, 12(sp)
 	lw	t6, 16(sp)
 	lw	ra, 0(t6)
-	jr	ra
+	jalr	ra, ra, 0
 	b	shadow_check_and_group.2686_ret
 beq_else.12282:
 	li	a0, 1
@@ -4378,7 +4378,7 @@ beq_else.12283:
 	lw	a1, 0(sp)
 	lw	t6, 4(sp)
 	lw	ra, 0(t6)
-	jr	ra
+	jalr	ra, ra, 0
 	b	shadow_check_one_or_group.2689_ret
 beq_else.12284:
 	li	a0, 1
@@ -4470,7 +4470,7 @@ beq_cont.12287:
 	lw	a1, 8(sp)
 	lw	t6, 12(sp)
 	lw	ra, 0(t6)
-	jr	ra
+	jalr	ra, ra, 0
 	b	shadow_check_one_or_matrix.2692_ret
 beq_else.12296:
 	li	a0, 1
@@ -4485,7 +4485,7 @@ beq_else.12296:
 	lw	a1, 8(sp)
 	lw	t6, 12(sp)
 	lw	ra, 0(t6)
-	jr	ra
+	jalr	ra, ra, 0
 	b	shadow_check_one_or_matrix.2692_ret
 beq_else.12297:
 	li	a0, 1
@@ -4553,7 +4553,7 @@ beq_else.12301:
 	lw	a2, 28(sp)
 	lw	t6, 36(sp)
 	lw	ra, 0(t6)
-	jr	ra
+	jalr	ra, ra, 0
 	b	solve_each_element.2695_ret
 beq_else.12300:
 	li	a1, 0
@@ -4663,7 +4663,7 @@ beq_cont.12306:
 	lw	a2, 28(sp)
 	lw	t6, 36(sp)
 	lw	ra, 0(t6)
-	jr	ra
+	jalr	ra, ra, 0
 	b	solve_each_element.2695_ret
 solve_each_element.2695_ret:
 	lw	ra, 96(sp)
@@ -4703,7 +4703,7 @@ beq_else.12313:
 	lw	a2, 0(sp)
 	lw	t6, 8(sp)
 	lw	ra, 0(t6)
-	jr	ra
+	jalr	ra, ra, 0
 	b	solve_one_or_network.2699_ret
 solve_one_or_network.2699_ret:
 	lw	ra, 24(sp)
@@ -4792,7 +4792,7 @@ beq_cont.12318:
 	lw	a2, 0(sp)
 	lw	t6, 8(sp)
 	lw	ra, 0(t6)
-	jr	ra
+	jalr	ra, ra, 0
 	b	trace_or_matrix.2703_ret
 trace_or_matrix.2703_ret:
 	lw	ra, 40(sp)
@@ -4912,7 +4912,7 @@ beq_else.12332:
 	lw	a3, 28(sp)
 	lw	t6, 40(sp)
 	lw	ra, 0(t6)
-	jr	ra
+	jalr	ra, ra, 0
 	b	solve_each_element_fast.2709_ret
 beq_else.12331:
 	li	a1, 0
@@ -5023,7 +5023,7 @@ beq_cont.12337:
 	lw	a3, 28(sp)
 	lw	t6, 40(sp)
 	lw	ra, 0(t6)
-	jr	ra
+	jalr	ra, ra, 0
 	b	solve_each_element_fast.2709_ret
 solve_each_element_fast.2709_ret:
 	lw	ra, 104(sp)
@@ -5065,7 +5065,7 @@ beq_else.12345:
 	lw	a3, 0(sp)
 	lw	t6, 12(sp)
 	lw	ra, 0(t6)
-	jr	ra
+	jalr	ra, ra, 0
 	b	solve_one_or_network_fast.2713_ret
 solve_one_or_network_fast.2713_ret:
 	lw	ra, 28(sp)
@@ -5156,7 +5156,7 @@ beq_cont.12350:
 	lw	a3, 0(sp)
 	lw	t6, 12(sp)
 	lw	ra, 0(t6)
-	jr	ra
+	jalr	ra, ra, 0
 	b	trace_or_matrix_fast.2717_ret
 trace_or_matrix_fast.2717_ret:
 	lw	ra, 44(sp)
@@ -5407,18 +5407,18 @@ get_nvector.2729:
 	mv	a0, s4
 	mv	t6, s6
 	lw	ra, 0(t6)
-	jr	ra
+	jalr	ra, ra, 0
 	b	get_nvector.2729_ret
 beq_else.12365:
 	li	s4, 2
 	bne	a1, s4, beq_else.12366
 	lw	ra, 0(t6)
-	jr	ra
+	jalr	ra, ra, 0
 	b	get_nvector.2729_ret
 beq_else.12366:
 	mv	t6, s5
 	lw	ra, 0(t6)
-	jr	ra
+	jalr	ra, ra, 0
 	b	get_nvector.2729_ret
 get_nvector.2729_ret:
 	lw	ra, 8(sp)
@@ -5915,7 +5915,7 @@ beq_cont.12413:
 	lw	a1, 20(sp)
 	lw	t6, 0(sp)
 	lw	ra, 0(t6)
-	jr	ra
+	jalr	ra, ra, 0
 	b	trace_reflections.2739_ret
 ble_else.12411:
 	b	trace_reflections.2739_ret
@@ -6452,7 +6452,7 @@ beq_cont.12458:
 	lw	a2, 0(sp)
 	lw	t6, 8(sp)
 	lw	ra, 0(t6)
-	jr	ra
+	jalr	ra, ra, 0
 	b	iter_trace_diffuse_rays.2753_ret
 ble_else.12454:
 	b	iter_trace_diffuse_rays.2753_ret
@@ -6585,7 +6585,7 @@ beq_else.12468:
 	lw	a2, 8(sp)
 	lw	t6, 4(sp)
 	lw	ra, 0(t6)
-	jr	ra
+	jalr	ra, ra, 0
 	b	trace_diffuse_ray_80percent.2762_ret
 trace_diffuse_ray_80percent.2762_ret:
 	lw	ra, 52(sp)
@@ -6786,7 +6786,7 @@ beq_cont.12473:
 	lw	a7, 0(sp)
 	lw	t6, 32(sp)
 	lw	ra, 0(t6)
-	jr	ra
+	jalr	ra, ra, 0
 	b	do_without_neighbors.2775_ret
 ble_else.12471:
 	b	do_without_neighbors.2775_ret
@@ -6944,7 +6944,7 @@ try_exploit_neighbors.2791:
 	lw	a1, 24(sp)
 	lw	t6, 28(sp)
 	lw	ra, 0(t6)
-	jr	ra
+	jalr	ra, ra, 0
 	b	try_exploit_neighbors.2791_ret
 beq_else.12486:
 	lw	a0, 20(sp)
@@ -6974,7 +6974,7 @@ beq_cont.12488:
 	lw	a4, 8(sp)
 	lw	t6, 4(sp)
 	lw	ra, 0(t6)
-	jr	ra
+	jalr	ra, ra, 0
 	b	try_exploit_neighbors.2791_ret
 ble_else.12485:
 	b	try_exploit_neighbors.2791_ret
@@ -7175,7 +7175,7 @@ beq_cont.12498:
 	lw	a7, 0(sp)
 	lw	t6, 32(sp)
 	lw	ra, 0(t6)
-	jr	ra
+	jalr	ra, ra, 0
 	b	pretrace_diffuse_rays.2804_ret
 ble_else.12496:
 	b	pretrace_diffuse_rays.2804_ret
@@ -7323,7 +7323,7 @@ pretrace_pixels.2807:
 	lw	a1, 88(sp)
 	lw	t6, 0(sp)
 	lw	ra, 0(t6)
-	jr	ra
+	jalr	ra, ra, 0
 	b	pretrace_pixels.2807_ret
 ble_else.12501:
 	b	pretrace_pixels.2807_ret
@@ -7400,7 +7400,7 @@ pretrace_line.2814:
 	fmv.s	fa0, fa1
 	fmv.s	fa1, ft11
 	lw	ra, 0(t6)
-	jr	ra
+	jalr	ra, ra, 0
 	b	pretrace_line.2814_ret
 pretrace_line.2814_ret:
 	lw	ra, 40(sp)
@@ -7483,7 +7483,7 @@ beq_cont.12509:
 	lw	a4, 24(sp)
 	lw	t6, 0(sp)
 	lw	ra, 0(t6)
-	jr	ra
+	jalr	ra, ra, 0
 	b	scan_pixel.2818_ret
 scan_pixel.2818_ret:
 	lw	ra, 48(sp)
@@ -7883,7 +7883,7 @@ ble_else.12516:
 	lw	a2, 28(sp)
 	lw	t6, 44(sp)
 	lw	ra, 0(t6)
-	jr	ra
+	jalr	ra, ra, 0
 	b	calc_dirvec.2844_ret
 calc_dirvec.2844_ret:
 	lw	ra, 84(sp)
@@ -7948,7 +7948,7 @@ calc_dirvecs.2852:
 	lw	a2, 16(sp)
 	lw	t6, 0(sp)
 	lw	ra, 0(t6)
-	jr	ra
+	jalr	ra, ra, 0
 	b	calc_dirvecs.2852_ret
 ble_else.12518:
 	b	calc_dirvecs.2852_ret
@@ -7994,7 +7994,7 @@ calc_dirvec_rows.2857:
 	lw	a0, 20(sp)
 	lw	t6, 0(sp)
 	lw	ra, 0(t6)
-	jr	ra
+	jalr	ra, ra, 0
 	b	calc_dirvec_rows.2857_ret
 ble_else.12520:
 	b	calc_dirvec_rows.2857_ret
@@ -8056,7 +8056,7 @@ create_dirvec_elements.2863:
 	lw	t6, 0(sp)
 	mv	a0, a3
 	lw	ra, 0(t6)
-	jr	ra
+	jalr	ra, ra, 0
 	b	create_dirvec_elements.2863_ret
 ble_else.12522:
 	b	create_dirvec_elements.2863_ret
@@ -8104,7 +8104,7 @@ create_dirvecs.2866:
 	addi	a0, a0, -1
 	lw	t6, 0(sp)
 	lw	ra, 0(t6)
-	jr	ra
+	jalr	ra, ra, 0
 	b	create_dirvecs.2866_ret
 ble_else.12524:
 	b	create_dirvecs.2866_ret
@@ -8136,7 +8136,7 @@ init_dirvec_constants.2868:
 	lw	a0, 0(sp)
 	lw	t6, 4(sp)
 	lw	ra, 0(t6)
-	jr	ra
+	jalr	ra, ra, 0
 	b	init_dirvec_constants.2868_ret
 ble_else.12526:
 	b	init_dirvec_constants.2868_ret
@@ -8169,7 +8169,7 @@ init_vecset_constants.2871:
 	addi	a0, a0, -1
 	lw	t6, 0(sp)
 	lw	ra, 0(t6)
-	jr	ra
+	jalr	ra, ra, 0
 	b	init_vecset_constants.2871_ret
 ble_else.12528:
 	b	init_vecset_constants.2871_ret
@@ -8202,7 +8202,7 @@ init_dirvecs.2873:
 	li	a0, 4
 	lw	t6, 0(sp)
 	lw	ra, 0(t6)
-	jr	ra
+	jalr	ra, ra, 0
 	b	init_dirvecs.2873_ret
 init_dirvecs.2873_ret:
 	lw	ra, 16(sp)
@@ -8464,7 +8464,7 @@ beq_else.12541:
 	mv	a1, a3
 	mv	t6, a2
 	lw	ra, 0(t6)
-	jr	ra
+	jalr	ra, ra, 0
 	b	setup_reflections.2888_ret
 beq_else.12543:
 	li	a2, 2
@@ -8472,7 +8472,7 @@ beq_else.12543:
 	mv	t6, a1
 	mv	a1, a3
 	lw	ra, 0(t6)
-	jr	ra
+	jalr	ra, ra, 0
 	b	setup_reflections.2888_ret
 beq_else.12544:
 	b	setup_reflections.2888_ret
@@ -8590,7 +8590,7 @@ rt.2890:
 	lw	a3, 72(sp)
 	lw	t6, 0(sp)
 	lw	ra, 0(t6)
-	jr	ra
+	jalr	ra, ra, 0
 	b	rt.2890_ret
 rt.2890_ret:
 	lw	ra, 84(sp)
