@@ -67,6 +67,7 @@ void exec(Simulator *sim,Op *op){
     int s_imm = 0; //sign extended immediate
     unsigned int address = 0;
     
+
     for(unsigned int i=0;i<sim->breakpoints.size();i++){
       if(sim->pc==sim->breakpoints[i]){
         fprintf(stdout,"break!!\n");
@@ -122,10 +123,10 @@ void exec(Simulator *sim,Op *op){
       case 0b1100111:
         //jalr
         decode_i(inst,op);
-        sim->registers[op->rd]=sim->pc + 4;
         s_imm = ( op -> imm ) | ((op->imm & 0x800) ? 0xFFFFF800:0); //sign extend 
         sim -> pc = (sim->registers[op->rs1] + s_imm);
         sim -> pc = (sim -> pc) &~ (0b1); //clear LSB
+        sim->registers[op->rd]=prev_pc + 4;
         break;
       case 0b1100011:
         //beq,bne,blt,bge,bltu,bgeu
