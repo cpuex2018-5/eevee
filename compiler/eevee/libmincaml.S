@@ -5,19 +5,22 @@ min_caml_print_char:
 	w	a0
 	jr	ra
 min_caml_print_newline:
+	addi	sp, sp, -4
+	sw	t1, 0(sp)
 	li	t1, 13
 	w	t1
 	li	t1, 10
 	w	t1
+	lw	t1, 0(sp)
+	addi	sp, sp, 4
 	jr	ra
 
 # TODO: 桁数による最適化？
 min_caml_print_int:
 	addi	sp, sp, -12
-	sw	s1, 8(sp)
-	sw	ra, 4(sp)
-	sw	fp, 0(sp)
-	addi	fp, sp, 12
+	sw	t1, 8(sp)
+	sw	s1, 4(sp)
+	sw	ra, 0(sp)
 # 負数なら'-'を出力し、絶対値を取る
 	bge	a0, zero, .print_int_L0
 	li	t1, 45
@@ -42,14 +45,19 @@ min_caml_print_int:
 	bgt	s1, zero, .print_int_L1
 .print_int_end:
 # spは元の位置に戻っている
-	lw	s1, 8(sp)
-	lw	ra, 4(sp)
-	lw	fp, 0(sp)
+	lw	t1, 8(sp)
+	lw	s1, 4(sp)
+	lw	ra, 0(sp)
 	addi	sp, sp, 12
 	jr	ra
 
 min_caml_read_int:
 # ' '(space)または'\n'で区切る
+	addi	sp, sp, -16
+	sw	t1, 12(sp)
+	sw	t2, 8(sp)
+	sw	t3, 4(sp)
+	sw	t4, 0(sp)
 	mv	a0, zero
 	li	t3, 32	# t3: space
 	li	t4, 10	# t4: '\n'
@@ -84,12 +92,22 @@ min_caml_read_int:
 	beq	t1, t4, .read_int_end
 	b	.read_int_L2
 .read_int_end:
+	lw	t1, 12(sp)
+	lw	t2, 8(sp)
+	lw	t3, 4(sp)
+	lw	t4, 0(sp)
+	addi	sp, sp, 16
 	jr	ra
 
 min_caml_read_float:
 # ' '(space)または'\n'で区切る
 # 小数点第1位までしかないことを前提にしている
-	addi	sp, sp, -4
+	addi	sp, sp, -24
+	sw	t1, 20(sp)
+	sw	t2, 16(sp)
+	sw	t3, 12(sp)
+	sw	t4, 8(sp)
+	sw	t5, 4(sp)
 	sw	ra, 0(sp)
 	mv	a0, zero
 	li	t3, 32	# t3: space
@@ -133,8 +151,13 @@ min_caml_read_float:
 	call	min_caml_float_of_int
 	fli	ft0, L_10
 	fdiv.s	fa0, fa0, ft0
+	lw	t1, 20(sp)
+	lw	t2, 16(sp)
+	lw	t3, 12(sp)
+	lw	t4, 8(sp)
+	lw	t5, 4(sp)
 	lw	ra, 0(sp)
-	addi	sp, sp, 4
+	addi	sp, sp, 24
 	jr	ra
 
 min_caml_floor: # tenuki(tmp)
@@ -147,6 +170,9 @@ min_caml_floor: # tenuki(tmp)
 	jr	ra
 
 min_caml_create_array:
+	addi	sp, sp, -8
+	sw	t1, 4(sp)
+	sw	t2, 0(sp)
 	mv	t1, zero
 	mv	t2, gp
 .create_array_L0:
@@ -155,10 +181,15 @@ min_caml_create_array:
 	addi	t1, t1, 1
 	ble	t1, a0, .create_array_L0
 	mv	a0, t2
+	lw	t1, 4(sp)
+	lw	t2, 0(sp)
+	addi	sp, sp, 8
 	jr	ra
 
 min_caml_div_rem:
 # a0 <- a0 / a1, a1 <- a0 mod a1 (引数a0, a1は共に正)
+	addi	sp, sp, -4
+	sw	t1, 0(sp)
 	li	t1, 0			# t1が商
 .div_L0:
 	blt	a0, a1, .div_end
@@ -168,22 +199,24 @@ min_caml_div_rem:
 .div_end:
 	mv	a1, a0
 	mv	a0, t1
+	lw	t1, 0(sp)
+	addi	sp, sp, 4
 	jr	ra
 
-min_caml_mul:
-# a0 <- a0 * a1
-	li	t1, 0
-.mul_L0:
-	ble	a1, zero, .mul_end
-	add	t1, t1, a0
-	addi	a1, a1, -1
-	b	.mul_L0
-.mul_end:
-	mv	a0, t1
-	jr	ra
+# min_caml_mul:
+# # a0 <- a0 * a1
+# 	li	t1, 0
+# .mul_L0:
+# 	ble	a1, zero, .mul_end
+# 	add	t1, t1, a0
+# 	addi	a1, a1, -1
+# 	b	.mul_L0
+# .mul_end:
+# 	mv	a0, t1
+# 	jr	ra
 
 # sin/cos
-.kernel_sin:
+.kernel_sin:	# use: ft1,2,3,4
 	fmv.s	ft1, fa0
 	fmul.s	ft1, ft1, ft1	# ft1: A ^ 2
 	fli	ft2, L_S3	# ft2: 係数
@@ -200,7 +233,7 @@ min_caml_mul:
 	fsub.s	fa0, fa0, ft4
 	jr	ra
 
-.kernel_cos:
+.kernel_cos:	# use: ft1,2,3,4
 	fmv.s	ft1, fa0
 	fmul.s	ft1, ft1, ft1	# ft1: A ^ 2
 	fli	fa0, L_1
@@ -240,7 +273,13 @@ min_caml_mul:
 	jr	ra
 
 min_caml_sin:
-	addi	sp, sp, -12
+	addi	sp, sp, -36
+	fsw	ft0, 32(sp)
+	fsw	ft1, 28(sp)
+	fsw	ft2, 24(sp)
+	fsw	ft3, 20(sp)
+	fsw	ft4, 16(sp)
+	sw	t2, 12(sp)
 	sw	s1, 8(sp)
 	sw	ra, 4(sp)
 	sw	fp, 0(sp)
@@ -272,19 +311,30 @@ min_caml_sin:
 .sin_L2: # else
 	fsub.s	fa0, ft3, fa0
 	call	.kernel_cos
-	b	.sin_L3
 .sin_L3:
 	beq	s1, zero, .sin_end
-	fneg.s	fa0, fa0	# FLAG == -1ならneg
+	fneg.s	fa0, fa0	# FLAG == 1ならneg
 .sin_end:
 	lw	fp, 0(sp)
 	lw	ra, 4(sp)
 	lw	s1, 8(sp)
-	addi	sp, sp, 8
+	flw	ft0, 32(sp)
+	flw	ft1, 28(sp)
+	flw	ft2, 24(sp)
+	flw	ft3, 20(sp)
+	flw	ft4, 16(sp)
+	lw	t2, 12(sp)
+	addi	sp, sp, 36
 	jr	ra
 
 min_caml_cos:
-	addi	sp, sp, -12
+	addi	sp, sp, -36
+	fsw	ft0, 32(sp)
+	fsw	ft1, 28(sp)
+	fsw	ft2, 24(sp)
+	fsw	ft3, 20(sp)
+	fsw	ft4, 16(sp)
+	sw	t2, 12(sp)
 	sw	s1, 8(sp)
 	sw	ra, 4(sp)
 	sw	fp, 0(sp)
@@ -315,15 +365,20 @@ min_caml_cos:
 .cos_L2: # else
 	fsub.s	fa0, ft3, fa0
 	call	.kernel_sin
-	b	.cos_L3
 .cos_L3:
 	beq	s1, zero, .cos_end
-	fneg.s	fa0, fa0	# FLAG == -1ならneg
+	fneg.s	fa0, fa0	# FLAG == 1ならneg
 .cos_end:
 	lw	fp, 0(sp)
 	lw	ra, 4(sp)
 	lw	s1, 8(sp)
-	addi	sp, sp, 8
+	flw	ft0, 32(sp)
+	flw	ft1, 28(sp)
+	flw	ft2, 24(sp)
+	flw	ft3, 20(sp)
+	flw	ft4, 16(sp)
+	lw	t2, 12(sp)
+	addi	sp, sp, 36
 	jr	ra
 
 .kernel_atan:
@@ -357,7 +412,11 @@ min_caml_cos:
 	jr	ra
 
 min_caml_atan:
-	addi	sp, sp, -8
+	addi	sp, sp, -24
+	fsw	ft0, 20(sp)
+	fsw	ft1, 16(sp)
+	fsw	ft2, 12(sp)
+	fsw	ft3, 8(sp)
 	sw	s1, 4(sp)
 	sw	ra, 0(sp)
 	fli	ft0, L_Atan1
@@ -395,12 +454,19 @@ min_caml_atan:
 	bne	s1, zero, .atan_end
 	fneg.s	fa0, fa0
 .atan_end:
+	flw	ft0, 20(sp)
+	flw	ft1, 16(sp)
+	flw	ft2, 12(sp)
+	flw	ft3, 8(sp)
 	lw	s1, 4(sp)
 	lw	ra, 0(sp)
-	addi	sp, sp, 8
+	addi	sp, sp, 24
 	jr	ra
 
 min_caml_float_of_int: # int -> float
+	addi	sp, sp, -8
+	fsw	ft0, 4(sp)
+	sw	t1, 0(sp)
 	fli	ft0, L_8388608
 	li	t1, 1258291200  # 0x4b000000
 	bge	a0, zero, .float_of_int_pos
@@ -418,9 +484,15 @@ min_caml_float_of_int: # int -> float
 	sw	a0, -4(sp)
 	flw	fa0, -4(sp)
 	fsub.s	fa0, fa0, ft0
+	flw	ft0, 4(sp)
+	lw	t1, 0(sp)
+	addi	sp, sp, 8
 	jr	ra
 
 min_caml_int_of_float: # float -> int
+	addi	sp, sp, -8
+	fsw	ft0, 4(sp)
+	sw	t1, 0(sp)
 	fli	ft0, L_0
 	fle.s	t1, ft0, fa0
 	beq	zero, t1, .int_of_float_neg
@@ -441,6 +513,9 @@ min_caml_int_of_float: # float -> int
 	li	t1, 1258291200
 	sub	a0, a0, t1
 	neg	a0, a0
+	flw	ft0, 4(sp)
+	lw	t1, 0(sp)
+	addi	sp, sp, 8
 	jr	ra
 
 	.data
