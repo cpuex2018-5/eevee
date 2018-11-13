@@ -69,13 +69,7 @@ and g' buf e =
   (* 末尾でなかったら計算結果をdestにセット (caml2html: emit_nontail) *)
   match e with
   | NonTail(_), Nop -> ()
-  | NonTail(x), Li(i) when -32768 <= i && i < 32768 -> Printf.bprintf buf "\tli\t%s, %d\n" (reg x) i
-  | NonTail(x), Li(i) ->
-    let n = i lsr 11 in
-    let m = i lxor (n lsl 11) in
-    let r = reg x in
-    Printf.bprintf buf "\tlui\t%s, %d\n" r n;
-    Printf.bprintf buf "\tori\t%s, %s, %d\n" r r m
+  | NonTail(x), Li(i) -> Printf.bprintf buf "\tli\t%s, %d\n" (reg x) i
   | NonTail(x), FLi(Id.L(l)) ->
     Printf.bprintf buf "\tfli\t%s, %s\n" (reg x) l
   | NonTail(x), SetL(Id.L(y)) ->
@@ -93,17 +87,17 @@ and g' buf e =
   | NonTail(x), Div(y, V(z)) -> Printf.bprintf buf "\tdiv\t%s, %s, %s\n" (reg x) (reg y) (reg z)    (* アセンブラ非対応 *)
   | NonTail(x), Div(y, C(z)) when z = 2 -> Printf.bprintf buf "\tsrai\t%s, %s, 1\n" (reg x) (reg y) (* built-in *)
   | NonTail(x), Div(y, C(z)) -> Printf.bprintf buf "\tdivi\t%s, %s, %d\n" (reg x) (reg y) z         (* アセンブラ非対応 *)
-  | NonTail(x), Slw(y, V(z)) -> Printf.bprintf buf "\tsll\t%s, %s, %s\n" (reg x) (reg y) (reg z)
-  | NonTail(x), Slw(y, C(z)) -> Printf.bprintf buf "\tslli\t%s, %s, %d\n" (reg x) (reg y) z
-  | NonTail(x), Lwz(y, V(z)) ->
+  | NonTail(x), Sll(y, V(z)) -> Printf.bprintf buf "\tsll\t%s, %s, %s\n" (reg x) (reg y) (reg z)
+  | NonTail(x), Sll(y, C(z)) -> Printf.bprintf buf "\tslli\t%s, %s, %d\n" (reg x) (reg y) z
+  | NonTail(x), Lw(y, V(z)) ->
     (* TODO: asml.ml, virtual.mlを変更してここが1命令になるようにする *)
     Printf.bprintf buf "\tadd\t%s, %s, %s\n" (reg reg_tmp) (reg y) (reg z);
     Printf.bprintf buf "\tlw\t%s, 0(%s)\n" (reg x) (reg reg_tmp)
-  | NonTail(x), Lwz(y, C(z)) -> Printf.bprintf buf "\tlw\t%s, %d(%s)\n" (reg x) z (reg y)
-  | NonTail(_), Stw(x, y, V(z)) ->
+  | NonTail(x), Lw(y, C(z)) -> Printf.bprintf buf "\tlw\t%s, %d(%s)\n" (reg x) z (reg y)
+  | NonTail(_), Sw(x, y, V(z)) ->
     Printf.bprintf buf "\tadd\t%s, %s, %s\n"(reg reg_tmp) (reg y) (reg z);
     Printf.bprintf buf "\tsw\t%s, 0(%s)\n" (reg x) (reg reg_tmp)
-  | NonTail(_), Stw(x, y, C(z)) -> Printf.bprintf buf "\tsw\t%s, %d(%s)\n" (reg x) z (reg y)
+  | NonTail(_), Sw(x, y, C(z)) -> Printf.bprintf buf "\tsw\t%s, %d(%s)\n" (reg x) z (reg y)
   | NonTail(x), FMv(y) when x = y -> ()
   | NonTail(x), FMv(y) -> Printf.bprintf buf "\tfmv.s\t%s, %s\n" (reg x) (reg y)
   | NonTail(x), FNeg(y) -> Printf.bprintf buf "\tfneg.s\t%s, %s\n" (reg x) (reg y)
@@ -113,14 +107,14 @@ and g' buf e =
   | NonTail(x), FDiv(y, z) -> Printf.bprintf buf "\tfdiv.s\t%s, %s, %s\n" (reg x) (reg y) (reg z)
   | NonTail(x), FAbs(y) -> Printf.bprintf buf "\tfabs.s\t%s, %s\n" (reg x) (reg y)
   | NonTail(x), FSqrt(y) -> Printf.bprintf buf "\tfsqrt.s\t%s, %s\n" (reg x) (reg y)
-  | NonTail(x), Lfd(y, V(z)) ->
+  | NonTail(x), Flw(y, V(z)) ->
     Printf.bprintf buf "\tadd\t%s, %s, %s\n" (reg reg_tmp) (reg y) (reg z);
     Printf.bprintf buf "\tflw\t%s, 0(%s)\n" (reg x) (reg reg_tmp)
-  | NonTail(x), Lfd(y, C(z)) -> Printf.bprintf buf "\tflw\t%s, %d(%s)\n" (reg x) z (reg y)
-  | NonTail(_), Stfd(x, y, V(z)) ->
+  | NonTail(x), Flw(y, C(z)) -> Printf.bprintf buf "\tflw\t%s, %d(%s)\n" (reg x) z (reg y)
+  | NonTail(_), Fsw(x, y, V(z)) ->
     Printf.bprintf buf "\tadd\t%s, %s, %s\n" (reg reg_tmp) (reg y) (reg z);
     Printf.bprintf buf "\tfsw\t%s, 0(%s)\n" (reg x) (reg reg_tmp)
-  | NonTail(_), Stfd(x, y, C(z)) -> Printf.bprintf buf "\tfsw\t%s, %d(%s)\n" (reg x) z (reg y)
+  | NonTail(_), Fsw(x, y, C(z)) -> Printf.bprintf buf "\tfsw\t%s, %d(%s)\n" (reg x) z (reg y)
   | NonTail(_), Comment(s) -> Printf.bprintf buf "#\t%s\n" s
   (* 退避の仮想命令の実装 (caml2html: emit_save) *)
   | NonTail(_), Save(x, y) when List.mem x allregs && not (S.mem y !stackset) ->
@@ -137,13 +131,13 @@ and g' buf e =
     assert (List.mem x allfregs);
     Printf.bprintf buf "\tflw\t%s, %d(%s)\n" (reg x) (offset y) (reg reg_sp)
   (* 末尾だったら計算結果を%a0か%fa0にセットしてリターン (caml2html: emit_tailret) *)
-  | Tail, (Nop | Stw _ | Stfd _ | Comment _ | Save _ as exp) ->
+  | Tail, (Nop | Sw _ | Fsw _ | Comment _ | Save _ as exp) ->
     g' buf (NonTail(Id.gentmp Type.Unit), exp);
     Printf.bprintf buf "\tb\t%s\n" !retlabel;
-  | Tail, (Li _ | SetL _ | Mv _ | Neg _ | Add _ | Sub _ | Mul _ | Div _ | Slw _ | Lwz _ as exp) ->
+  | Tail, (Li _ | SetL _ | Mv _ | Neg _ | Add _ | Sub _ | Mul _ | Div _ | Sll _ | Lw _ as exp) ->
     g' buf (NonTail(regs.(0)), exp);
     Printf.bprintf buf "\tb\t%s\n" !retlabel;
-  | Tail, (FLi _ | FMv _ | FNeg _ | FAdd _ | FSub _ | FMul _ | FDiv _ | FAbs _ | FSqrt _ | Lfd _ as exp) ->
+  | Tail, (FLi _ | FMv _ | FNeg _ | FAdd _ | FSub _ | FMul _ | FDiv _ | FAbs _ | FSqrt _ | Flw _ as exp) ->
     g' buf (NonTail(fregs.(0)), exp);
     Printf.bprintf buf "\tb\t%s\n" !retlabel;
   | Tail, (Restore(x) as exp) ->

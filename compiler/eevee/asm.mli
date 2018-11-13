@@ -13,9 +13,9 @@ and exp =
   | Sub of Id.t * id_or_imm
   | Mul of Id.t * id_or_imm
   | Div of Id.t * id_or_imm
-  | Slw of Id.t * id_or_imm
-  | Lwz of Id.t * id_or_imm
-  | Stw of Id.t * Id.t * id_or_imm
+  | Sll of Id.t * id_or_imm
+  | Lw of Id.t * id_or_imm
+  | Sw of Id.t * Id.t * id_or_imm
   | FMv of Id.t 
   | FNeg of Id.t
   | FAdd of Id.t * Id.t
@@ -24,8 +24,8 @@ and exp =
   | FDiv of Id.t * Id.t
   | FAbs of Id.t
   | FSqrt of Id.t
-  | Lfd of Id.t * id_or_imm
-  | Stfd of Id.t * Id.t * id_or_imm
+  | Flw of Id.t * id_or_imm
+  | Fsw of Id.t * Id.t * id_or_imm
   | Comment of string
   (* virtual instructions *)
   | IfEq of Id.t * id_or_imm * t * t

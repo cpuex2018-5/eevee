@@ -26,4 +26,4 @@ else
     ./../asm/main $FLAG $ASMNAME
 fi
 
-echo "generated " $ASMNAME " and " $BINNAME "
+echo "generated " $ASMNAME " and " $BINNAME
