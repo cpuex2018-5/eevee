@@ -29,7 +29,7 @@ module fadd(
   assign m1a= {2'b01, m1};  
   assign m2a= {2'b01, m2};  
    
-  wire [7:0] e2i;    
+  wire [7:0] e2_inv;    
   assign e2_inv=~e2;  //bit反転
 
 
