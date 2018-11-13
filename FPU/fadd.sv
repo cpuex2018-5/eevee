@@ -130,8 +130,12 @@ module fadd(
   assign eyf = {1'b0, eyd} - {4'b0, se};
   
   //ただし、seの方が大きい時は、非正規化数とする.
-  wire [7:0] ey;    
-  assign ey = ({1'b0, eyd} > {4'b0, se}) ? eyf[7:0] : 8'b0 ;                                
+  wire [7:0] eyr;    
+  assign eyr = ({1'b0, eyd} > {4'b0, se}) ? eyf[7:0] : 8'b0 ;                                
+  
+  //x2=-x1のとき、仮数部を引き算したら0になり、このときのみ指数部を0にする必要がある.
+  wire [7:0] ey;
+  assign ey = (se==5'd26) ? 8'd0 : eyr ; 
   
   //我々の仕様では、非正規化数になるときは、仮数部27桁全て0にしてもよい
   wire [26:0] myf;
