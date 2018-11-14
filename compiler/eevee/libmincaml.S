@@ -416,13 +416,14 @@ min_caml_float_of_int: # int -> float
 	flw	fa0, -4(sp)
 	fsub.s	fa0, fa0, ft0
 	fneg.s	fa0, fa0
-	jr	ra
+	b	.float_of_int_ret
 .float_of_int_pos:
 	add	a0, a0, t1
 # TODO: integer -> floating レジスタ間のmv (fmv.w.x) がほしいかもしれない...
 	sw	a0, -4(sp)
 	flw	fa0, -4(sp)
 	fsub.s	fa0, fa0, ft0
+.float_of_int_ret:
 	flw	ft0, 4(sp)
 	lw	t1, 0(sp)
 	addi	sp, sp, 8
@@ -442,7 +443,7 @@ min_caml_int_of_float: # float -> int
 	lw	a0, -4(sp)
 	li	t1, 1258291200
 	sub	a0, a0, t1
-	jr	ra
+	b	.int_of_float_ret
 .int_of_float_neg:
 	fabs.s	fa0, fa0
 	fli	ft0, L_8388608
@@ -452,6 +453,7 @@ min_caml_int_of_float: # float -> int
 	li	t1, 1258291200
 	sub	a0, a0, t1
 	neg	a0, a0
+.int_of_float_ret:
 	flw	ft0, 4(sp)
 	lw	t1, 0(sp)
 	addi	sp, sp, 8

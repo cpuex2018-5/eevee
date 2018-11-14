@@ -810,7 +810,7 @@ _min_caml_start: # main entry point
 	sw	s6, 12(s11)
 	sw	a4, 8(s11)
 	sw	a1, 4(s11)
-	li	a0, 512
+	li	a0, 128
 	mv	a1, a0
 	lw	ra, 0(s11)
 	jalr	ra, ra, 0
