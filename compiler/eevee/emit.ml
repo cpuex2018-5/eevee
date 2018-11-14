@@ -307,9 +307,6 @@ let f oc (Prog(data, fundefs, e)) =
   Printf.fprintf oc "\t.text\n";
   Printf.fprintf oc "\t.globl _min_caml_start\n";
   Printf.fprintf oc "_min_caml_start: # main entry point\n";
-  Printf.fprintf oc "\taddi\tsp, sp, -8\n";
-  Printf.fprintf oc "\tsw\tfp, 0(sp)\n";
-  Printf.fprintf oc "\taddi\tfp, sp, 8\n";
   Printf.fprintf oc "#\tmain program starts\n";
   stackset := S.empty;
   stackmap := [];
@@ -317,9 +314,6 @@ let f oc (Prog(data, fundefs, e)) =
   g buf (NonTail("_R_0"), e);
   Buffer.output_buffer oc buf;
   Printf.fprintf oc "#\tmain program ends\n";
-  Printf.fprintf oc "\tlw\tra, 4(sp)\n";
-  Printf.fprintf oc "\tlw\tfp, 0(sp)\n";
-  Printf.fprintf oc "\taddi\tsp, sp, 8\n";
   Printf.fprintf oc "\tj\tend\n";
   List.iter (fun fundef -> h oc fundef) fundefs;
   Printf.fprintf oc "end:\n";

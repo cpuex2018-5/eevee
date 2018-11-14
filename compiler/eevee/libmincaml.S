@@ -99,13 +99,23 @@ min_caml_read_float:
 	addi	sp, sp, 8
 	jr	ra
 
-min_caml_floor: # tenuki(tmp)
-	addi	sp, sp, -4
+min_caml_floor:
+	addi	sp, sp, -12
+	sw	t1, 8(sp)
+	fsw	ft1, 4(sp)
 	sw	ra, 0(sp)
+	fmv.s	ft1, fa0	# ft1: before flooring
 	call	min_caml_int_of_float
 	call	min_caml_float_of_int
+	fle.s	t1, fa0, ft1	# after <= before ?
+	bne	t1, zero, .floor_ret
+	fli	ft1, L_1
+	fsub.s	fa0, fa0, ft1
+.floor_ret:
+	lw	t1, 8(sp)
+	flw	ft1, 4(sp)
 	lw	ra, 0(sp)
-	addi	sp, sp, 4
+	addi	sp, sp, 12
 	jr	ra
 
 min_caml_create_array:

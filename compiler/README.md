@@ -11,6 +11,11 @@ test/fib.mlからtest/fib.sをコンパイラで生成し、さらにそれを�
 * `-v` : アセンブラのdebugモードの出力を[filename].asmに上書き
 * `-d` : アセンブラのverboseモードの出力を[filename].asmに上書き
 
+## raytracer/minrt.mlのコンパイルについて
+
+* 普通に `./build.sh [-d|-v] raytracer/minrt.ml` でOKです
+* 画像サイズが512 x 512だとシミュレータで出すのに10分以上かかるのでデバッグ時は128 x 128にすることをお勧めします(minrt.mlの最後の行の `rt 512 512` を `rt 128 128` にする)
+
 ---
 
 An educational compiler for a minimal subset of OCaml, written in

@@ -1,9 +1,6 @@
 	.text
 	.globl _min_caml_start
 _min_caml_start: # main entry point
-	addi	sp, sp, -8
-	sw	fp, 0(sp)
-	addi	fp, sp, 8
 #	main program starts
 	li	a0, 1
 	li	a1, 0
@@ -815,9 +812,6 @@ _min_caml_start: # main entry point
 	lw	ra, 0(s11)
 	jalr	ra, ra, 0
 #	main program ends
-	lw	ra, 4(sp)
-	lw	fp, 0(sp)
-	addi	sp, sp, 8
 	j	end
 xor_2458:
 	addi	sp, sp, -12

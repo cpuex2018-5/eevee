@@ -1,8 +1,4 @@
 main:
-	addi	sp,sp,-8
-	sw	ra,4(sp)
-	sw	fp,0(sp)
-	addi	fp,sp,8     # fp: old stack pointer
 #	main program starts
 #	fli	fa0, L_0	# 0.0
 #	fli	fa0, L_A5	# atan(0.2) = 0.19739555984988078
@@ -11,11 +7,6 @@ main:
 	fli	fa0, L_2PI	# 1.4129651365067377
 	call	min_caml_atan
 #	main program ends
-	mv	a5,a0
-	mv	a0,a5
-	lw	ra,4(sp)
-	lw	s0,0(sp)
-	addi	sp,sp,8
 	jal	zero,end
 end:
 	j	end
