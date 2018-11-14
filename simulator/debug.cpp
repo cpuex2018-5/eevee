@@ -170,6 +170,23 @@ int debug_exec(Simulator *sim,std::vector<std::string> &dbginst){
     printf("continue...\n");
     return 1;
   }
+  else if(dbginst[0] == "c" && dbginst.size() == 2){
+    int index = 0;
+    try{
+    index = std::stoi(dbginst[1],nullptr,10);
+    }
+    catch (...){
+      fprintf(stderr,"arguments must be an integer\n");
+    }
+    if(index < 0){
+      fprintf(stderr,"invalid argument\n");
+    return 0;
+    }
+    debug_mode = 0;
+    sim -> bp_to_skip = index;
+    printf("continue...\n");
+    return 1;
+  }
   else if(dbginst[0] == "i" && dbginst.size() == 2){
     if(dbginst[1]=="b"){
       list_breakpoints(sim);

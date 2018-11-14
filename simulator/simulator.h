@@ -20,6 +20,7 @@ typedef struct {
   FILE *in;
   FILE *out;
   std::vector<unsigned int> breakpoints;
+  int bp_to_skip;
 } Simulator;
 
 typedef struct {

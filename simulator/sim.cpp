@@ -25,6 +25,7 @@ Simulator *init(unsigned long m_size,unsigned long s_pos,FILE *in,FILE *out){
   //allocate the same size of memory for text and data section for now
   sim -> in = in;
   sim -> out = out;
+  sim -> bp_to_skip = 0;
   return sim;
 }
 
@@ -70,6 +71,11 @@ void exec(Simulator *sim,Op *op){
 
     for(unsigned int i=0;i<sim->breakpoints.size();i++){
       if(sim->pc==sim->breakpoints[i]){
+        if(sim->bp_to_skip!=0){
+          sim -> bp_to_skip--;
+          fprintf(stdout,"skipped\n");
+          continue;
+        }
         fprintf(stdout,"break!!\n");
         debug_mode=1; //break
       }
