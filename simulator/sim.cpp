@@ -73,7 +73,6 @@ void exec(Simulator *sim,Op *op){
       if(sim->pc==sim->breakpoints[i]){
         if(sim->bp_to_skip!=0){
           sim -> bp_to_skip--;
-          fprintf(stdout,"skipped\n");
           continue;
         }
         fprintf(stdout,"break!!\n");
