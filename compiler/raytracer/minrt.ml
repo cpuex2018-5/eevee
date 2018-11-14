@@ -103,14 +103,6 @@ let reflections =
 
 let n_reflections = create_array 1 0 in
 
-(********************** from miniMLRuntime.ml **********************)
-let rec fispos x = x > 0.0 in
-let rec fisneg x = x < 0.0 in
-let rec fiszero x = (x = 0.0) in
-let rec fsqr x = x *. x in
-let rec fless a b = a < b in
-let rec fhalf a = a /. 2.0 in
-
 (*
 (*MINCAML*) let true = 1 in
 (*MINCAML*) let false = 0 in *)

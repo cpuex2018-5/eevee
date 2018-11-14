@@ -36,16 +36,16 @@ let string_of_t (exp : t) =
     | Unit -> indent ^ "()" ^ endline
     | Int n   -> indent ^ "INT " ^ (string_of_int n) ^ endline
     | Float f -> indent ^ "FLOAT " ^ (string_of_float f) ^ endline
-    | Neg e   -> indent ^ "NEG " ^ e ^ endline
-    | Add (e1, e2)  -> indent ^ "ADD " ^ e1 ^ " " ^ e2 ^ endline
-    | Sub (e1, e2)  -> indent ^ "SUB " ^ e1 ^ " " ^ e2 ^ endline
-    | Mul (e1, e2)  -> indent ^ "MUL " ^ e1 ^ " " ^ e2 ^ endline
-    | Div (e1, e2)  -> indent ^ "DIV " ^ e1 ^ " " ^ e2 ^ endline
-    | FNeg e        -> indent ^ "FNEG " ^ e ^ endline
-    | FAdd (e1, e2) -> indent ^ "FADD " ^ e1 ^ " " ^ e2 ^ endline
-    | FSub (e1, e2) -> indent ^ "FSUB " ^ e1 ^ " " ^ e2 ^ endline
-    | FMul (e1, e2) -> indent ^ "FMUL " ^ e1 ^ " " ^ e2 ^ endline
-    | FDiv (e1, e2) -> indent ^ "FDIV " ^ e1 ^ " " ^ e2 ^ endline
+    | Neg e   -> indent ^ "- " ^ e ^ endline
+    | Add (e1, e2)  -> indent ^ e1 ^ " + " ^ e2 ^ endline
+    | Sub (e1, e2)  -> indent ^ e1 ^ " - " ^ e2 ^ endline
+    | Mul (e1, e2)  -> indent ^ e1 ^ " * " ^ e2 ^ endline
+    | Div (e1, e2)  -> indent ^ e1 ^ " / " ^ e2 ^ endline
+    | FNeg e        -> indent ^ "-. " ^ e ^ endline
+    | FAdd (e1, e2) -> indent ^ e1 ^ " +. " ^ e2 ^ endline
+    | FSub (e1, e2) -> indent ^ e1 ^ " -. " ^ e2 ^ endline
+    | FMul (e1, e2) -> indent ^ e1 ^ " *. " ^ e2 ^ endline
+    | FDiv (e1, e2) -> indent ^ e1 ^ " /. " ^ e2 ^ endline
     | IfEq (e1, e2, et, ef) -> indent ^ "IF ( " ^ e1 ^ " = " ^ e2 ^ " ) THEN\n" ^ (str_of_t et (depth + 1)) ^
                                indent ^ "ELSE\n" ^ (str_of_t ef (depth + 1))
     | IfLE (e1, e2, et, ef) -> indent ^ "IF ( " ^ e1 ^ " <= " ^ e2 ^ " ) THEN\n" ^ (str_of_t et (depth + 1)) ^
@@ -210,9 +210,19 @@ let rec g (env : Type.t M.t) (exp : Syntax.t) : t * Type.t = (* where K-normaliz
     let e2', t2 = g env' e2 in
     let e1', t1 = g (M.add_list yts env') e1 in
     LetRec({ name = (x, t); args = yts; body = e1' }, e2'), t2
-  | Syntax.App(Syntax.Var("fneg"), [e], _) ->
-    insert_let (g env e)
-      (fun x -> FNeg(x), Type.Float)
+  | Syntax.App(Syntax.Var("fsqr"), [x], p) -> g env (Syntax.FMul(x, x, p))
+  | Syntax.App(Syntax.Var("fhalf"), [x], p) -> g env (Syntax.FDiv(x, Float 2.0, p))
+  | Syntax.App(Syntax.Var("fneg"), [e], p) -> g env (Syntax.FNeg(e, p))
+  | Syntax.App(Syntax.Var("fiszero"), [x], p) -> g env (Syntax.Eq(x, Float 0.0, p))
+  | Syntax.App(Syntax.Var("fispos"), [x], p) ->
+    (* fispos x == x > 0 == ~ (x <= 0) *)
+    g env (Syntax.Not(Syntax.LE(x, Float 0.0, p), p))
+  | Syntax.App(Syntax.Var("fisneg"), [x], p) ->
+    (* fisneg x == x < 0 == ~ (x >= 0) == ~ (0 <= x) *)
+    g env (Syntax.Not(Syntax.LE(Float 0.0, x, p), p))
+  | Syntax.App(Syntax.Var("fless"), [x;y], p) ->
+    (* fless x y == x < y == ~ (x >= y) == ~ (y <= x) *)
+    g env (Syntax.Not(Syntax.LE(y, x, p), p))
   | Syntax.App(Syntax.Var(f), e2s, _) when not (M.mem f env) ->
     (match M.find f !Typing.extenv with
      | Type.Fun(_, t) ->

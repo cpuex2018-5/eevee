@@ -13,7 +13,7 @@
 #define RM 0b000
 
 // simulatorのMEM_SIZE
-#define MEM_SIZE 0x100010
+#define MEM_SIZE 0x1000010
 
 BinGen::BinGen(std::ofstream ofs, std::ofstream debugofs, bool is_verbose, bool is_debug, bool is_ascii)
   : is_verbose_(is_verbose),
@@ -356,7 +356,7 @@ BinGen::Inst BinGen::Convert(std::string input) {
         assert(2 == arg.size());
         uint32_t imm = MyStoi(arg[1]) + nline_ * 4 + MEM_SIZE;
         std::string tmp_reg = "t6";
-        ret1 = lui(tmp_reg, (imm >> 12) & 0xfffff);
+        ret1 = lui(tmp_reg, ((imm >> 12) + ((imm >> 11) & 1)) & 0xfffff);
         nline_++;
         ret2 = flw(arg[0], tmp_reg, (imm & 0xfff));
     }

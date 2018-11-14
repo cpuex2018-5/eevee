@@ -133,19 +133,15 @@ and g' buf e =
   (* 末尾だったら計算結果を%a0か%fa0にセットしてリターン (caml2html: emit_tailret) *)
   | Tail, (Nop | Sw _ | Fsw _ | Comment _ | Save _ as exp) ->
     g' buf (NonTail(Id.gentmp Type.Unit), exp);
-    Printf.bprintf buf "\tb\t%s\n" !retlabel;
   | Tail, (Li _ | SetL _ | Mv _ | Neg _ | Add _ | Sub _ | Mul _ | Div _ | Sll _ | Lw _ as exp) ->
     g' buf (NonTail(regs.(0)), exp);
-    Printf.bprintf buf "\tb\t%s\n" !retlabel;
   | Tail, (FLi _ | FMv _ | FNeg _ | FAdd _ | FSub _ | FMul _ | FDiv _ | FAbs _ | FSqrt _ | Flw _ as exp) ->
     g' buf (NonTail(fregs.(0)), exp);
-    Printf.bprintf buf "\tb\t%s\n" !retlabel;
   | Tail, (Restore(x) as exp) ->
     (match locate x with
      | [i] -> g' buf (NonTail(regs.(0)), exp)
      | [i; j] when i + 1 = j -> g' buf (NonTail(fregs.(0)), exp)
      | _ -> assert false);
-    Printf.bprintf buf "\tb\t%s\n" !retlabel;
 
     (* IF内がfalseの場合にjump *)
   | Tail, IfEq(x, V(y), e1, e2) ->
@@ -225,11 +221,9 @@ and g' buf e =
     g'_args buf [(f, reg_cl)] iargs fargs;
     Printf.bprintf buf "\tlw\tra, 0(%s)\n" (reg reg_cl);
     Printf.bprintf buf "\tjalr\tra, ra, 0\n";
-    Printf.bprintf buf "\tb\t%s\n" !retlabel
   | Tail, CallDir(Id.L(f), iargs, fargs) ->
     g'_args buf [] iargs fargs;
     Printf.bprintf buf "\tcall\t%s\n" f;
-    Printf.bprintf buf "\tb\t%s\n" !retlabel
   | NonTail(a), CallCls(f, iargs, fargs) ->
     g'_args buf [(f, reg_cl)] iargs fargs;
     Printf.bprintf buf "\tlw\tra, 0(%s)\n" (reg reg_cl); (* set closure address to %ra *)
@@ -250,6 +244,10 @@ and g'_tail_if buf rs1 rs2 e1 e2 b bn = (* bはラベルに使うだけで命令
   Printf.bprintf buf "\t%s\t%s, %s, %s\n" bn (reg rs1) (reg rs2) b_else;
   let stackset_back = !stackset in
   g buf (Tail, e1); (* if内がtrueの場合 = jumpしなかった場合 *)
+  (match e2 with
+   | Ans(Nop) -> ()
+   | _ ->
+     Printf.bprintf buf "\tb\t%s\n" !retlabel);
   Printf.bprintf buf "%s:\n" b_else;
   stackset := stackset_back;
   g buf (Tail, e2);

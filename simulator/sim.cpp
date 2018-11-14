@@ -78,7 +78,7 @@ void exec(Simulator *sim,Op *op){
     if(debug_mode == 1){
       //for debug
       Op *dbgop = (Op *)malloc(sizeof(Op));
-      fprintf(stdout,"current pc: %ld  inst_counter: %ld  sp:%d\n",sim->pc,inst_counter,sim->registers[2]);
+      fprintf(stdout,"current pc: %ld  inst_counter: %ld  sp:%d, gp:%d\n",sim->pc,inst_counter,sim->registers[2], sim->registers[3]);
       disas(inst,opcode,dbgop);
       while(1){
         std::string buffer;

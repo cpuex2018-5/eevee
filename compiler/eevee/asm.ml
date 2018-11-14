@@ -7,17 +7,17 @@ type t = (* 命令の列 (caml2html: sparcasm_t) *)
 and exp = (* 一つ一つの命令に対応する式 (caml2html: sparcasm_exp) *)
   | Nop
   | Li of int
-  | FLi of Id.l (* Load Floating-Point Double D-form *)
-  | SetL of Id.l (* Set Label(?) *)
+  | FLi of Id.l
+  | SetL of Id.l
   | Mv of Id.t
   | Neg of Id.t
   | Add of Id.t * id_or_imm
   | Sub of Id.t * id_or_imm
   | Mul of Id.t * id_or_imm
   | Div of Id.t * id_or_imm
-  | Sll of Id.t * id_or_imm (* Shift Left Word *)
-  | Lw of Id.t * id_or_imm (* Load Word and Zero *)
-  | Sw of Id.t * Id.t * id_or_imm (* Store Word *)
+  | Sll of Id.t * id_or_imm
+  | Lw of Id.t * id_or_imm
+  | Sw of Id.t * Id.t * id_or_imm
   | FMv of Id.t
   | FNeg of Id.t
   | FAdd of Id.t * Id.t
@@ -26,8 +26,8 @@ and exp = (* 一つ一つの命令に対応する式 (caml2html: sparcasm_exp) *
   | FDiv of Id.t * Id.t
   | FAbs of Id.t
   | FSqrt of Id.t
-  | Flw of Id.t * id_or_imm (* Load Floating-Point Double D-form *)
-  | Fsw of Id.t * Id.t * id_or_imm (* Store Floating-Point Double D-form *)
+  | Flw of Id.t * id_or_imm
+  | Fsw of Id.t * Id.t * id_or_imm
   | Comment of string
   (* virtual instructions *)
   | IfEq of Id.t * id_or_imm * t * t
@@ -57,7 +57,7 @@ let fregs =
      "%ft1"; "%ft2"; "%ft3"; "%ft4"; "%ft5"; "%ft6"; "%ft7"; "%ft8"; "%ft9"; "%ft10"; "%ft11" |]
 let allregs = Array.to_list regs
 let allfregs = Array.to_list fregs
-let reg_cl = regs.(Array.length regs - 1) (* closure address *)
+let reg_cl = "%s11" (* closure address *)
 let reg_sw = regs.(Array.length regs - 2) (* temporary for swap *)
 let reg_fsw = fregs.(Array.length fregs - 1) (* temporary for swap *)
 let reg_sp = "%sp" (* stack pointer *)
