@@ -45,8 +45,10 @@ int main(int argc, char* argv[])
         std::cout << "ERROR: The input file should have suffix '.s'" << std::endl;
         return 0;
     }
-    std::ifstream ifs(infile), lib("libmincaml.S");
-    if (ifs.fail() || lib.fail()) {
+    std::string iolibname = (infile.substr(infile.size() - 7, 5) == "minrt") ? "libcontest.S" : "libmincaml.S";
+    std::string cmnlibname = "libcommon.S";
+    std::ifstream ifs(infile), iolib(iolibname), cmnlib(cmnlibname);
+    if (ifs.fail() || iolib.fail() || cmnlib.fail()) {
         std::cerr << "ERROR: Failed to open the file" << std::endl;
         return 0;
     }
@@ -63,20 +65,25 @@ int main(int argc, char* argv[])
         bingen.ReadLabels(str);
 
     // link the whole library.
-    while (getline(lib, str))
+    while (getline(iolib, str))
+        bingen.ReadLabels(str);
+    while (getline(cmnlib, str))
         bingen.ReadLabels(str);
 
     bingen.OnReadLabelsCompleted();
     ifs.clear();
     ifs.seekg(0, std::ios::beg);
-    lib.clear();
-    lib.seekg(0, std::ios::beg);
+    iolib.clear();
+    iolib.seekg(0, std::ios::beg);
+    cmnlib.clear();
+    cmnlib.seekg(0, std::ios::beg);
 
     // Round 2: Replace the instructions with bytecodes
     while (getline(ifs, str))
         bingen.Main(str);
-
-    while (getline(lib, str))
+    while (getline(iolib, str))
+        bingen.Main(str);
+    while (getline(cmnlib, str))
         bingen.Main(str);
 
     bingen.Finish();

@@ -104,3 +104,7 @@ See [Wiki](https://github.com/cpuex2018-5/eevee/wiki/eevee-ISA-extension).
 * プログラムの最後に32bitの0の羅列がつくようになりました(10/29)
 
 * 浮動小数演算のround modeの情報はデコードする際は読み捨ててください
+
+* コンテストでの入力用に最適化したライブラリ (`libcontest.S`) と普通のライブラリ (`libmincaml.S`) を分けました
+    * 共通のものは `libcommon.S` に入れました
+    * `minrt.s` を部分文字列として含むアセンブリをアセンブラに通すと`libcontest.S` と`libcommon.S` が、それ以外のアセンブリは `libmincaml.S` と `libcommon.S` がリンクされます
