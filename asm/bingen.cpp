@@ -68,7 +68,7 @@ void BinGen::ReadLabels(std::string input) {
         return;
     }
     mnemo.pop_back();
-    std::cerr << "[INFO] new label " << mnemo << " registered at " << nline_ * 4 << std::endl;
+    // std::cerr << "[INFO] new label " << mnemo << " registered at " << nline_ * 4 << std::endl;
     label_map_[mnemo] = nline_;
 }
 

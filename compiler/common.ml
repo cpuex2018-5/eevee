@@ -2,6 +2,8 @@
 (* 置換可能な右辺式と、それが代入された変数(左辺)のリスト *)
 type letenv = (KNormal.t * Id.t) list
 
+type tupleenv = (Id.t * (Id.t * Type.t) list) list
+
 let print_letenv (env : letenv) =
   let string_of_letenv (env : letenv) =
     String.concat "" (List.map (fun (e, x) -> x ^ " = " ^ KNormal.string_of_t e) env)
@@ -31,24 +33,36 @@ let rec eq_t (e1 : KNormal.t) (e2 : KNormal.t) : bool =
   | _ -> e1 = e2
 
 (* essential part of the common subexpression elimination *)
-let rec g (env : letenv) (exp : KNormal.t) : KNormal.t =
+let rec g (env : letenv) (tenv : tupleenv) (exp : KNormal.t) : KNormal.t =
   match exp with
   | IfEq(x, y, e1, e2) ->
-    IfEq(x, y, (g env e1), (g env e2))
+    IfEq(x, y, (g env tenv e1), (g env tenv e2))
   | IfLE(x, y, e1, e2) ->
-    IfLE(x, y, (g env e1), (g env e2))
+    IfLE(x, y, (g env tenv e1), (g env tenv e2))
+  | Let(xt, Int n, e2) -> Let(xt, Int n, g env tenv e2) (* Intの即値は保持しない方が良い *)
   | Let((x, t), e1, e2) ->
-    let e1 = g env e1 in
+    let e1 = g env tenv e1 in
     (match List.find_opt (fun (e, _) -> eq_t e e1) env with
-     | Some (e, y) ->Let((x, t), Var y, g env e2)
+     | Some (e, y) ->Let((x, t), Var y, g env tenv e2)
      | None ->
        (* 'e1' is unknown -> register it to the 'env' *)
        (match may_have_side_effect e1 with
-        | true  -> Let ((x, t), e1, g env e2)
-        | false -> Let ((x, t), e1, g ((e1, x) :: env) e2)))
-  | LetRec(f', e) -> LetRec(f', (g env e))
-  | LetTuple(xts, y, e) -> LetTuple(xts, y, g env e)
+        | true  -> Let ((x, t), e1, g env tenv e2)
+        | false -> Let ((x, t), e1, g ((e1, x) :: env) tenv e2)))
+  | LetRec({ name = n; args = a; body = e1 }, e2) ->
+    (* 関数を超えての共通部分式は削除しない *)
+    LetRec({ name = n; args = a; body = g [] [] e1 }, (g env tenv e2))
+  | LetTuple(xts, y, e) ->
+    (match List.find_opt (fun (x, _) -> x = y) tenv with
+     | None ->
+       LetTuple(xts, y, g env ((y, xts) :: tenv) e)
+     | Some (_, xts') ->
+       let (xs, ts) = List.split xts in
+       let (xs', ts') = List.split xts' in
+       assert (List.for_all2 (fun t t' -> t = t') ts ts');
+       let table = List.combine xs xs' in
+       let e' = List.fold_left (fun e (x, y) -> KNormal.id_subst e x y) e table in
+       g env tenv e')
   | _ -> exp
 
-let f exp = g [] exp
-
+let f exp = g [] [] exp
