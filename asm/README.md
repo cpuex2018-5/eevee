@@ -43,7 +43,7 @@ $ ./main -v target/fib.s
 * `-d` : debug mode (pcの値を先頭につけたアセンブリを[入力].asmに出力)
 
 ```
-$ ./main -d target/fib.s  # target/fib.asm will be generated
+$ ./main -d target/fib.s  # target/fib.asm will be generated as well as target/fib.bin
 ```
 
 ```
@@ -87,7 +87,6 @@ See [Wiki](https://github.com/cpuex2018-5/eevee/wiki/eevee-ISA-extension).
 ```
 .file    "fib.c"
 .option  nopic
-.text
 .align   1
 .globl   fib
 .type    fib, @function
