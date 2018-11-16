@@ -33,10 +33,10 @@ let rec eq_t (e1 : KNormal.t) (e2 : KNormal.t) : bool =
 (* essential part of the common subexpression elimination *)
 let rec g (env : letenv) (exp : KNormal.t) : KNormal.t =
   match exp with
-  | IfEq(e1, e2, et, ef) ->
-    IfEq(e1, e2, (g env et), (g env ef))
-  | IfLE(e1, e2, et, ef) ->
-    IfLE(e1, e2, (g env et), (g env ef))
+  | IfEq(x, y, e1, e2) ->
+    IfEq(x, y, (g env e1), (g env e2))
+  | IfLE(x, y, e1, e2) ->
+    IfLE(x, y, (g env e1), (g env e2))
   | Let((x, t), e1, e2) ->
     let e1 = g env e1 in
     (match List.find_opt (fun (e, _) -> eq_t e e1) env with
@@ -47,7 +47,7 @@ let rec g (env : letenv) (exp : KNormal.t) : KNormal.t =
         | true  -> Let ((x, t), e1, g env e2)
         | false -> Let ((x, t), e1, g ((e1, x) :: env) e2)))
   | LetRec(f', e) -> LetRec(f', (g env e))
-  | LetTuple(l, e1, e2) -> LetTuple(l, e1, (g env e2))
+  | LetTuple(xts, y, e) -> LetTuple(xts, y, g env e)
   | _ -> exp
 
 let f exp = g [] exp

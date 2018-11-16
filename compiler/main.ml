@@ -2,30 +2,30 @@ let limit = ref 1000
 
 let rec iter n e = (* optimization (caml2html: main_iter) *)
   Format.eprintf "iteration %d@." n;
-  if n = 0 then e else
-    (
-      (* print_endline "------------------------------";
-         KNormal.print_t e; *)
-      let e' = Common.f e in
-      (* print_endline "-------------After Common.f-----------------";
-         KNormal.print_t e'; *)
-      let e' = Beta.f e' in
-      (* print_endline "---------------After Beta.f-----------------";
-         KNormal.print_t e'; *)
-      let e' = Assoc.f e' in
-      (* print_endline "--------------After Assoc.f-----------------";
-         KNormal.print_t e'; *)
-      let e' = Inline.f e' in
-      (* print_endline "-------------After Inline.f-----------------";
-         KNormal.print_t e'; *)
-      let e' = ConstFold.f e' in
-      (* print_endline "-------------After ConstFold.f--------------";
-         KNormal.print_t e'; *)
-      let e' = Elim.f e' in
-      (* print_endline "---------------After Elim.f-----------------";
-         KNormal.print_t e'; *)
-      if e = e' then e else
-        iter (n - 1) e')
+  if n = 0 then e else (
+    (* print_endline "------------------------------";
+       KNormal.print_t e; *)
+    let e' = Common.f e in
+    (* print_endline "-------------After Common.f-----------------";
+       KNormal.print_t e'; *)
+    let e' = Beta.f e' in
+    (* print_endline "---------------After Beta.f-----------------";
+       KNormal.print_t e'; *)
+    let e' = Assoc.f e' in
+    (* print_endline "--------------After Assoc.f-----------------";
+       KNormal.print_t e'; *)
+    let e' = Inline.f e' in
+    (* print_endline "-------------After Inline.f-----------------";
+       KNormal.print_t e'; *)
+    let e' = ConstFold.f e' in
+    (* print_endline "-------------After ConstFold.f--------------";
+       KNormal.print_t e'; *)
+    let e' = Elim.f e' in
+    (* print_endline "---------------After Elim.f-----------------";
+       KNormal.print_t e'; *)
+    if e = e' then e else
+      iter (n - 1) e'
+  )
 
 let lexbuf outchan l = (* compile the buffer and put it to outchan (caml2html: main_lexbuf) *)
   Id.counter := 0;
@@ -41,9 +41,10 @@ let lexbuf outchan l = (* compile the buffer and put it to outchan (caml2html: m
   let e = Closure.f e in
   print_endline "-----------After Closure.f-----------------";
   (* Closure.print_prog e; *)
-  (* let e = TupleOpt.f e in
-     print_endline "-----------After TupleOpt.f-----------------";
-     Closure.print_prog e; *)
+  (* let e = TupleOpt.f e in *)
+  (* print_endline "-----------After TupleOpt.f-----------------"; *)
+  let e = CommonTuple.f e in
+  (* Closure.print_prog e; *)
   let e = Virtual.f e in
   let e = Simm.f e in
   let e = RegAlloc.f e in
