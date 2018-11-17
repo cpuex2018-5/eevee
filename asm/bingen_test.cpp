@@ -8,8 +8,8 @@
 
 class BinGenTest{
   public:
-    BinGenTest(std::ofstream ofs, std::ofstream debugofs)
-        : bingen_(BinGen(std::move(ofs), std::move(debugofs), false /* is_verbose */, false /* is_debug */, false /* is_asci */)) {}
+    BinGenTest(std::ofstream ofs)
+        : bingen_(BinGen(std::move(ofs), false /* is_verbose */, false /* is_debug */, false /* is_asci */)) {}
     ~BinGenTest() = default;
 
     void TestToString() {
@@ -81,8 +81,8 @@ int main (void) {
     // TestParseOffset();
     // TestToString();
 
-    std::ofstream ofs, debugofs;
-    BinGenTest test(std::move(ofs), std::move(debugofs));
+    std::ofstream ofs;
+    BinGenTest test(std::move(ofs));
     test.TestParse();
     test.TestConvert();
     std::cout << "Tests are all finished!" << std::endl;

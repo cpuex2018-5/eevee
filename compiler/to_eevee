@@ -1,6 +1,5 @@
 #!/usr/bin/env bash
-ln -sf eevee/{*.ml{,i},libmincaml.S} .
+ln -sf eevee/{*.ml{,i},libmincaml.S,libcommon.S,libcontest.S} .
 cd test; ln -sf eevee/{,too}manyargs.ml .; cd ..
 cd shootout; ln -sf eevee/Makefile .; cd ..
 cd bytemark; ln -sf eevee/Makefile .; cd ..
-cd min-rt; ln -sf eevee/globals.s .; cd ..

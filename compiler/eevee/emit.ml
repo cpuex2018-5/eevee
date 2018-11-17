@@ -33,14 +33,6 @@ let reg r =
   then String.sub r 1 (String.length r - 1)
   else r
 
-(*
-let load_label r label =
-  let r' = reg r in
-  Printf.sprintf
-    "\tlis\t%s, ha16(%s)\n\taddi\t%s, %s, lo16(%s)\n"
-    r' label r' r' label
-*)
-
 (* Shuffle registers so that the old content will not be lost *)
 let rec shuffle sw xys =
   (* remove identical moves *)

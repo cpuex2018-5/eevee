@@ -15,12 +15,11 @@
 // simulatorのMEM_SIZE
 #define MEM_SIZE 0x10000010
 
-BinGen::BinGen(std::ofstream ofs, std::ofstream debugofs, bool is_verbose, bool is_debug, bool is_ascii)
+BinGen::BinGen(std::ofstream ofs, bool is_verbose, bool is_debug, bool is_ascii)
   : is_verbose_(is_verbose),
     is_debug_(is_debug),
     is_ascii_(is_ascii),
     ofs_(std::move(ofs)),
-    debugofs_(std::move(debugofs)),
     regmap_(create_regmap()),
     fregmap_(create_fregmap()) {}
 
@@ -56,7 +55,7 @@ void BinGen::ReadLabels(std::string input) {
         // Don't count these markers
         if (mnemo == ".file" || mnemo == ".option" || mnemo == ".align" ||
             mnemo == ".globl" || mnemo == ".type" || mnemo == ".size" || mnemo == ".ident") {
-            std::fprintf(stderr, "[INFO] |%s| was ignored\n", input.c_str());
+            // std::fprintf(stderr, "[INFO] |%s| was ignored\n", input.c_str());
             return;
         }
 
@@ -82,16 +81,16 @@ void BinGen::Main(std::string input) {
     BinGen::Inst inst(Convert(input));
 
     if (is_debug_) {
-        if (inst.first == 0 && inst.second == ~0) { // not an instruction or a data
+        if (inst.first == 0 && inst.second == 0xffffffff) { // not an instruction or a data
             if (input[0] != '#')
-                debugofs_ << "\t" << input << std::endl;
+                std::printf("\t%s\n", input.c_str());
         } else {
-            debugofs_ << "(" << old_nline * 4 << ")\t" << input << std::endl;
+            std::printf("(%d)\t%s\n", old_nline * 4, input.c_str());
         }
     }
 
     // not an instruction or a data
-    if (inst.first == 0 && inst.second == ~0) return;
+    if (inst.first == 0 && inst.second == 0xffffffff) return;
 
     if (is_verbose_) {
         std::cout << "(pc " << old_nline * 4 << "):" << input << std::endl;
@@ -171,25 +170,25 @@ BinGen::Inst BinGen::Convert(std::string input) {
 
     if (mnemo == ".text") {
         data_mode_ = false;
-        return Inst(0, ~0);
+        return Inst(0, 0xffffffff);
     }
 
     if (mnemo == ".data") {
         data_mode_ = true;
-        return Inst(0, ~0);
+        return Inst(0, 0xffffffff);
     }
 
     // Labels
     if (mnemo.back() == ':')
-        return Inst(0, ~0);
+        return Inst(0, 0xffffffff);
 
     if (mnemo == ".file" || mnemo == ".option" || mnemo == ".align" ||
         mnemo == ".globl" || mnemo == ".type" || mnemo == ".size" || mnemo == ".ident")
-        return Inst(0, ~0);
+        return Inst(0, 0xffffffff);
 
     // Comment
     if (mnemo == "")
-        return Inst(0, ~0);
+        return Inst(0, 0xffffffff);
 
     // Data
     if (mnemo == ".word") {
@@ -326,7 +325,7 @@ BinGen::Inst BinGen::Convert(std::string input) {
     }
     else if (mnemo == "b") {
         assert(1 == arg.size());
-        // これはbeqでもよい
+        // TODO: bgeじゃなくbeqにする？
         ret1 = branch("bge", "zero", "zero", MyStoi(arg[0]));
     }
     else if (mnemo == "j") {
@@ -383,9 +382,9 @@ std::string BinGen::ToString(uint32_t inst) {
 }
 
 std::string BinGen::InstToString(Inst inst) {
-    if (inst.first == 0)
+    if (inst.first == 0 && inst.second == 0xffffffff)
         return "";
-    else if (inst.second == ~0)
+    else if (inst.second == 0)
         return ToString(inst.first);
     else
         return ToString(inst.first) + "    " + ToString(inst.second);
