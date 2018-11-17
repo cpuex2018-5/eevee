@@ -4,6 +4,8 @@ type t = (* formula after K-normalization (caml2html: knormal_t) *)
   | Unit
   | Int of int
   | Float of float
+  | Not of Id.t
+  | Xor of Id.t * Id.t
   | Neg of Id.t
   | Add of Id.t * Id.t
   | Sub of Id.t * Id.t
@@ -36,6 +38,8 @@ let string_of_t (exp : t) =
     | Unit -> indent ^ "()" ^ endline
     | Int n   -> indent ^ "INT " ^ (string_of_int n) ^ endline
     | Float f -> indent ^ "FLOAT " ^ (string_of_float f) ^ endline
+    | Not e   -> indent ^ "~ " ^ e ^ endline
+    | Xor (e1, e2) -> indent ^ "XOR " ^ e1 ^ " " ^ e2 ^ endline
     | Neg e   -> indent ^ "- " ^ e ^ endline
     | Add (e1, e2)  -> indent ^ e1 ^ " + " ^ e2 ^ endline
     | Sub (e1, e2)  -> indent ^ e1 ^ " - " ^ e2 ^ endline
@@ -76,8 +80,8 @@ let print_t (exp : t) =
 (* S.t = Id.t *)
 let rec fv = function (* free variable (caml2html: knormal_fv) *)
   | Unit | Int(_) | Float(_) | ExtArray(_) -> S.empty
-  | Neg(x) | FNeg(x) -> S.singleton x
-  | Add(x, y) | Sub(x, y) | Mul(x, y) | Div(x, y) | FAdd(x, y) | FSub(x, y) | FMul(x, y) | FDiv(x, y) | Get(x, y) -> S.of_list [x; y]
+  | Not(x) | Neg(x) | FNeg(x) -> S.singleton x
+  | Xor(x, y) | Add(x, y) | Sub(x, y) | Mul(x, y) | Div(x, y) | FAdd(x, y) | FSub(x, y) | FMul(x, y) | FDiv(x, y) | Get(x, y) -> S.of_list [x; y]
   | IfEq(x, y, e1, e2) | IfLE(x, y, e1, e2) -> S.add x (S.add y (S.union (fv e1) (fv e2)))
   | Let((x, t), e1, e2) -> S.union (fv e1) (S.remove x (fv e2))
   | Var(x) -> S.singleton x
@@ -93,7 +97,9 @@ let rec fv = function (* free variable (caml2html: knormal_fv) *)
 let rec id_subst (e : t) (a : Id.t) (b : Id.t) : t =
   let subst_ x = if x = a then b else x in
   match e with
+  | Not e   -> Not (subst_ e)
   | Neg e   -> Neg (subst_ e)
+  | Xor (e1, e2)  -> Xor  (subst_ e1, subst_ e2)
   | Add (e1, e2)  -> Add  (subst_ e1, subst_ e2)
   | Sub (e1, e2)  -> Sub  (subst_ e1, subst_ e2)
   | Mul (e1, e2)  -> Mul  (subst_ e1, subst_ e2)
@@ -137,6 +143,8 @@ let rec g (env : Type.t M.t) (exp : Syntax.t) : t * Type.t = (* where K-normaliz
   | Syntax.Int(i) -> Int(i), Type.Int
   | Syntax.Float(d) -> Float(d), Type.Float
   | Syntax.Not(e, p) -> g env (Syntax.If(e, Syntax.Bool(false), Syntax.Bool(true), p))
+    (* insert_let (g env e)
+      (fun x -> Not(x), Type.Int) *)
   | Syntax.Neg(e, _) ->
     insert_let (g env e)
       (fun x -> Neg(x), Type.Int)
@@ -210,6 +218,10 @@ let rec g (env : Type.t M.t) (exp : Syntax.t) : t * Type.t = (* where K-normaliz
     let e2', t2 = g env' e2 in
     let e1', t1 = g (M.add_list yts env') e1 in
     LetRec({ name = (x, t); args = yts; body = e1' }, e2'), t2
+  | Syntax.App(Syntax.Var("xor"), [e1; e2], _) ->
+    insert_let (g env e1)
+      (fun x -> insert_let (g env e2)
+          (fun y -> Xor(x, y), Type.Int))
   | Syntax.App(Syntax.Var("fsqr"), [x], p) -> g env (Syntax.FMul(x, x, p))
   | Syntax.App(Syntax.Var("fhalf"), [x], p) -> g env (Syntax.FDiv(x, Float 2.0, p))
   | Syntax.App(Syntax.Var("fneg"), [e], p) -> g env (Syntax.FNeg(e, p))

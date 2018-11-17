@@ -3,7 +3,9 @@ type t = (* クロージャ変換後の式 (caml2html: closure_t) *)
   | Unit
   | Int of int
   | Float of float
+  | Not of Id.t
   | Neg of Id.t
+  | Xor of Id.t * Id.t
   | Add of Id.t * Id.t
   | Sub of Id.t * Id.t
   | Mul of Id.t * Id.t
@@ -37,7 +39,9 @@ let rec str_of_t ?(no_indent = false) ?(endline = "\n") (exp : t) (depth : int) 
   | Unit -> indent ^ "()" ^ endline
   | Int n   -> indent ^ "INT " ^ (string_of_int n) ^ endline
   | Float f -> indent ^ "FLOAT " ^ (string_of_float f) ^ endline
+  | Not e   -> indent ^ "~ " ^ e ^ endline
   | Neg e   -> indent ^ "- " ^ e ^ endline
+  | Xor (e1, e2)  -> indent ^ "XOR " ^ e1 ^ " " ^ e2 ^ endline
   | Add (e1, e2)  -> indent ^ e1 ^ " + " ^ e2 ^ endline
   | Sub (e1, e2)  -> indent ^ e1 ^ " - " ^ e2 ^ endline
   | Mul (e1, e2)  -> indent ^ e1 ^ " * " ^ e2 ^ endline
@@ -83,7 +87,9 @@ let print_prog p = print_string (string_of_prog p)
 let rec id_subst (e : t) (a : Id.t) (b : Id.t) : t =
   let subst_ x = if x = a then b else x in
   match e with
+  | Not e   -> Not (subst_ e)
   | Neg e   -> Neg (subst_ e)
+  | Xor (e1, e2)  -> Xor  (subst_ e1, subst_ e2)
   | Add (e1, e2)  -> Add  (subst_ e1, subst_ e2)
   | Sub (e1, e2)  -> Sub  (subst_ e1, subst_ e2)
   | Mul (e1, e2)  -> Mul  (subst_ e1, subst_ e2)
@@ -111,8 +117,8 @@ let rec id_subst (e : t) (a : Id.t) (b : Id.t) : t =
 
 let rec fv = function
   | Unit | Int(_) | Float(_) | ExtArray(_) -> S.empty
-  | Neg(x) | FNeg(x) -> S.singleton x
-  | Add(x, y) | Sub(x, y) | Mul(x, y) | Div(x, y) | FAdd(x, y) | FSub(x, y) | FMul(x, y) | FDiv(x, y) | Get(x, y) -> S.of_list [x; y]
+  | Not(x) | Neg(x) | FNeg(x) -> S.singleton x
+  | Xor(x, y) | Add(x, y) | Sub(x, y) | Mul(x, y) | Div(x, y) | FAdd(x, y) | FSub(x, y) | FMul(x, y) | FDiv(x, y) | Get(x, y) -> S.of_list [x; y]
   | IfEq(x, y, e1, e2)| IfLE(x, y, e1, e2) -> S.add x (S.add y (S.union (fv e1) (fv e2)))
   | Let((x, t), e1, e2) -> S.union (fv e1) (S.remove x (fv e2))
   | Var(x) -> S.singleton x
@@ -130,7 +136,9 @@ let rec g env known e =
   | KNormal.Unit -> Unit
   | KNormal.Int(i) -> Int(i)
   | KNormal.Float(d) -> Float(d)
+  | KNormal.Not(x) -> Not(x)
   | KNormal.Neg(x) -> Neg(x)
+  | KNormal.Xor(x, y) -> Xor(x, y)
   | KNormal.Add(x, y) -> Add(x, y)
   | KNormal.Sub(x, y) -> Sub(x, y)
   | KNormal.Mul(x, y) -> Mul(x, y)

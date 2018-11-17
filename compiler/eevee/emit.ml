@@ -76,7 +76,10 @@ and g' buf e =
     Printf.bprintf buf "\tla\t%s, %s\n" (reg x) y
   | NonTail(x), Mv(y) when x = y -> ()
   | NonTail(x), Mv(y) -> Printf.bprintf buf "\tmv\t%s, %s\n" (reg x) (reg y)
+  | NonTail(x), Not(y) -> Printf.bprintf buf "\tnot\t%s, %s\n" (reg x) (reg y)
   | NonTail(x), Neg(y) -> Printf.bprintf buf "\tneg\t%s, %s\n" (reg x) (reg y)
+  | NonTail(x), Xor(y, V(z)) -> Printf.bprintf buf "\txor\t%s, %s, %s\n" (reg x) (reg y) (reg z)
+  | NonTail(x), Xor(y, C(z)) -> Printf.bprintf buf "\txori\t%s, %s, %d\n" (reg x) (reg y) z
   | NonTail(x), Add(y, V(z)) -> Printf.bprintf buf "\tadd\t%s, %s, %s\n" (reg x) (reg y) (reg z)
   | NonTail(x), Add(y, C(z)) -> Printf.bprintf buf "\taddi\t%s, %s, %d\n" (reg x) (reg y) z
   | NonTail(x), Sub(y, V(z)) -> Printf.bprintf buf "\tsub\t%s, %s, %s\n" (reg x) (reg y) (reg z)
@@ -133,7 +136,7 @@ and g' buf e =
   (* 末尾だったら計算結果を%a0か%fa0にセットしてリターン (caml2html: emit_tailret) *)
   | Tail, (Nop | Sw _ | Fsw _ | Comment _ | Save _ as exp) ->
     g' buf (NonTail(Id.gentmp Type.Unit), exp);
-  | Tail, (Li _ | SetL _ | Mv _ | Neg _ | Add _ | Sub _ | Mul _ | Div _ | Sll _ | Lw _ as exp) ->
+  | Tail, (Li _ | SetL _ | Mv _ | Neg _ | Not _ | Xor _ | Add _ | Sub _ | Mul _ | Div _ | Sll _ | Lw _ as exp) ->
     g' buf (NonTail(regs.(0)), exp);
   | Tail, (FLi _ | FMv _ | FNeg _ | FAdd _ | FSub _ | FMul _ | FDiv _ | FAbs _ | FSqrt _ | Flw _ as exp) ->
     g' buf (NonTail(fregs.(0)), exp);

@@ -49,7 +49,9 @@ let rec g env = function (* 式の仮想マシンコード生成 (caml2html: vir
         data := (l, d) :: !data;
         l in
     Ans(FLi(l))
+  | Closure.Not(x) -> Ans(Not(x))
   | Closure.Neg(x) -> Ans(Neg(x))
+  | Closure.Xor(x, y) -> Ans(Xor(x, V(y)))
   | Closure.Add(x, y) -> Ans(Add(x, V(y)))
   | Closure.Sub(x, y) -> Ans(Sub(x, V(y)))
   | Closure.Mul(x, y) -> Ans(Mul(x, V(y)))

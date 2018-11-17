@@ -6,7 +6,9 @@ let rec g env = function
   | Unit -> Unit
   | Int(i) -> Int(i)
   | Float(d) -> Float(d)
+  | Not(x) -> Not(find x env)
   | Neg(x) -> Neg(find x env)
+  | Xor(x, y) -> Xor(find x env, find y env)
   | Add(x, y) -> Add(find x env, find y env)
   | Sub(x, y) -> Sub(find x env, find y env)
   | Mul(x, y) -> Mul(find x env, find y env)

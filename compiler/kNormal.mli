@@ -2,6 +2,8 @@ type t =
   | Unit
   | Int of int
   | Float of float
+  | Not of Id.t
+  | Xor of Id.t * Id.t
   | Neg of Id.t
   | Add of Id.t * Id.t
   | Sub of Id.t * Id.t
