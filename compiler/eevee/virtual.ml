@@ -61,6 +61,8 @@ let rec g env = function (* 式の仮想マシンコード生成 (caml2html: vir
   | Closure.FSub(x, y) -> Ans(FSub(x, y))
   | Closure.FMul(x, y) -> Ans(FMul(x, y))
   | Closure.FDiv(x, y) -> Ans(FDiv(x, y))
+  | Closure.FEq(x, y) -> Ans(FEq(x, y))
+  | Closure.FLE(x, y) -> Ans(FLE(x, y))
   | Closure.IfEq(x, y, e1, e2) ->
     (match M.find x env with
      | Type.Bool | Type.Int -> Ans(IfEq(x, V(y), g env e1, g env e2))

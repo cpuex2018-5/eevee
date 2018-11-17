@@ -76,7 +76,7 @@ and g' buf e =
     Printf.bprintf buf "\tla\t%s, %s\n" (reg x) y
   | NonTail(x), Mv(y) when x = y -> ()
   | NonTail(x), Mv(y) -> Printf.bprintf buf "\tmv\t%s, %s\n" (reg x) (reg y)
-  | NonTail(x), Not(y) -> Printf.bprintf buf "\tnot\t%s, %s\n" (reg x) (reg y)
+  | NonTail(x), Not(y) -> Printf.bprintf buf "\txori\t%s, %s, 1\n" (reg x) (reg y)
   | NonTail(x), Neg(y) -> Printf.bprintf buf "\tneg\t%s, %s\n" (reg x) (reg y)
   | NonTail(x), Xor(y, V(z)) -> Printf.bprintf buf "\txor\t%s, %s, %s\n" (reg x) (reg y) (reg z)
   | NonTail(x), Xor(y, C(z)) -> Printf.bprintf buf "\txori\t%s, %s, %d\n" (reg x) (reg y) z
@@ -108,6 +108,8 @@ and g' buf e =
   | NonTail(x), FSub(y, z) -> Printf.bprintf buf "\tfsub.s\t%s, %s, %s\n" (reg x) (reg y) (reg z)
   | NonTail(x), FMul(y, z) -> Printf.bprintf buf "\tfmul.s\t%s, %s, %s\n" (reg x) (reg y) (reg z)
   | NonTail(x), FDiv(y, z) -> Printf.bprintf buf "\tfdiv.s\t%s, %s, %s\n" (reg x) (reg y) (reg z)
+  | NonTail(x), FEq(y, z) -> Printf.bprintf buf "\tfeq.s\t%s, %s, %s\n" (reg x) (reg y) (reg z)
+  | NonTail(x), FLE(y, z) -> Printf.bprintf buf "\tfle.s\t%s, %s, %s\n" (reg x) (reg y) (reg z)
   | NonTail(x), FAbs(y) -> Printf.bprintf buf "\tfabs.s\t%s, %s\n" (reg x) (reg y)
   | NonTail(x), FSqrt(y) -> Printf.bprintf buf "\tfsqrt.s\t%s, %s\n" (reg x) (reg y)
   | NonTail(x), Flw(y, V(z)) ->
@@ -138,7 +140,7 @@ and g' buf e =
     g' buf (NonTail(Id.gentmp Type.Unit), exp);
   | Tail, (Li _ | SetL _ | Mv _ | Neg _ | Not _ | Xor _ | Add _ | Sub _ | Mul _ | Div _ | Sll _ | Lw _ as exp) ->
     g' buf (NonTail(regs.(0)), exp);
-  | Tail, (FLi _ | FMv _ | FNeg _ | FAdd _ | FSub _ | FMul _ | FDiv _ | FAbs _ | FSqrt _ | Flw _ as exp) ->
+  | Tail, (FLi _ | FMv _ | FNeg _ | FAdd _ | FSub _ | FMul _ | FDiv _ | FEq _ | FLE _ | FAbs _ | FSqrt _ | Flw _ as exp) ->
     g' buf (NonTail(fregs.(0)), exp);
   | Tail, (Restore(x) as exp) ->
     (match locate x with

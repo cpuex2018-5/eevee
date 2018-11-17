@@ -20,6 +20,8 @@ let rec g env = function (* where alpha-conversion happens (caml2html: alpha_g) 
   | FSub(x, y) -> FSub(find x env, find y env)
   | FMul(x, y) -> FMul(find x env, find y env)
   | FDiv(x, y) -> FDiv(find x env, find y env)
+  | FEq(x, y)  -> FEq(find x env, find y env)
+  | FLE(x, y)  -> FLE(find x env, find y env)
   | IfEq(x, y, e1, e2) -> IfEq(find x env, find y env, g env e1, g env e2)
   | IfLE(x, y, e1, e2) -> IfLE(find x env, find y env, g env e1, g env e2)
   | Let((x, t), e1, e2) ->

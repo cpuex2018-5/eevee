@@ -15,6 +15,8 @@ type t = (* クロージャ変換後の式 (caml2html: closure_t) *)
   | FSub of Id.t * Id.t
   | FMul of Id.t * Id.t
   | FDiv of Id.t * Id.t
+  | FEq  of Id.t * Id.t
+  | FLE  of Id.t * Id.t
   | IfEq of Id.t * Id.t * t * t
   | IfLE of Id.t * Id.t * t * t
   | Let of (Id.t * Type.t) * t * t
@@ -51,6 +53,8 @@ let rec str_of_t ?(no_indent = false) ?(endline = "\n") (exp : t) (depth : int) 
   | FSub (e1, e2) -> indent ^ e1 ^ " -. " ^ e2 ^ endline
   | FMul (e1, e2) -> indent ^ e1 ^ " *. " ^ e2 ^ endline
   | FDiv (e1, e2) -> indent ^ e1 ^ " /. " ^ e2 ^ endline
+  | FEq  (e1, e2) -> indent ^ e1 ^ " =. " ^ e2 ^ endline
+  | FLE  (e1, e2) -> indent ^ e1 ^ " <=. " ^ e2 ^ endline
   | IfEq (e1, e2, et, ef) -> indent ^ "IF ( " ^ e1 ^ " = " ^ e2 ^ " ) THEN\n" ^ (str_of_t et (depth + 1)) ^
                              indent ^ "ELSE\n" ^ (str_of_t ef (depth + 1))
   | IfLE (e1, e2, et, ef) -> indent ^ "IF ( " ^ e1 ^ " <= " ^ e2 ^ " ) THEN\n" ^ (str_of_t et (depth + 1)) ^
@@ -99,6 +103,8 @@ let rec id_subst (e : t) (a : Id.t) (b : Id.t) : t =
   | FSub (e1, e2) -> FSub (subst_ e1, subst_ e2)
   | FMul (e1, e2) -> FMul (subst_ e1, subst_ e2)
   | FDiv (e1, e2) -> FDiv (subst_ e1, subst_ e2)
+  | FEq (e1, e2)  -> FEq (subst_ e1, subst_ e2)
+  | FLE (e1, e2)  -> FLE (subst_ e1, subst_ e2)
   | IfEq (e1, e2, et, ef) -> IfEq (subst_ e1, subst_ e2, id_subst et a b, id_subst ef a b)
   | IfLE (e1, e2, et, ef) -> IfLE (subst_ e1, subst_ e2, id_subst et a b, id_subst ef a b)
   | Let ((x, t), e1, e2) ->
@@ -118,7 +124,8 @@ let rec id_subst (e : t) (a : Id.t) (b : Id.t) : t =
 let rec fv = function
   | Unit | Int(_) | Float(_) | ExtArray(_) -> S.empty
   | Not(x) | Neg(x) | FNeg(x) -> S.singleton x
-  | Xor(x, y) | Add(x, y) | Sub(x, y) | Mul(x, y) | Div(x, y) | FAdd(x, y) | FSub(x, y) | FMul(x, y) | FDiv(x, y) | Get(x, y) -> S.of_list [x; y]
+  | Xor(x, y) | Add(x, y) | Sub(x, y) | Mul(x, y) | Div(x, y)
+  | FAdd(x, y) | FSub(x, y) | FMul(x, y) | FDiv(x, y) | FEq(x, y) | FLE(x, y) | Get(x, y) -> S.of_list [x; y]
   | IfEq(x, y, e1, e2)| IfLE(x, y, e1, e2) -> S.add x (S.add y (S.union (fv e1) (fv e2)))
   | Let((x, t), e1, e2) -> S.union (fv e1) (S.remove x (fv e2))
   | Var(x) -> S.singleton x
@@ -148,6 +155,8 @@ let rec g env known e =
   | KNormal.FSub(x, y) -> FSub(x, y)
   | KNormal.FMul(x, y) -> FMul(x, y)
   | KNormal.FDiv(x, y) -> FDiv(x, y)
+  | KNormal.FEq(x, y) -> FEq(x, y)
+  | KNormal.FLE(x, y) -> FLE(x, y)
   | KNormal.IfEq(x, y, e1, e2) -> IfEq(x, y, g env known e1, g env known e2)
   | KNormal.IfLE(x, y, e1, e2) -> IfLE(x, y, g env known e1, g env known e2)
   | KNormal.Let((x, t), e1, e2) -> Let((x, t), g env known e1, g (M.add x t env) known e2)

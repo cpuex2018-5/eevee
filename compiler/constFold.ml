@@ -16,7 +16,7 @@ let findt x env = (match M.find x env with Tuple(ys) -> ys | _ -> raise Not_foun
 
 let rec g env = function
   | Var(x) when memi x env -> Int(findi x env)
-  (* | Var(x) when memf x env -> Float(findf x env) *)
+  | Var(x) when memf x env -> Float(findf x env)
   (* | Var(x) when memt x env -> Tuple(findt x env) *)
   | Not(x) when memi x env -> Int(lnot (findi x env))
   | Neg(x) when memi x env -> Int(-(findi x env))
@@ -30,6 +30,8 @@ let rec g env = function
   | FSub(x, y) when memf x env && memf y env -> Float(findf x env -. findf y env)
   | FMul(x, y) when memf x env && memf y env -> Float(findf x env *. findf y env)
   | FDiv(x, y) when memf x env && memf y env -> Float(findf x env /. findf y env)
+  | FEq(x, y) when memf x env && memf y env -> if (findf x env = findf y env) then Int(1) else Int(0)
+  | FLE(x, y) when memf x env && memf y env -> if (findf x env <= findf y env) then Int(1) else Int(0)
   | IfEq(x, y, e1, e2) when memi x env && memi y env -> if findi x env = findi y env then g env e1 else g env e2
   | IfEq(x, y, e1, e2) when memf x env && memf y env -> if findf x env = findf y env then g env e1 else g env e2
   | IfEq(x, y, e1, e2) -> IfEq(x, y, g env e1, g env e2)

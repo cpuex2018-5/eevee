@@ -43,9 +43,9 @@ let rec eta (e : KNormal.t) : KNormal.t =
 let rec fvs (e : KNormal.t) : S.t =
   match e with
   | Unit | Int _ | Float _ | ExtArray _ -> S.empty
-  | Neg x | FNeg x -> S.singleton x
-  | Add (x, y) | Sub (x, y) | Mul (x, y) | Div (x, y) -> S.of_list [x; y]
-  | FAdd (x, y) | FSub (x, y) | FMul (x, y) | FDiv (x, y) -> S.of_list [x; y]
+  | Not x | Neg x | FNeg x -> S.singleton x
+  | Xor(x, y) | Add(x, y) | Sub(x, y) | Mul(x, y) | Div(x, y) -> S.of_list [x; y]
+  | FAdd(x, y) | FSub(x, y) | FMul(x, y) | FDiv(x, y) | FEq(x, y) | FLE(x, y) -> S.of_list [x; y]
   | IfEq (x, y, e1, e2)  -> S.add x (S.add y (S.union (fvs e1) (fvs e2)))
   | IfLE (x, y, e1, e2)  -> S.add x (S.add y (S.union (fvs e1) (fvs e2)))
   | Let ((x, _), e1, e2) -> S.remove x (S.union (fvs e1) (fvs e2))
