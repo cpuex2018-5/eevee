@@ -135,6 +135,39 @@ and id_subst_fun (f : fundef) (a : Id.t) (b : Id.t) : fundef =
   let subst_ x = if x = a then b else x in
   { name = ((subst_ (fst f.name)), snd f.name); args = (List.map (fun (x, t) -> (subst_ x, t)) f.args); body = id_subst f.body a b }
 
+let rec unfold_extfun (exp : Syntax.t) : Syntax.t =
+  match exp with
+  | Not(e, p) -> Not(unfold_extfun e, p)
+  | Neg(e, p) -> Neg(unfold_extfun e, p)
+  | Add(e1, e2, p) -> Add(unfold_extfun e1, unfold_extfun e2, p)
+  | Sub(e1, e2, p) -> Sub(unfold_extfun e1, unfold_extfun e2, p)
+  | Mul(e1, e2, p) -> Mul(unfold_extfun e1, unfold_extfun e2, p)
+  | Div(e1, e2, p) -> Div(unfold_extfun e1, unfold_extfun e2, p)
+  | FNeg(e, p) -> FNeg(unfold_extfun e, p)
+  | FAdd(e1, e2, p) -> FAdd(unfold_extfun e1, unfold_extfun e2, p)
+  | FSub(e1, e2, p) -> FSub(unfold_extfun e1, unfold_extfun e2, p)
+  | FMul(e1, e2, p) -> FMul(unfold_extfun e1, unfold_extfun e2, p)
+  | FDiv(e1, e2, p) -> FDiv(unfold_extfun e1, unfold_extfun e2, p)
+  | Eq(e1, e2, t, p) -> Eq(unfold_extfun e1, unfold_extfun e2, t, p)
+  | LE(e1, e2, t, p) -> LE(unfold_extfun e1, unfold_extfun e2, t, p)
+  | If(e1, e2, e3, p) -> If(unfold_extfun e1, unfold_extfun e2, unfold_extfun e3, p)
+  | Let(xt, e1, e2, p) -> Let(xt, unfold_extfun e1, unfold_extfun e2, p)
+  | LetRec(f, e, p) -> LetRec({ name = f.name; args = f.args; body = unfold_extfun f.body }, unfold_extfun e, p)
+  | App(Var("fsqr"), [e], p) -> let e' = unfold_extfun e in FMul(e', e', p)
+  | App(Var("fhalf"), [e], p) -> FDiv(unfold_extfun e, Float 2.0, p)
+  | App(Var("fneg"), [e], p) -> FNeg(unfold_extfun e, p)
+  | App(Var("fiszero"), [e], p) -> Eq(unfold_extfun e, Float(0.0), Type.Float, p)
+  | App(Var("fispos"), [e], p) -> Not(LE(unfold_extfun e, Float(0.0), Type.Float, p), p)
+  | App(Var("fisneg"), [e], p) -> Not(LE(Float(0.0), unfold_extfun e, Type.Float, p), p)
+  | App(Var("fless"), [e1; e2], p) -> Not(LE(unfold_extfun e2, unfold_extfun e1, Type.Float, p), p)
+  | App(e1, e2, p) -> App(unfold_extfun e1, List.map unfold_extfun e2, p)
+  | Tuple(es) -> Tuple(List.map unfold_extfun es)
+  | LetTuple(xts, e1, e2, p) -> LetTuple(xts, unfold_extfun e1, unfold_extfun e2, p)
+  | Array(e1, e2, p) -> Array(unfold_extfun e1, unfold_extfun e2, p)
+  | Get(e1, e2, p) -> Get(unfold_extfun e1, unfold_extfun e2, p)
+  | Put(e1, e2, e3, p) -> Put(unfold_extfun e1, unfold_extfun e2, unfold_extfun e3, p)
+  | _ -> exp
+
 let insert_let (e, t) k = (* k : continuation *)
   match e with
   | Var(x) -> k x
@@ -149,9 +182,9 @@ let rec g (env : Type.t M.t) (exp : Syntax.t) : t * Type.t = (* where K-normaliz
   | Syntax.Bool(b) -> Int(if b then 1 else 0), Type.Int (* true -> 1, false -> 0 (caml2html: knormal_bool) *)
   | Syntax.Int(i) -> Int(i), Type.Int
   | Syntax.Float(d) -> Float(d), Type.Float
-  | Syntax.Not(e, p) -> g env (Syntax.If(e, Syntax.Bool(false), Syntax.Bool(true), p))
-  (* insert_let (g env e)
-     (fun x -> Not(x), Type.Int) *) (* TODO: 直接Notにすると命令数が増えるのはなぜなのか調べる *)
+  | Syntax.Not(e, p) ->
+    insert_let (g env e)
+      (fun x -> Not(x), Type.Bool)
   | Syntax.Neg(e, _) ->
     insert_let (g env e)
       (fun x -> Neg(x), Type.Int)
@@ -190,70 +223,27 @@ let rec g (env : Type.t M.t) (exp : Syntax.t) : t * Type.t = (* where K-normaliz
     insert_let (g env e1)
       (fun x -> insert_let (g env e2)
           (fun y -> FDiv(x, y), Type.Float))
-  | Syntax.Eq(Float(x), Float(y), p) ->
-    insert_let (g env (Float(x)))
-      (fun x -> insert_let (g env (Float(y)))
-          (fun y -> FEq(x, y), Type.Int))
-  | Syntax.LE(Float(x), Float(y), p)  ->
-    insert_let (g env (Float(x)))
-      (fun x -> insert_let (g env (Float(y)))
-          (fun y -> FLE(x, y), Type.Int))
-  | Syntax.Eq (_, _, p) | Syntax.LE (_, _, p) as cmp ->
+  | Syntax.Eq (e1, e2, Type.Float, p) ->
+    insert_let (g env e1)
+      (fun x -> insert_let (g env e2)
+          (fun y -> FEq(x, y), Type.Bool))
+  | Syntax.LE (e1, e2, Type.Float, p) ->
+    insert_let (g env e1)
+      (fun x -> insert_let (g env e2)
+          (fun y -> FLE(x, y), Type.Bool))
+  | Syntax.Eq (_, _, _, p) | Syntax.LE (_, _, _, p) as cmp ->
     g env (Syntax.If(cmp, Syntax.Bool(true), Syntax.Bool(false), p))
   | Syntax.If(Syntax.Not(e1, _), e2, e3, p) ->
     (* converting branch by not (caml2html: knormal_not) *)
     g env (Syntax.If(e1, e3, e2, p))
-  | Syntax.If(Syntax.App(Syntax.Var("fiszero"), [e1], _), e2, e3, _) ->
-    insert_let (g env e1)
-      (fun x -> insert_let (Int(0), Type.Int)
-          (fun y -> insert_let (Float(0.0), Type.Float)
-              (fun z ->
-                 let (e2', t2) = g env e2 in
-                 let (e3', t3) = g env e3 in
-                 let tmp = Id.gentmp Type.Int in
-                 Let((tmp, Type.Int), FEq(x, z),
-                     IfEq(tmp, y, e3', e2')), t2)))
-  | Syntax.If(Syntax.App(Syntax.Var("fispos"), [e1], _), e2, e3, _) ->
-    (* fispos x == x > 0 == ~ (x <= 0) *)
-    insert_let (g env e1)
-      (fun x -> insert_let (Int(0), Type.Int)
-          (fun y -> insert_let (Float(0.0), Type.Float)
-              (fun z ->
-                 let (e2', t2) = g env e2 in
-                 let (e3', t3) = g env e3 in
-                 let tmp = Id.gentmp Type.Int in
-                 Let((tmp, Type.Int), FLE(x, z),
-                     IfEq(tmp, y, e2', e3')), t2)))
-  | Syntax.If(Syntax.App(Syntax.Var("fisneg"), [e1], _), e2, e3, _) ->
-    (* fisneg x == x < 0 == ~ (x >= 0) == ~ (0 <= x) *)
-    insert_let (g env e1)
-      (fun x -> insert_let (Int(0), Type.Int)
-          (fun y -> insert_let (Float(0.0), Type.Float)
-              (fun z ->
-                 let (e2', t2) = g env e2 in
-                 let (e3', t3) = g env e3 in
-                 let tmp = Id.gentmp Type.Int in
-                 Let((tmp, Type.Int), FLE(z, x),
-                     IfEq(tmp, y, e2', e3')), t2)))
-  | Syntax.If(Syntax.App(Syntax.Var("fless"), [e1; e2], _), e3, e4, _) ->
-    (* fless x y == x < y == ~ (x >= y) == ~ (y <= x) *)
-    insert_let (g env e1)
-      (fun x -> insert_let (g env e2)
-          (fun y -> insert_let (Int(0), Type.Int)
-              (fun z ->
-                 let (e3', t3) = g env e3 in
-                 let (e4', t4) = g env e4 in
-                 let tmp = Id.gentmp Type.Int in
-                 Let((tmp, Type.Int), FLE(y, x),
-                     IfEq(tmp, z, e3', e4')), t3)))
-  | Syntax.If(Syntax.Eq(e1, e2, _), e3, e4, _) ->
+  | Syntax.If(Syntax.Eq(e1, e2, _, _), e3, e4, _) ->
     insert_let (g env e1)
       (fun x -> insert_let (g env e2)
           (fun y ->
              let e3', t3 = g env e3 in
              let e4', t4 = g env e4 in
              IfEq(x, y, e3', e4'), t3))
-  | Syntax.If(Syntax.LE(e1, e2, _), e3, e4, _) ->
+  | Syntax.If(Syntax.LE(e1, e2, _, _), e3, e4, _) ->
     insert_let (g env e1)
       (fun x -> insert_let (g env e2)
           (fun y ->
@@ -261,7 +251,7 @@ let rec g (env : Type.t M.t) (exp : Syntax.t) : t * Type.t = (* where K-normaliz
              let e4', t4 = g env e4 in
              IfLE(x, y, e3', e4'), t3))
   | Syntax.If(e1, e2, e3, p) ->
-    g env (Syntax.If(Syntax.Eq(e1, Syntax.Bool(false), p), e3, e2, p))
+    g env (Syntax.If(Syntax.Eq(e1, Syntax.Bool(false), Type.Bool, p), e3, e2, p))
   | Syntax.Let((x, t), e1, e2, _) ->
     let e1', t1 = g env e1 in
     let e2', t2 = g (M.add x t env) e2 in
@@ -280,19 +270,6 @@ let rec g (env : Type.t M.t) (exp : Syntax.t) : t * Type.t = (* where K-normaliz
     insert_let (g env e1)
       (fun x -> insert_let (g env e2)
           (fun y -> Xor(x, y), Type.Int))
-  | Syntax.App(Syntax.Var("fsqr"), [x], p) -> g env (Syntax.FMul(x, x, p))
-  | Syntax.App(Syntax.Var("fhalf"), [x], p) -> g env (Syntax.FDiv(x, Float 2.0, p))
-  | Syntax.App(Syntax.Var("fneg"), [e], p) -> g env (Syntax.FNeg(e, p))
-  | Syntax.App(Syntax.Var("fiszero"), [x], p) -> g env (Syntax.Eq(x, Float 0.0, p))
-  | Syntax.App(Syntax.Var("fispos"), [x], p) ->
-    (* fispos x == x > 0 == ~ (x <= 0) *)
-    g env (Syntax.Not(Syntax.LE(x, Float 0.0, p), p))
-  | Syntax.App(Syntax.Var("fisneg"), [x], p) ->
-    (* fisneg x == x < 0 == ~ (x >= 0) == ~ (0 <= x) *)
-    g env (Syntax.Not(Syntax.LE(Float 0.0, x, p), p))
-  | Syntax.App(Syntax.Var("fless"), [x;y], p) ->
-    (* fless x y == x < y == ~ (x >= y) == ~ (y <= x) *)
-    g env (Syntax.Not(Syntax.LE(y, x, p), p))
   | Syntax.App(Syntax.Var(f), e2s, _) when not (M.mem f env) ->
     (match M.find f !Typing.extenv with
      | Type.Fun(_, t) ->
@@ -352,4 +329,4 @@ let rec g (env : Type.t M.t) (exp : Syntax.t) : t * Type.t = (* where K-normaliz
           (fun y -> insert_let (g env e3)
               (fun z -> Put(x, y, z), Type.Unit)))
 
-let f e = fst (g M.empty e)
+let f e = fst (g M.empty (unfold_extfun e))

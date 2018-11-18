@@ -16,8 +16,8 @@ type t =
   | FSub of t * t * pos
   | FMul of t * t * pos
   | FDiv of t * t * pos
-  | Eq of t * t * pos
-  | LE of t * t * pos
+  | Eq of t * t * Type.t * pos
+  | LE of t * t * Type.t * pos
   | If of t * t * t * pos
   | Let of (Id.t * Type.t) * t * t * pos
   | Var of Id.t
@@ -54,8 +54,8 @@ let rec string_of_t ?(do_indent = true) ?(endline = "\n") (exp : t) (depth : int
   | FSub (e1, e2, _) -> prefix ^ "FSUB\n" ^ (string_of_t e1 (depth + 1)) ^ (string_of_t e2 (depth + 1))
   | FMul (e1, e2, _) -> prefix ^ "FMUL\n" ^ (string_of_t e1 (depth + 1)) ^ (string_of_t e2 (depth + 1))
   | FDiv (e1, e2, _) -> prefix ^ "FDIV\n" ^ (string_of_t e1 (depth + 1)) ^ (string_of_t e2 (depth + 1))
-  | Eq (e1, e2, _)   -> prefix ^ "EQ\n" ^ (string_of_t e1 (depth + 1)) ^ (string_of_t e2 (depth + 1))
-  | LE (e1, e2, _)   -> prefix ^ "LE\n" ^ (string_of_t e1 (depth + 1)) ^ (string_of_t e2 (depth + 1))
+  | Eq (e1, e2, _, _)   -> prefix ^ "EQ\n" ^ (string_of_t e1 (depth + 1)) ^ (string_of_t e2 (depth + 1))
+  | LE (e1, e2, _, _)   -> prefix ^ "LE\n" ^ (string_of_t e1 (depth + 1)) ^ (string_of_t e2 (depth + 1))
   | If (b, e1, e2, _) -> prefix ^ "IF\n" ^ (string_of_t b (depth + 1)) ^
                          prefix ^ "THEN\n" ^ (string_of_t e1 (depth + 1)) ^
                          prefix ^ "ELSE\n" ^ (string_of_t e2 (depth + 1))

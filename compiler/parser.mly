@@ -95,17 +95,17 @@ exp:
 | exp SLASH exp
     { Div($1, $3, get_pos ()) }
 | exp EQUAL exp
-    { Eq($1, $3, get_pos ()) }
+    { Eq($1, $3, Type.gentyp(), get_pos ()) }
 | exp LESS_GREATER exp
-    { Not(Eq($1, $3, get_pos ()), get_pos ()) }
+    { Not(Eq($1, $3, Type.gentyp(), get_pos ()), get_pos ()) }
 | exp LESS exp
-    { Not(LE($3, $1, get_pos ()), get_pos ()) }
+    { Not(LE($3, $1, Type.gentyp(), get_pos ()), get_pos ()) }
 | exp GREATER exp
-    { Not(LE($1, $3, get_pos ()), get_pos ()) }
+    { Not(LE($1, $3, Type.gentyp(), get_pos ()), get_pos ()) }
 | exp LESS_EQUAL exp
-    { LE($1, $3, get_pos ()) }
+    { LE($1, $3, Type.gentyp(), get_pos ()) }
 | exp GREATER_EQUAL exp
-    { LE($3, $1, get_pos ()) }
+    { LE($3, $1, Type.gentyp(), get_pos ()) }
 | IF exp THEN exp ELSE exp
     %prec prec_if
     { If($2, $4, $6, get_pos ()) }

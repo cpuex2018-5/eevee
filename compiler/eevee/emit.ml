@@ -68,7 +68,7 @@ and g' buf e =
     Printf.bprintf buf "\tla\t%s, %s\n" (reg x) y
   | NonTail(x), Mv(y) when x = y -> ()
   | NonTail(x), Mv(y) -> Printf.bprintf buf "\tmv\t%s, %s\n" (reg x) (reg y)
-  | NonTail(x), Not(y) -> Printf.bprintf buf "\txori\t%s, %s, 1\n" (reg x) (reg y)
+  | NonTail(x), Not(y) -> Printf.bprintf buf "\txori\t%s, %s, 1\t# boolean not\n" (reg x) (reg y)
   | NonTail(x), Neg(y) -> Printf.bprintf buf "\tneg\t%s, %s\n" (reg x) (reg y)
   | NonTail(x), Xor(y, V(z)) -> Printf.bprintf buf "\txor\t%s, %s, %s\n" (reg x) (reg y) (reg z)
   | NonTail(x), Xor(y, C(z)) -> Printf.bprintf buf "\txori\t%s, %s, %d\n" (reg x) (reg y) z

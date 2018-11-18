@@ -27,8 +27,8 @@ let rec deref_term = function
   | Neg(e, p) -> Neg(deref_term e, p)
   | Add(e1, e2, p) -> Add(deref_term e1, deref_term e2, p)
   | Sub(e1, e2, p) -> Sub(deref_term e1, deref_term e2, p)
-  | Eq(e1, e2, p) -> Eq(deref_term e1, deref_term e2, p)
-  | LE(e1, e2, p) -> LE(deref_term e1, deref_term e2, p)
+  | Eq(e1, e2, t, p) -> Eq(deref_term e1, deref_term e2, deref_typ t, p)
+  | LE(e1, e2, t, p) -> LE(deref_term e1, deref_term e2, deref_typ t, p)
   | FNeg(e, p) -> FNeg(deref_term e, p)
   | FAdd(e1, e2, p) -> FAdd(deref_term e1, deref_term e2, p)
   | FSub(e1, e2, p) -> FSub(deref_term e1, deref_term e2, p)
@@ -107,8 +107,9 @@ let rec g env e =
       unify Type.Float (g env e1) p;
       unify Type.Float (g env e2) p;
       Type.Float
-    | Eq(e1, e2, p) | LE(e1, e2, p) ->
-      unify (g env e1) (g env e2) p;
+    | Eq(e1, e2, t, p) | LE(e1, e2, t, p) ->
+      unify t (g env e1) p;
+      unify t (g env e2) p;
       Type.Bool
     | If(e1, e2, e3, p) ->
       unify (g env e1) Type.Bool p;
