@@ -45,7 +45,9 @@ int main(int argc, char* argv[])
         std::cout << "ERROR: The input file should have suffix '.s'" << std::endl;
         return 0;
     }
-    std::string iolibname = (infile.substr(infile.size() - 7, 5) == "minrt") ? "libcontest.S" : "libmincaml.S";
+    std::string iolibname =
+        (infile.size() >= 7 && infile.substr(infile.size() - 7, 5) == "minrt") ?
+        "libcontest.S" : "libmincaml.S";
     std::string cmnlibname = "libcommon.S";
     std::ifstream ifs(infile), iolib(iolibname), cmnlib(cmnlibname);
     if (ifs.fail() || iolib.fail() || cmnlib.fail()) {
