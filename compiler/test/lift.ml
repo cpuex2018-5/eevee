@@ -11,7 +11,6 @@ let rec loop x =
   else
     print_int (f x) in
 loop 10000000
-*)
 
 let l = Array.make 1 1 in
 let a = l.(0) in
@@ -29,19 +28,20 @@ let rec loop x z =
     loop (x - 1) (z + t)
 in
 print_int (loop 100000 0)
+*)
 
-(*
 let rec f a b =
   if 1 < 2 then
     let rec g c d =
-      let rec h d e =
-        a + b + c + d + e in
-      h 2 3 in
-    g 1 2
+      a + b + c + d in
+    let rec h e =
+      g e 2 in
+    h 1
   else
     2 in
 print_int (f 1 2)
 
+(*
 let z = 4 in
 let rec f x = x - z in
 print_int (f 8)

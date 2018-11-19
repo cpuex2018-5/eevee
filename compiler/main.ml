@@ -33,11 +33,12 @@ let lexbuf outchan l = (* compile the buffer and put it to outchan (caml2html: m
   let e = Parser.exp Lexer.token l in
   let e = Typing.f e in
   let e = KNormal.f e in
-  print_endline "-----------After KNormal.f--------------";
   KNormal.print_t e;
-  (* let e = Lift.f e in *)
+  print_endline "-----------After KNormal.f--------------";
   let e = Alpha.f e in
   let e = iter !limit e in
+  (* let e = Lift.f e in
+     KNormal.print_t e; *)
   let e = Closure.f e in
   print_endline "-----------After Closure.f-----------------";
   (* Closure.print_prog e; *)

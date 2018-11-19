@@ -39,6 +39,19 @@ let rec eta (e : KNormal.t) : KNormal.t =
   | _ -> e
 
 (* --------------------Lambda Lifting-------------------- *)
+let rec helper (e : KNormal.t) (f : Id.t) (args : Id.t list) : KNormal.t =
+  (* f : 引数を増やしたいfunction *)
+  match e with
+  | IfEq(x, y, e1, e2) -> IfEq(x, y, helper e1 f args, helper e2 f args)
+  | IfLE(x, y, e1, e2) -> IfLE(x, y, helper e1 f args, helper e2 f args)
+  | Let(xt, e1, e2) -> Let(xt, helper e1 f args, helper e2 f args)
+  | Var v when v = f -> App(f, args)
+  | LetRec({ name = n; args = a; body = e1 }, e2) -> LetRec({ name = n; args = a; body = helper e1 f args }, helper e2 f args)
+  | App(g, x) when g = f -> App(f, x @ args)
+  | LetTuple(xts, y, e) -> LetTuple(xts, y, helper e f args)
+  | ExtFunApp(g, x) when g = f -> ExtFunApp(f, x @ args)
+  | _ -> e
+
 (* collect free variables in e *)
 let rec fvs (e : KNormal.t) : S.t =
   match e with
@@ -62,40 +75,44 @@ let rec fvs (e : KNormal.t) : S.t =
   | ExtFunApp (f, x) -> S.of_list x
 
 (* bind free variables in functions *)
-let rec expandArg (e : KNormal.t) (fs : (Id.t * (Id.t * Type.t) list) list) (env : Type.t M.t) : KNormal.t =
+let rec expandArg (e : KNormal.t) (env : Type.t M.t) : KNormal.t =
   match e with
-  | IfEq (x, y, e1, e2) -> IfEq (x, y, expandArg e1 fs env, expandArg e2 fs env)
-  | IfLE (x, y, e1, e2) -> IfLE (x, y, expandArg e1 fs env, expandArg e2 fs env)
+  | IfEq (x, y, e1, e2) -> IfEq (x, y, expandArg e1 env, expandArg e2 env)
+  | IfLE (x, y, e1, e2) -> IfLE (x, y, expandArg e1 env, expandArg e2 env)
   | Let ((x, t), e1, e2) ->
-    let newenv = M.add x t env in
-    Let ((x, t), (expandArg e1 fs env), (expandArg e2 fs newenv))
+    Let ((x, t), (expandArg e1 env), (expandArg e2 (M.add x t env)))
   | LetRec ({ name = (x, t); args = yts; body = e1 }, e2) ->
     let newenv_e1 = M.add x t (List.fold_left (fun e (y, t) -> M.add y t e) env yts) in
-    let e1 = expandArg e1 fs (M.add x t newenv_e1) in
+    let newenv_e2 = M.add x t env in
     let var_args = List.map fst yts in
     let fvs = S.diff (fvs e1) (S.of_list (x :: var_args)) in
     (match S.is_empty fvs with
      | true ->
-       LetRec ({ name = (x, t); args = yts; body = e1 }, expandArg e2 fs (M.add x t env))
+       LetRec ({ name = (x, t); args = yts; body = expandArg e1 newenv_e1 }, expandArg e2 newenv_e2)
      | false ->
        let exargs = List.map (fun x -> (x, M.find x env)) (S.elements fvs) in
-       Format.eprintf "[Lift] found free vars in %s: " x;
-       Id.print_tlist (List.map fst exargs);
+       Format.eprintf "[Lift] found free vars in %s: \n" x;
        (* 再帰関数の場合は(x, exargs)の情報がe1で必要 *)
-       let newe1 = expandArg e1 ((x, exargs) :: fs) (M.add x t env) in
-       let newe2 = expandArg e2 ((x, exargs) :: fs) (M.add x t env) in
-       let newt = match t with Type.Fun (xs, y) -> Type.Fun (xs @ (List.map snd exargs), y) | _ -> assert false in
-       match (List.length (yts @ exargs)) > 20 with
-       | false -> KNormal.LetRec ({ name = (x, newt); args = yts @ exargs; body = newe1 }, newe2)
-       | true -> KNormal.LetRec ({ name = (x, t); args = yts; body = e1 }, e2))
+       match (List.length (yts @ exargs)) > 12 with
+       | false ->
+         (* print_endline x; *)
+         let newe1 = expandArg (helper e1 x (List.map fst exargs)) newenv_e1 in
+         let newe2 = expandArg (helper e2 x (List.map fst exargs)) newenv_e2 in
+         let newt = match t with Type.Fun (xs, y) -> Type.Fun (xs @ (List.map snd exargs), y) | _ -> assert false in
+         KNormal.LetRec ({ name = (x, newt); args = yts @ exargs; body = newe1 }, newe2)
+       | true ->
+         KNormal.LetRec ({ name = (x, t); args = yts; body = e1 }, e2))
   | LetTuple (l, e1, e2) ->
     let newenv = List.fold_left (fun m (x, t) -> M.add x t m) env l in
-    LetTuple (l, e1, expandArg e2 fs newenv)
+    LetTuple (l, e1, expandArg e2 newenv)
+(*
   | App (e1, e2) ->
+    KNormal.print_t e;
     (try
        let added_args = List.map fst (List.assoc e1 fs) in
        App (e1, e2 @ added_args)
      with Not_found -> e)
+*)
   | _ -> e
 
 (* remove function definition f from e *)
@@ -144,6 +161,6 @@ let rec lift (e : KNormal.t) (in_nest : bool) (env : (Id.t * Id.t) list) : KNorm
   | _ -> e
 
 let f (e : KNormal.t) : KNormal.t =
-  let e = eta e in
-  let e = expandArg e [] M.empty in
+  (* let e = eta e in *)
+  let e = expandArg e M.empty in
   lift e false []
