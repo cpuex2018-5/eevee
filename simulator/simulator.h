@@ -63,7 +63,6 @@ bool skip(char);
 
 //debug.c
 void print_fregs(Simulator *);
-void dump_memory(Simulator *,int,int);
 void print_regs(Simulator *);
 int debug_exec(Simulator *,std::vector<std::string>&);
 int debug_parse(Simulator* ,std::string&,std::vector<std::string>&);

@@ -24,7 +24,7 @@ void print_fregs(Simulator *sim){
 
 void dump_memory(Simulator *sim,int start,int end){
   if(start < 0) start = 0;
-  if(end > 0x100010) end = 0x100010;
+  if(end > MEM_SIZE) end = MEM_SIZE;
   int len = end - start;
   if(len < 0) len = 0;
 
@@ -145,15 +145,15 @@ int debug_exec(Simulator *sim,std::vector<std::string> &dbginst){
       int start = sp - 100;
       if(start < 0) start = 0;
       int end = sp + 100;
-      if(end > 0x100010) end = 0x100010;
+      if(end > MEM_SIZE) end = MEM_SIZE;
       dump_memory(sim,start,end);
     }
     else if(dbginst.size()==3){
       int start = 0;
       int end = 0;
       try{
-        start = std::stoi(dbginst[1],nullptr,10);
-        end = std::stoi(dbginst[2],nullptr,10);
+        start = std::stoi(dbginst[1],nullptr,16);
+        end = std::stoi(dbginst[2],nullptr,16);
         dump_memory(sim,start,end);
       }
       catch (...){
