@@ -8,9 +8,23 @@
 
 class BinGen {
     public:
-        typedef std::pair<uint32_t, uint32_t> Inst;
+        typedef struct inst {
+            inst() : fst(0xffffffff), snd(0xffffffff), data(0xffffffff) {};
+            inst(uint32_t fst, uint32_t snd, uint32_t data) : fst(fst), snd(snd), data(data) {};
+            ~inst() {};
 
-        BinGen(std::ofstream ofs, bool is_verbose, bool is_debug, bool is_ascii);
+            // 各フィールドは、0xffffffffだったら何も入っていない(None)を意味する
+            uint32_t fst;  // instruction
+            uint32_t snd;  // instruction
+            uint32_t data; // floating-point data
+
+            bool is_empty() { return fst == 0xffffffff && snd == 0xffffffff && data == 0xffffffff; }
+            bool is_inst() { return fst != 0xffffffff; }
+            bool is_double_inst() { return fst != 0xffffffff && snd != 0xffffffff; }
+            bool is_data() { return data != 0xffffffff; }
+        } Inst;
+
+        BinGen(std::ofstream ofs, std::ofstream coefs, bool is_verbose, bool is_debug, bool is_ascii);
 
         // 1周目
         void ReadLabels(std::string input);
@@ -78,14 +92,20 @@ class BinGen {
 
         uint32_t Pack(Fields fields);
         void CheckImmediate(uint32_t imm, int range, std::string func_name);
-        void WriteDataInBinary(uint32_t data);
-        void WriteDataInAscii(uint32_t data);
+        void WriteInst(uint32_t inst);
+        void WriteData(uint32_t data);
+        void FillUpCoe();
 
         // |imm|がラベルの場合は対応する値を返し、即値ならstoiして返す　
         uint32_t MyStoi(std::string imm);
 
-        // Number of instructions read so far.
+        // 浮動小数の即値ラベルをさす|label|を具体的な即値に変換する
+        uint32_t SolveImmLabel(std::string label);
+
+        // Number of instructions read so far
         int nline_ = 0;
+        // Number of data read so far
+        int ndata_ = 0;
 
         bool is_verbose_;
         bool is_debug_;
@@ -93,7 +113,9 @@ class BinGen {
 
         bool data_mode_ = false;
         std::ofstream ofs_;
+        std::ofstream coefs_;
         std::map<std::string, int> label_map_;
+        std::map<std::string, int> data_map_;
         const std::map<std::string, int> regmap_;
         const std::map<std::string, int> fregmap_;
 
