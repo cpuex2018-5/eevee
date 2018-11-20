@@ -13,7 +13,7 @@
 #define RM 0b000
 
 // simulatorのMEM_SIZE
-#define MEM_SIZE 0x600010
+#define MEM_SIZE 0x10000010
 
 BinGen::BinGen(std::ofstream ofs, bool is_verbose, bool is_debug, bool is_ascii)
   : is_verbose_(is_verbose),
