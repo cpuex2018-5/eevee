@@ -15,11 +15,12 @@
 // simulatorのMEM_SIZE
 #define MEM_SIZE 0x10000010
 
-BinGen::BinGen(std::ofstream ofs, bool is_verbose, bool is_debug, bool is_ascii)
+BinGen::BinGen(std::ofstream ofs, std::ofstream coefs, bool is_verbose, bool is_debug, bool is_ascii)
   : is_verbose_(is_verbose),
     is_debug_(is_debug),
     is_ascii_(is_ascii),
     ofs_(std::move(ofs)),
+    coefs_(std::move(coefs)),
     regmap_(create_regmap()),
     fregmap_(create_fregmap()) {}
 
@@ -35,6 +36,17 @@ void BinGen::ReadLabels(std::string input) {
 
     if (mnemo == ".data") {
         data_mode_ = true;
+        return;
+    }
+
+    if (data_mode_) {
+        if (mnemo.back() != ':') {
+            assert(mnemo == ".word");
+            return;
+        }
+        mnemo.pop_back();
+        // std::cerr << "[INFO] new label " << mnemo << " registered at " << ndata_ * 4 << std::endl;
+        data_map_[mnemo] = ndata_++;
         return;
     }
 
@@ -81,41 +93,38 @@ void BinGen::Main(std::string input) {
     BinGen::Inst inst(Convert(input));
 
     if (is_debug_) {
-        if (inst.first == 0 && inst.second == 0xffffffff) { // not an instruction or a data
-            if (input[0] != '#')
-                std::printf("\t%s\n", input.c_str());
-        } else {
+        if (inst.is_inst()) {
             std::printf("(%d)\t%s\n", old_nline * 4, input.c_str());
+        } else {
+            std::printf("\t%s\n", input.c_str());
         }
     }
 
-    // not an instruction or a data
-    if (inst.first == 0 && inst.second == 0xffffffff) return;
-
     if (is_verbose_) {
         std::cout << "(pc " << old_nline * 4 << "):" << input << std::endl;
-        PrintInst(inst);
+        if (inst.is_inst()) PrintInst(inst);
         std::cout << std::endl;
     }
 
-    if (is_ascii_) {
-        WriteDataInAscii(inst.first);
-        if (inst.second == 0) return;
-        WriteDataInAscii(inst.second);
+    if (inst.is_empty()) return;
+
+    if (!inst.is_inst()) {
+        assert(inst.is_data());
+        WriteData(inst.data);
         return;
     }
 
-    WriteDataInBinary(inst.first);
-    if (inst.second == 0) return;
-    WriteDataInBinary(inst.second);
+    WriteInst(inst.fst);
+
+    if (!inst.is_double_inst())
+        return;
+
+    WriteInst(inst.snd);
 }
 
 void BinGen::Finish() {
-    if (is_ascii_) {
-        WriteDataInAscii(0);
-        return;
-    }
-    WriteDataInBinary(0);
+    WriteInst(0);
+    FillUpCoe();
     ofs_.close();
 }
 
@@ -165,92 +174,92 @@ BinGen::Inst BinGen::Convert(std::string input) {
     std::string mnemo;
     std::vector<std::string> arg;
     Parse(input, mnemo, arg);
-    uint32_t ret1, ret2;
-    ret1 = ret2 = 0;
+    uint32_t inst1, inst2;
+    inst1 = inst2 = 0xffffffff;
 
     if (mnemo == ".text") {
         data_mode_ = false;
-        return Inst(0, 0xffffffff);
+        return Inst();
     }
 
     if (mnemo == ".data") {
         data_mode_ = true;
-        return Inst(0, 0xffffffff);
+        return Inst();
     }
 
     // Labels
     if (mnemo.back() == ':')
-        return Inst(0, 0xffffffff);
+        return Inst();
 
     if (mnemo == ".file" || mnemo == ".option" || mnemo == ".align" ||
         mnemo == ".globl" || mnemo == ".type" || mnemo == ".size" || mnemo == ".ident")
-        return Inst(0, 0xffffffff);
+        return Inst();
 
     // Comment
     if (mnemo == "")
-        return Inst(0, 0xffffffff);
+        return Inst();
 
     // Data
     if (mnemo == ".word") {
         assert(data_mode_);
         assert(1 == arg.size());
-        ret1 = MyStoi(arg[0]);
+        return Inst(0xffffffff, 0xffffffff, MyStoi(arg[0]));
     }
 
     // RV32I basic instructions ==============================================================
     else if (mnemo == "lui") {
         assert(2 == arg.size());
-        ret1 = lui(arg[0], MyStoi(arg[1]));
+        inst1 = lui(arg[0], MyStoi(arg[1]));
     }
     else if (mnemo == "auipc") {
         assert(2 == arg.size());
-        ret1 = auipc(arg[0], MyStoi(arg[1]));
+        inst1 = auipc(arg[0], MyStoi(arg[1]));
     }
     else if (mnemo == "jal") {
         assert(2 == arg.size());
-        ret1 = jal(arg[0], MyStoi(arg[1]));
+        inst1 = jal(arg[0], MyStoi(arg[1]));
     }
     else if (mnemo == "jalr") {
         assert(3 == arg.size());
-        ret1 = jalr(arg[0], arg[1], MyStoi(arg[2]));
+        inst1 = jalr(arg[0], arg[1], MyStoi(arg[2]));
     }
     else if (mnemo == "beq" || mnemo == "bne" || mnemo == "blt" || mnemo == "bge" || mnemo == "bltu") {
         assert(3 == arg.size());
-        ret1 = branch(mnemo,arg[0],arg[1], MyStoi(arg[2]));
+        inst1 = branch(mnemo,arg[0],arg[1], MyStoi(arg[2]));
 
     }
     else if (mnemo == "lb" || mnemo == "lh" || mnemo == "lw" || mnemo == "lbu" || mnemo == "lhu") {
         assert(2 == arg.size());
         std::string rs1; uint32_t offset;
         ParseOffset(arg[1], &rs1, &offset);
-        ret1 = load(mnemo, arg[0], rs1, offset);
+        inst1 = load(mnemo, arg[0], rs1, offset);
     }
 
     else if (mnemo == "sb" || mnemo == "sh" || mnemo == "sw") {
         assert(2 == arg.size());
         std::string rs1; uint32_t offset;
         ParseOffset(arg[1], &rs1, &offset);
-        ret1 = store(mnemo, arg[0], rs1, offset);
+        inst1 = store(mnemo, arg[0], rs1, offset);
     }
 
     else if (mnemo == "addi" || mnemo == "slti" || mnemo == "sltiu" || mnemo == "xori" || mnemo == "ori" || mnemo == "andi") {
         assert(3 == arg.size());
-        ret1 = op_imm(mnemo, arg[0], arg[1], MyStoi(arg[2]));
+        inst1 = op_imm(mnemo, arg[0], arg[1], MyStoi(arg[2]));
     }
     else if (mnemo == "slli" || mnemo == "srli" || mnemo == "srai") {
         assert(3 == arg.size());
-        ret1 = (op_imm_shift(mnemo, arg[0], arg[1], MyStoi(arg[2])));
+        inst1 = (op_imm_shift(mnemo, arg[0], arg[1], MyStoi(arg[2])));
     }
     else if (mnemo == "add" || mnemo == "sub" || mnemo == "sll" || mnemo == "slt" || mnemo == "sltu" || mnemo == "xor" ||
         mnemo == "srl" || mnemo == "sra" || mnemo == "or" || mnemo == "and") {
         assert(3 == arg.size());
-        ret1 = op(mnemo, arg[0], arg[1], arg[2]);
+        inst1 = op(mnemo, arg[0], arg[1], arg[2]);
     }
 
     // I/O instructions (temporary) ==========================================================
     else if (mnemo == "w" || mnemo == "r") {
         assert(1 == arg.size());
-        ret1 = io(mnemo, arg[0]);
+        inst1 = io(mnemo, arg[0]);
     }
 
     // Floating-point instructions ===========================================================
@@ -258,114 +267,114 @@ BinGen::Inst BinGen::Convert(std::string input) {
         assert(2 == arg.size());
         std::string rs; uint32_t offset;
         ParseOffset(arg[1], &rs, &offset);
-        ret1 = flw(arg[0], rs, offset);
+        inst1 = flw(arg[0], rs, offset);
     }
 
     else if (mnemo == "fsw") {
         assert(2 == arg.size());
         std::string rs; uint32_t offset;
         ParseOffset(arg[1], &rs, &offset);
-        ret1 = fsw(arg[0], rs, offset);
+        inst1 = fsw(arg[0], rs, offset);
     }
 
     else if (mnemo == "feq.s" || mnemo == "flt.s" || mnemo == "fle.s") {
         assert(3 == arg.size());
-        ret1 = f_cmp(mnemo, arg[0], arg[1], arg[2]);
+        inst1 = f_cmp(mnemo, arg[0], arg[1], arg[2]);
     }
 
     else if (mnemo == "fsqrt.s" || mnemo == "fabs.s" || mnemo == "fneg.s" || mnemo == "fmv.s" || mnemo == "finv.s") {
         assert(2 == arg.size());
-        ret1 = f_op2(mnemo, arg[0], arg[1]);
+        inst1 = f_op2(mnemo, arg[0], arg[1]);
     }
     else if (mnemo == "fadd.s" || mnemo == "fsub.s" || mnemo == "fmul.s" || mnemo == "fdiv.s") {
         assert(3 == arg.size());
-        ret1 = f_op3(mnemo, arg[0], arg[1], arg[2]);
+        inst1 = f_op3(mnemo, arg[0], arg[1], arg[2]);
     }
 
     // Pseudo-instructions ===================================================================
     else if (mnemo == "la") {
         assert(2 == arg.size());
         uint32_t tmp = MyStoi(arg[1]);
-        ret1 = auipc(arg[0], ((tmp >> 12) + ((tmp >> 11) & 0x1)) & 0xfffff);
+        inst1 = auipc(arg[0], ((tmp >> 12) + ((tmp >> 11) & 0x1)) & 0xfffff);
         nline_++;
-        ret2 = op_imm("addi", arg[0], arg[0], tmp & 0xfff);
+        inst2 = op_imm("addi", arg[0], arg[0], tmp & 0xfff);
     }
 
     else if (mnemo == "li") {
         assert(2 == arg.size());
         uint32_t tmp = MyStoi(arg[1]);
         if (tmp > (1 << 11) - 1) {
-            ret1 = lui(arg[0], ((tmp >> 12) + ((tmp >> 11) & 0x1)) & 0xfffff);
+            inst1 = lui(arg[0], ((tmp >> 12) + ((tmp >> 11) & 0x1)) & 0xfffff);
             nline_++;
-            ret2 = op_imm("addi", arg[0], arg[0], tmp & 0xfff);
+            inst2 = op_imm("addi", arg[0], arg[0], tmp & 0xfff);
         } else {
-            ret1 = op_imm("addi", arg[0], "zero", tmp);
+            inst1 = op_imm("addi", arg[0], "zero", tmp);
         }
     }
 
     else if (mnemo == "mv") {
         assert(2 == arg.size());
-        ret1 = op_imm("addi", arg[0], arg[1], 0);
+        inst1 = op_imm("addi", arg[0], arg[1], 0);
     }
     else if (mnemo == "not") {
         assert(2 == arg.size());
-        ret1 = op_imm("xori", arg[0], arg[1], -1);
+        inst1 = op_imm("xori", arg[0], arg[1], -1);
     }
     else if (mnemo == "neg") {
         assert(2 == arg.size());
-        ret1 = op("sub", arg[0], "zero", arg[1]);
+        inst1 = op("sub", arg[0], "zero", arg[1]);
     }
     else if (mnemo == "bgt") {
         assert(3 == arg.size());
-        ret1 = branch("blt", arg[1], arg[0], MyStoi(arg[2]));
+        inst1 = branch("blt", arg[1], arg[0], MyStoi(arg[2]));
     }
     else if (mnemo == "ble") {
         assert(3 == arg.size());
-        ret1 = branch("bge", arg[1], arg[0], MyStoi(arg[2]));
+        inst1 = branch("bge", arg[1], arg[0], MyStoi(arg[2]));
     }
     else if (mnemo == "b") {
         assert(1 == arg.size());
         // TODO: bgeじゃなくbeqにする？
-        ret1 = branch("bge", "zero", "zero", MyStoi(arg[0]));
+        inst1 = branch("bge", "zero", "zero", MyStoi(arg[0]));
     }
     else if (mnemo == "j") {
         assert(1 == arg.size());
-        ret1 = jal("x0", MyStoi(arg[0]));
+        inst1 = jal("x0", MyStoi(arg[0]));
     }
     else if (mnemo == "jr") {
         assert(1 == arg.size());
-        ret1 = jalr("zero", arg[0], 0);
+        inst1 = jalr("zero", arg[0], 0);
     }
     else if (mnemo == "ret") {
         assert(0 == arg.size());
-        ret1 = jalr("x0", "x1", 0u);
+        inst1 = jalr("x0", "x1", 0u);
     }
     else if (mnemo == "call") {
         assert(1 == arg.size());
         uint32_t imm = MyStoi(arg[0]);
         // jalrが符号拡張するため、下から12bit目が1の場合はauipcに渡す即値に1を足す
         // その結果2 ^ 12を超える場合は下位20bitをわたす
-        ret1 = auipc("x6", ((imm >> 12) + ((imm >> 11) & 1)) & 0xfffff);
+        inst1 = auipc("x6", ((imm >> 12) + ((imm >> 11) & 1)) & 0xfffff);
         nline_++;
-        ret2 = jalr("x1", "x6", imm & 0xfff);
+        inst2 = jalr("x1", "x6", imm & 0xfff);
     }
 
     else if (mnemo == "fli") {
         // Note: t6レジスタが潰される
         assert(2 == arg.size());
-        uint32_t imm = MyStoi(arg[1]) + nline_ * 4 + MEM_SIZE;
+        uint32_t imm = SolveImmLabel(arg[1]);
         std::string tmp_reg = "t6";
-        ret1 = lui(tmp_reg, ((imm >> 12) + ((imm >> 11) & 1)) & 0xfffff);
+        inst1 = lui(tmp_reg, ((imm >> 12) + ((imm >> 11) & 1)) & 0xfffff);
         nline_++;
-        ret2 = flw(arg[0], tmp_reg, (imm & 0xfff));
+        inst2 = flw(arg[0], tmp_reg, (imm & 0xfff));
     }
 
     else {
         fprintf(stderr, "No such instructions: %s\n", input.c_str());
-        return Inst(0, -1);
+        return Inst();
     }
 
-    BinGen::Inst ret(ret1, ret2);
+    BinGen::Inst ret(inst1, inst2, 0xffffffff);
     nline_++;
     return ret;
 }
@@ -382,12 +391,12 @@ std::string BinGen::ToString(uint32_t inst) {
 }
 
 std::string BinGen::InstToString(Inst inst) {
-    if (inst.first == 0 && inst.second == 0xffffffff)
+    if (inst.is_empty())
         return "";
-    else if (inst.second == 0)
-        return ToString(inst.first);
+    else if (inst.snd == 0xffffffff)
+        return ToString(inst.fst);
     else
-        return ToString(inst.first) + "    " + ToString(inst.second);
+        return ToString(inst.fst) + "    " + ToString(inst.snd);
 }
 
 void BinGen::PrintInt(uint32_t inst) {
@@ -642,22 +651,35 @@ void BinGen::CheckImmediate(uint32_t imm, int range, std::string func_name) {
     }
 }
 
-void BinGen::WriteDataInBinary(uint32_t data) {
+void BinGen::WriteInst(uint32_t inst) {
+    if (is_ascii_) {
+        std::string str;
+        for (int i = 0; i < 32; i++)
+            str.push_back(((inst >> (31 - i)) & 0x1)? '1' : '0');
+        assert(str.size() == 32);
+        ofs_ << str << std::endl;
+        return;
+    }
     unsigned char d[4];
-    d[0] = data >> 24;
-    d[1] = data >> 16;
-    d[2] = data >> 8;
-    d[3] = data;
+    d[0] = inst >> 24;
+    d[1] = inst >> 16;
+    d[2] = inst >> 8;
+    d[3] = inst;
     ofs_.write((char *)d, 4);
 }
 
-void BinGen::WriteDataInAscii(uint32_t data) {
+void BinGen::WriteData(uint32_t data) {
     std::string str;
-    for (int i = 0; i < 32; i++) {
+    for (int i = 0; i < 32; i++)
         str.push_back(((data >> (31 - i)) & 0x1)? '1' : '0');
-    }
     assert(str.size() == 32);
-    ofs_ << str << std::endl;
+    coefs_ << str << std::endl;
+}
+
+void BinGen::FillUpCoe() {
+    for (int i = 0; i < (1 << 18) - ndata_; i++) {
+        coefs_ << "00000000000000000000000000000000" << std::endl;
+    }
 }
 
 uint32_t BinGen::MyStoi(std::string imm) {
@@ -667,12 +689,20 @@ uint32_t BinGen::MyStoi(std::string imm) {
     catch (...) {
         // stoi() failed. |imm| was a label.
         // std::cout << imm << label_map_[imm] << std::endl;
-        if (label_map_[imm] == 0 && imm != "main") {
+        if (label_map_.count(imm) == 0) {
             std::cerr << "\x1b[31m[ERROR] Undefined symbol: " << imm << "\x1b[39m\n";
             return 0;
         }
         return (label_map_[imm] - nline_) * 4;
     }
+}
+
+uint32_t BinGen::SolveImmLabel(std::string label) {
+    if (data_map_.count(label) == 0) {
+        std::cerr << "\x1b[31m[ERROR] Undefined symbol: " << label << "\x1b[39m\n";
+        return 0;
+    }
+    return data_map_[label] * 4;
 }
 
 void print_binary(int val){
