@@ -35,7 +35,6 @@ Simulator *init(unsigned long m_size,unsigned long s_pos,FILE *in,FILE *out,FILE
     fread(&buf,sizeof(char),33,coef);
     //buf[0] ~ buf[32] がデータでbuf[33] が'\n
     int tmp = std::stoi(buf,nullptr,2);
-    sim->data_memory[100] = 1;
     sim->data_memory[4*i]=get_binary(tmp,0,8);
     sim->data_memory[4*i+1]=get_binary(tmp,8,16);
     sim->data_memory[4*i+2]=get_binary(tmp,16,24);
@@ -413,13 +412,8 @@ void exec(Simulator *sim,Op *op){
         s_imm = (op->imm) | ((op->imm & 0x800) ? 0xFFFFF800:0);
         address = sim -> registers[op->rs1] + s_imm;
         union {float f_f;unsigned int f_i;} u1;
-        if (address < MEM_SIZE) {
             u1.f_i = ((unsigned int)sim->data_memory[address+3]<<24)+((unsigned int)sim->data_memory[address+2]<<16)
                 + ((unsigned int)sim->data_memory[address+1]<<8)+((unsigned int)sim->data_memory[address]);
-        }
-        else{
-          printf("something wrong!!\n");
-        }
         if(op->funct3 == 0b010){
           sim -> f_registers[op->rd] = u1.f_f;
         }
