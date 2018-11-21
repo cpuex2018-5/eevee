@@ -1,6 +1,7 @@
 	.text
 	.globl _min_caml_start
 _min_caml_start: # main entry point
+	li	gp, 92	# initialize gp
 #	main program starts
 	li	a0, 21600
 	li	a1, 337500
