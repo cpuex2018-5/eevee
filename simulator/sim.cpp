@@ -31,14 +31,21 @@ Simulator *init(unsigned long m_size,unsigned long s_pos,FILE *in,FILE *out,FILE
   sim -> coef = coef;
 
   for(int i=0;i<(1<<18)-1;i++){
-    char buf[33];
-    fread(&buf,sizeof(char),33,coef);
+    char buf[32];
+    fread(&buf,sizeof(char),32,coef);
+    fseek(coef,1L,SEEK_CUR);
     //buf[0] ~ buf[32] がデータでbuf[33] が'\n
-    int tmp = std::stoi(buf,nullptr,2);
-    sim->data_memory[4*i]=get_binary(tmp,0,8);
-    sim->data_memory[4*i+1]=get_binary(tmp,8,16);
-    sim->data_memory[4*i+2]=get_binary(tmp,16,24);
-    sim->data_memory[4*i+3]=get_binary(tmp,24,32);
+      try{
+        int tmp = strtol(buf,NULL,2);
+        sim->data_memory[4*i]=get_binary(tmp,0,8);
+        sim->data_memory[4*i+1]=get_binary(tmp,8,16);
+        sim->data_memory[4*i+2]=get_binary(tmp,16,24);
+        sim->data_memory[4*i+3]=get_binary(tmp,24,32);   
+      }
+      catch(...){
+        printf("not a valid value :%s\n",buf);
+      }
+
   }
   return sim;
 }
