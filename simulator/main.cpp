@@ -36,7 +36,6 @@ int main(int argc,char **argv){
   }
   optind++;
   FILE *coef = fopen(argv[optind],"rb");
-  printf("%s",argv[optind]);
   if(coef==NULL){
     fprintf(stderr,"coe file not found\n");
   }
