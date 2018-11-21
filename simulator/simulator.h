@@ -19,6 +19,7 @@ typedef struct {
   unsigned int text_size;
   FILE *in;
   FILE *out;
+  FILE *coef;
   std::vector<unsigned int> breakpoints;
   int bp_to_skip;
 } Simulator;
@@ -35,7 +36,7 @@ typedef struct {
 
 
 //sim.c
-Simulator *init(unsigned long m_size,unsigned long s_pos,FILE *,FILE *);
+Simulator *init(unsigned long m_size,unsigned long s_pos,FILE *,FILE *,FILE *);
 void destroy(Simulator*);
 void load(Simulator*,FILE *);
 void exec(Simulator*,Op *);

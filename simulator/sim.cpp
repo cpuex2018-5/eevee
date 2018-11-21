@@ -2,7 +2,7 @@
 extern int debug_mode;
 
 
-Simulator *init(unsigned long m_size,unsigned long s_pos,FILE *in,FILE *out){
+Simulator *init(unsigned long m_size,unsigned long s_pos,FILE *in,FILE *out,FILE *coef){
   int i = 0;
   Simulator *sim = (Simulator *)malloc(sizeof(Simulator));
 
@@ -23,9 +23,24 @@ Simulator *init(unsigned long m_size,unsigned long s_pos,FILE *in,FILE *out){
   sim -> data_memory = (unsigned char*)malloc(sizeof(unsigned char)*m_size);
   memset(sim->data_memory,0,sizeof(unsigned char)*m_size);
   //allocate the same size of memory for text and data section for now
+
+  
   sim -> in = in;
   sim -> out = out;
   sim -> bp_to_skip = 0;
+  sim -> coef = coef;
+
+  for(int i=0;i<(1<<18)-1;i++){
+    char buf[33];
+    fread(&buf,sizeof(char),33,coef);
+    //buf[0] ~ buf[32] がデータでbuf[33] が'\n
+    int tmp = std::stoi(buf,nullptr,2);
+    sim->data_memory[100] = 1;
+    sim->data_memory[4*i]=get_binary(tmp,0,8);
+    sim->data_memory[4*i+1]=get_binary(tmp,8,16);
+    sim->data_memory[4*i+2]=get_binary(tmp,16,24);
+    sim->data_memory[4*i+3]=get_binary(tmp,24,32);
+  }
   return sim;
 }
 
@@ -401,10 +416,9 @@ void exec(Simulator *sim,Op *op){
         if (address < MEM_SIZE) {
             u1.f_i = ((unsigned int)sim->data_memory[address+3]<<24)+((unsigned int)sim->data_memory[address+2]<<16)
                 + ((unsigned int)sim->data_memory[address+1]<<8)+((unsigned int)sim->data_memory[address]);
-        } else {
-            // text_memoryから読む場合はaddressが[プログラム中の番地+MEM_SIZE]になるようにアセンブラがしている
-            address -= MEM_SIZE;
-            u1.f_i = (sim->text_memory[address]<<24) | (sim->text_memory[address+1]<<16) | (sim->text_memory[address+2]<<8) | sim->text_memory[address+3];
+        }
+        else{
+          printf("something wrong!!\n");
         }
         if(op->funct3 == 0b010){
           sim -> f_registers[op->rd] = u1.f_f;
