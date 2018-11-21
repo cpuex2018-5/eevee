@@ -34,14 +34,15 @@ int main(int argc,char **argv){
     fprintf(stderr,"can not open %s\n",argv[optind]);
     exit(1);
   }
-
+  optind++;
+  FILE *coef = fopen(argv[optind],"rb");
+  printf("%s",argv[optind]);
+  if(coef==NULL){
+    fprintf(stderr,"coe file not found\n");
+  }
   FILE *in = fopen("contest_input.bin","rb");
   if(in==NULL){
     fprintf(stderr,"input file not found\n");
-  }
-  FILE *coef = fopen("mandelbrot.coe","rb");
-  if(coef==NULL){
-    fprintf(stderr,"coe file not found\n");
   }
   FILE *out = fopen("output.ppm","wb");
   if(out==NULL){
