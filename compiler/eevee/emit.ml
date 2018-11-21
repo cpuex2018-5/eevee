@@ -304,6 +304,7 @@ let f oc (Prog(data, fundefs, e)) =
   Printf.fprintf oc "\t.text\n";
   Printf.fprintf oc "\t.globl _min_caml_start\n";
   Printf.fprintf oc "_min_caml_start: # main entry point\n";
+  Printf.fprintf oc "\tli\tgp, %d\t# initialize gp\n" ((List.length data + 23) * 4);
   Printf.fprintf oc "#\tmain program starts\n";
   stackset := S.empty;
   stackmap := [];

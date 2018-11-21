@@ -1,6 +1,7 @@
 	.text
 	.globl _min_caml_start
 _min_caml_start: # main entry point
+	li	gp, 116	# initialize gp
 #	main program starts
 	li	a0, 0
 	call	yloop_43
