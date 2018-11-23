@@ -28,10 +28,10 @@ void floatToBinary(float f){
   union {float f; unsigned int i;}u ;
   u.f = f;
   for(int j = 31;j>=0;j--){
-    printf("%d ",((u.i>>j)&0x1));
+    printf("%d",((u.i>>j)&0x1));
   }
   printf("\n");
-  printf("%20f\n",f);
+  //printf("%20f\n",f);
 }
 
 bool skip(char c){

@@ -17,6 +17,7 @@ void print_fregs(Simulator *sim){
       fprintf(stdout,"fReg %02d(%7s):  D:%s\n",i,fRegs[i],str.c_str());
     } else {
       fprintf(stdout,"fReg %02d(%7s):  D:%f\n",i,fRegs[i],sim->f_registers[i]);
+      floatToBinary(sim->f_registers[i]);
     }
   }
 }
