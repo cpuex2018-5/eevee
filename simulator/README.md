@@ -1,9 +1,10 @@
 ## 実行方法
-./eevee_sim [-d] [-h] <binary file> <coe file>
+./eevee_sim [-d] [-h] [-f] <binary file> <coe file>
 
 ## オプション
 -d:デバッグモード
 -h:ヘルプ
+-f:fpuのc実装を使う
 
 ## デバッグコマンド
 （たぶん引数足りなかったりするとバグる）
