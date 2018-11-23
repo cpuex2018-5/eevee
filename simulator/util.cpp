@@ -34,6 +34,11 @@ void floatToBinary(float f){
   //printf("%20f\n",f);
 }
 
+void floatToHex(float f){
+  union {float f;unsigned int i;}u;
+  u.f = f;
+  printf("Hex expression: %8x\n",u.i);
+}
 bool skip(char c){
   return (c == ' ' || c == '\t');
 }

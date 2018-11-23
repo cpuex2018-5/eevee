@@ -18,6 +18,7 @@ void print_fregs(Simulator *sim){
     } else {
       fprintf(stdout,"fReg %02d(%7s):  D:%f\n",i,fRegs[i],sim->f_registers[i]);
       floatToBinary(sim->f_registers[i]);
+      floatToHex(sim->f_registers[i]);
     }
   }
 }

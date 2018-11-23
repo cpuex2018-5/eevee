@@ -59,6 +59,7 @@ void usage();
 void print_binary(int);
 std::string to_string(uint32_t);
 void floatToBinary(float f);
+void floatToHex(float f);
 void disas(unsigned int,unsigned int,Op *);
 bool skip(char);
 
