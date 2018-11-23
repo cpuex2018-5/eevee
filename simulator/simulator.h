@@ -67,3 +67,12 @@ void print_fregs(Simulator *);
 void print_regs(Simulator *);
 int debug_exec(Simulator *,std::vector<std::string>&);
 int debug_parse(Simulator* ,std::string&,std::vector<std::string>&);
+
+float fadd(float,float);
+float fmul(float,float);
+float fsub(float,float);
+float fpuabs(float);
+float fpuneg(float);
+float fsqrt(float);
+float finv(float);
+float fdiv(float,float);

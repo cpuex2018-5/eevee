@@ -1,6 +1,6 @@
 #include"./simulator.h"
 extern int debug_mode;
-
+extern int fpu_mode;
 
 Simulator *init(unsigned long m_size,unsigned long s_pos,FILE *in,FILE *out,FILE *coef){
   int i = 0;
@@ -451,23 +451,59 @@ void exec(Simulator *sim,Op *op){
         decode_r(inst,op);
         if(op->funct7 == 0b0000000){
           //fadd.s
-          sim -> f_registers[op->rd] = sim -> f_registers[op->rs1] + sim -> f_registers[op->rs2];
+          if(fpu_mode==0){
+            sim -> f_registers[op->rd] = sim -> f_registers[op->rs1] + sim -> f_registers[op->rs2];
+          }
+          else{
+            float true_val = sim -> f_registers[op->rs1] + sim -> f_registers[op->rs2];
+            float fpu_val = fadd(sim->f_registers[op->rs1],sim->f_registers[op->rs2]);
+            sim -> f_registers[op->rd] = fpu_val;
+          }
         }
         else if(op->funct7 == 0b0000100){
           //fsub.s
-          sim -> f_registers[op->rd] = sim -> f_registers[op->rs1] - sim -> f_registers[op->rs2];
+          if(fpu_mode==0){
+            sim -> f_registers[op->rd] = sim -> f_registers[op->rs1] - sim -> f_registers[op->rs2];
+          }
+          else{
+            float true_val = sim -> f_registers[op->rs1] - sim->f_registers[op->rs2];
+            float fpu_val = fsub(sim->f_registers[op->rs1],sim->f_registers[op->rs2]);
+            sim -> f_registers[op->rd] = fpu_val;
+          }
         }
         else if(op->funct7 == 0b0001000){
           //fmul.s
-          sim -> f_registers[op->rd] = sim -> f_registers[op->rs1] * sim -> f_registers[op->rs2];
+          if(fpu_mode==0){
+            sim -> f_registers[op->rd] = sim -> f_registers[op->rs1] * sim -> f_registers[op->rs2];
+          }
+          else{
+            float true_val = sim -> f_registers[op->rs1] * sim -> f_registers[op->rs2];
+            float fpu_val = fmul(sim->f_registers[op->rs1],sim->f_registers[op->rs2]);
+            sim -> f_registers[op->rd] = fpu_val;
+          }
         }
         else if(op->funct7 == 0b0001100){
           //fdiv.s
-          sim -> f_registers[op->rd] = sim -> f_registers[op->rs1] / sim -> f_registers[op->rs2];
+          if(fpu_mode==0){
+            sim -> f_registers[op->rd] = sim -> f_registers[op->rs1] / sim -> f_registers[op->rs2];
+          }
+          else{
+            float true_val = sim -> f_registers[op->rs1] / sim -> f_registers[op->rs2];
+            float fpu_val = fdiv(sim->f_registers[op->rs1],sim->f_registers[op->rs2]);
+            sim -> f_registers[op->rd] = fpu_val;
+          }
         }
         else if(op->funct7 == 0b0101100 && op->rs2 == 0b00000){
           //fsqrt.s
-          sim -> f_registers[op->rd] = std::sqrt(sim->f_registers[op->rs1]);
+
+          if(fpu_mode==0){
+            sim -> f_registers[op->rd] = std::sqrt(sim->f_registers[op->rs1]);
+          }
+          else{
+            float true_val = std::sqrt(sim->f_registers[op->rs1]);
+            float fpu_val = fsqrt(sim->f_registers[op->rs1]);
+            sim -> f_registers[op->rd] = fpu_val;
+          }
         }
         else if(op->funct7 == 0b1010000 && op->funct3 == 0b010){
           //feq.s
@@ -493,15 +529,36 @@ void exec(Simulator *sim,Op *op){
         }
         else if(op->funct7 == 0b0010000 && op->rs2 == 0b00000 && op->funct3 == 0b001){
           //fneg.s
-          sim -> f_registers[op->rd] = - (sim -> f_registers[op->rs1]);
+          if(fpu_mode==0){
+            sim -> f_registers[op->rd] = - (sim -> f_registers[op->rs1]);
+          }
+          else{
+            float true_val = - (sim -> f_registers[op->rs1]);
+            float fpu_val = fpuneg(sim->f_registers[op->rs1]);
+            sim -> f_registers[op->rd] = fpu_val;
+          }
         }
         else if(op->funct7 == 0b0010000 && op->rs2 == 0b00000 && op->funct3 == 0b010){
           //fabs.s
-          sim -> f_registers[op->rd] = fabs(sim->f_registers[op->rs1]);
+          if(fpu_mode==0){
+            sim -> f_registers[op->rd] = fabs(sim->f_registers[op->rs1]);
+          }
+          else{
+            float true_val = fabs(sim->f_registers[op->rs1]);
+            float fpu_val = fpuabs(sim->f_registers[op->rs1]);
+            sim -> f_registers[op->rd] = fpu_val;
+          }
         }
         else if(op->funct7 == 0b0010000 && op->rs2 == 0b00000 && op->funct3 == 0b011){
           //finv.s
-          sim -> f_registers[op->rd] = 1/sim->f_registers[op->rs1];
+          if(fpu_mode==0){
+            sim -> f_registers[op->rd] = 1/sim->f_registers[op->rs1];
+          }
+          else{
+            float true_val = 1/sim->f_registers[op->rs1];
+            float fpu_val = finv(sim->f_registers[op->rs1]);
+            sim -> f_registers[op->rd] = fpu_val;
+          }
         }
         else{
           fprintf(stderr,"Unknown instruction\n");

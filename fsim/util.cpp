@@ -1,5 +1,5 @@
 #include "./fsim.h"
-
+/*
 unsigned int get_binary(unsigned int n,int start,int end){
   int len = end - start;
   n = n << (32-end);
@@ -13,7 +13,7 @@ unsigned long long get_binary(unsigned long long n,int start,int end){
   n = n >> (64-len);
   return n;
 }
-
+*/
 void floatToBinary(float f){
   union {float f; unsigned int i;}u ;
   u.f = f;
