@@ -54,7 +54,7 @@ void BinGen::ReadLabels(std::string input) {
         // The input wasn't a label.
 
         // Some pseudo-instructions will expand to two instrs
-        if (mnemo == "la" || mnemo == "ret" || mnemo == "call" || mnemo == "fli") {
+        if (mnemo == "la" || mnemo == "ret" || mnemo == "call" || mnemo == "fli" || mnemo == "tail") {
             nline_ += 2;
             return;
         }
@@ -357,6 +357,13 @@ BinGen::Inst BinGen::Convert(std::string input) {
         inst1 = auipc("x6", ((imm >> 12) + ((imm >> 11) & 1)) & 0xfffff);
         nline_++;
         inst2 = jalr("x1", "x6", imm & 0xfff);
+    }
+    else if (mnemo == "tail") {
+        assert(1 == arg.size());
+        uint32_t imm = MyStoi(arg[0]);
+        inst1 = auipc("x6", ((imm >> 12) + ((imm >> 11) & 1)) & 0xfffff);
+        nline_++;
+        inst2 = jalr("x0", "x6", imm & 0xfff);
     }
 
     else if (mnemo == "fli") {

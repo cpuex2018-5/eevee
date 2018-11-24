@@ -9,8 +9,8 @@
 
 for tests:
 
-    $ make test
-    $ ./tests
+    $ make bingen_test
+    $ ./bingen_test
 
 #### options
 
@@ -72,7 +72,7 @@ $ ./main -d target/fib.s  # target/fib.asm will be generated as well as target/f
 
 * `min-caml-asm`: min-camlで吐いたアセンブリ
 
-* `libtest` : libmincaml.Sのテスト用のアセンブリ
+* `test` : テスト用に作った色々なアセンブリ
 
 ## Specification
 ### eevee ISA
