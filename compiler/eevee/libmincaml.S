@@ -150,7 +150,7 @@ min_caml_read_float:
 .read_float_end:
 	call	min_caml_float_of_int
 	fli	ft0, L_10
-	fdiv.s	fa0, fa0, ft0
+	fdiv	fa0, fa0, ft0
 	lw	t1, 20(sp)
 	lw	t2, 16(sp)
 	lw	t3, 12(sp)

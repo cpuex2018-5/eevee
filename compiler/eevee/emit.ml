@@ -94,16 +94,16 @@ and g' buf e =
     Printf.bprintf buf "\tsw\t%s, 0(%s)\n" (reg x) (reg reg_tmp)
   | NonTail(_), Sw(x, y, C(z)) -> Printf.bprintf buf "\tsw\t%s, %d(%s)\n" (reg x) z (reg y)
   | NonTail(x), FMv(y) when x = y -> ()
-  | NonTail(x), FMv(y) -> Printf.bprintf buf "\tfmv.s\t%s, %s\n" (reg x) (reg y)
-  | NonTail(x), FNeg(y) -> Printf.bprintf buf "\tfneg.s\t%s, %s\n" (reg x) (reg y)
-  | NonTail(x), FAdd(y, z) -> Printf.bprintf buf "\tfadd.s\t%s, %s, %s\n" (reg x) (reg y) (reg z)
-  | NonTail(x), FSub(y, z) -> Printf.bprintf buf "\tfsub.s\t%s, %s, %s\n" (reg x) (reg y) (reg z)
-  | NonTail(x), FMul(y, z) -> Printf.bprintf buf "\tfmul.s\t%s, %s, %s\n" (reg x) (reg y) (reg z)
-  | NonTail(x), FDiv(y, z) -> Printf.bprintf buf "\tfdiv.s\t%s, %s, %s\n" (reg x) (reg y) (reg z)
-  | NonTail(x), FEq(y, z) -> Printf.bprintf buf "\tfeq.s\t%s, %s, %s\n" (reg x) (reg y) (reg z)
-  | NonTail(x), FLE(y, z) -> Printf.bprintf buf "\tfle.s\t%s, %s, %s\n" (reg x) (reg y) (reg z)
-  | NonTail(x), FAbs(y) -> Printf.bprintf buf "\tfabs.s\t%s, %s\n" (reg x) (reg y)
-  | NonTail(x), FSqrt(y) -> Printf.bprintf buf "\tfsqrt.s\t%s, %s\n" (reg x) (reg y)
+  | NonTail(x), FMv(y) -> Printf.bprintf buf "\tfmv\t%s, %s\n" (reg x) (reg y)
+  | NonTail(x), FNeg(y) -> Printf.bprintf buf "\tfneg\t%s, %s\n" (reg x) (reg y)
+  | NonTail(x), FAdd(y, z) -> Printf.bprintf buf "\tfadd\t%s, %s, %s\n" (reg x) (reg y) (reg z)
+  | NonTail(x), FSub(y, z) -> Printf.bprintf buf "\tfsub\t%s, %s, %s\n" (reg x) (reg y) (reg z)
+  | NonTail(x), FMul(y, z) -> Printf.bprintf buf "\tfmul\t%s, %s, %s\n" (reg x) (reg y) (reg z)
+  | NonTail(x), FDiv(y, z) -> Printf.bprintf buf "\tfdiv\t%s, %s, %s\n" (reg x) (reg y) (reg z)
+  | NonTail(x), FEq(y, z) -> Printf.bprintf buf "\tfeq\t%s, %s, %s\n" (reg x) (reg y) (reg z)
+  | NonTail(x), FLE(y, z) -> Printf.bprintf buf "\tfle\t%s, %s, %s\n" (reg x) (reg y) (reg z)
+  | NonTail(x), FAbs(y) -> Printf.bprintf buf "\tfabs\t%s, %s\n" (reg x) (reg y)
+  | NonTail(x), FSqrt(y) -> Printf.bprintf buf "\tfsqrt\t%s, %s\n" (reg x) (reg y)
   | NonTail(x), Flw(y, V(z)) ->
     Printf.bprintf buf "\tadd\t%s, %s, %s\n" (reg reg_tmp) (reg y) (reg z);
     Printf.bprintf buf "\tflw\t%s, 0(%s)\n" (reg x) (reg reg_tmp)
@@ -171,11 +171,11 @@ and g' buf e =
        g'_tail_if buf x reg_tmp e1 e2 "bge" "blt")
   | Tail, IfFEq(x, y, e1, e2) ->
     (* Store the comparison result in reg_tmp (integer register!) *)
-    Printf.bprintf buf "\tfeq.s\t%s, %s, %s\n" (reg reg_tmp) (reg x) (reg y);
+    Printf.bprintf buf "\tfeq\t%s, %s, %s\n" (reg reg_tmp) (reg x) (reg y);
     (* reg_tmp = 0 -> not equal -> 分岐する *)
     g'_tail_if buf reg_tmp "zero" e1 e2 "bne" "beq"
   | Tail, IfFLE(x, y, e1, e2) ->
-    Printf.bprintf buf "\tfle.s\t%s, %s, %s\n" (reg reg_tmp) (reg x) (reg y);
+    Printf.bprintf buf "\tfle\t%s, %s, %s\n" (reg reg_tmp) (reg x) (reg y);
     (* reg_tmp = 0 -> x > y -> 分岐する *)
     g'_tail_if buf reg_tmp "zero" e1 e2 "bne" "beq"
   | NonTail(z), IfEq(x, V(y), e1, e2) ->
@@ -206,10 +206,10 @@ and g' buf e =
        Printf.bprintf buf "\tli\t%s, %d\n" (reg reg_tmp) y;
        g'_non_tail_if buf (NonTail(z)) x reg_tmp e1 e2 "bge" "blt")
   | NonTail(z), IfFEq(x, y, e1, e2) ->
-    Printf.bprintf buf "\tfeq.s\t%s, %s, %s\n" (reg reg_tmp) (reg x) (reg y);
+    Printf.bprintf buf "\tfeq\t%s, %s, %s\n" (reg reg_tmp) (reg x) (reg y);
     g'_non_tail_if buf (NonTail(z)) reg_tmp "zero" e1 e2 "bne" "beq"
   | NonTail(z), IfFLE(x, y, e1, e2) ->
-    Printf.bprintf buf "\tfle.s\t%s, %s, %s\n" (reg reg_tmp) (reg x) (reg y);
+    Printf.bprintf buf "\tfle\t%s, %s, %s\n" (reg reg_tmp) (reg x) (reg y);
     g'_non_tail_if buf (NonTail(z)) reg_tmp "zero" e1 e2 "bne" "beq"
 
   (* INFO: caller-save regs: ra, t*, a* / callee-save regs: sp, fp, s* *)
@@ -228,14 +228,14 @@ and g' buf e =
     if List.mem a allregs && a <> regs.(0) then
       Printf.bprintf buf "\tmv\t%s, %s\n" (reg a) (reg regs.(0))
     else if List.mem a allfregs && a <> fregs.(0) then
-      Printf.bprintf buf "\tfmv.s\t%s, %s\n" (reg a) (reg fregs.(0));
+      Printf.bprintf buf "\tfmv\t%s, %s\n" (reg a) (reg fregs.(0));
   | (NonTail(a), CallDir(Id.L(f), iargs, fargs)) ->
     g'_args buf [] iargs fargs;
     Printf.bprintf buf "\tcall\t%s\n" f;
     if List.mem a allregs && a <> regs.(0) then
       Printf.bprintf buf "\tmv\t%s, %s\n" (reg a) (reg regs.(0))
     else if List.mem a allfregs && a <> fregs.(0) then
-      Printf.bprintf buf "\tfmv.s\t%s, %s\n" (reg a) (reg fregs.(0));
+      Printf.bprintf buf "\tfmv\t%s, %s\n" (reg a) (reg fregs.(0));
 and g'_tail_if buf rs1 rs2 e1 e2 b bn = (* bはラベルに使うだけで命令には使わない *)
   let b_else = Id.genid (b ^ "_else") in
   Printf.bprintf buf "\t%s\t%s, %s, %s\n" bn (reg rs1) (reg rs2) b_else;
@@ -277,7 +277,7 @@ and g'_args buf x_reg_cl int_args float_args =
       (0, [])
       float_args in
   List.iter
-    (fun (z, fr) -> Printf.bprintf buf "\tfmv.s\t%s, %s\n" (reg fr) (reg z))
+    (fun (z, fr) -> Printf.bprintf buf "\tfmv\t%s, %s\n" (reg fr) (reg z))
     (shuffle reg_fsw zfrs)
 
 let h oc { name = Id.L(x); args = _; fargs = _; body = e; ret = _ } =

@@ -277,16 +277,16 @@ BinGen::Inst BinGen::Convert(std::string input) {
         inst1 = fsw(arg[0], rs, offset);
     }
 
-    else if (mnemo == "feq.s" || mnemo == "flt.s" || mnemo == "fle.s") {
+    else if (mnemo == "feq" || mnemo == "flt" || mnemo == "fle") {
         assert(3 == arg.size());
         inst1 = f_cmp(mnemo, arg[0], arg[1], arg[2]);
     }
 
-    else if (mnemo == "fsqrt.s" || mnemo == "fabs.s" || mnemo == "fneg.s" || mnemo == "fmv.s" || mnemo == "finv.s") {
+    else if (mnemo == "fsqrt" || mnemo == "fabs" || mnemo == "fneg" || mnemo == "fmv" || mnemo == "finv") {
         assert(2 == arg.size());
         inst1 = f_op2(mnemo, arg[0], arg[1]);
     }
-    else if (mnemo == "fadd.s" || mnemo == "fsub.s" || mnemo == "fmul.s" || mnemo == "fdiv.s") {
+    else if (mnemo == "fadd" || mnemo == "fsub" || mnemo == "fmul" || mnemo == "fdiv") {
         assert(3 == arg.size());
         inst1 = f_op3(mnemo, arg[0], arg[1], arg[2]);
     }
@@ -585,13 +585,13 @@ uint32_t BinGen::fsw(std::string frs2, std::string frs1, uint32_t imm) {
 
 // fsqrt.s, fabs.s, fneg.s, fmv.s, finv.s (2 operands)
 uint32_t BinGen::f_op2(std::string mnemo, std::string frd, std::string frs) {
-    uint32_t funct7 = (mnemo == "fsqrt.s") ? 0b0101100 : 0b0010000;
+    uint32_t funct7 = (mnemo == "fsqrt") ? 0b0101100 : 0b0010000;
     uint32_t funct3;
-    if (mnemo == "fsqrt.s") funct3 = RM;
-    if (mnemo == "fmv.s")   funct3 = 0b000;
-    if (mnemo == "fneg.s")  funct3 = 0b001;
-    if (mnemo == "fabs.s")  funct3 = 0b010;
-    if (mnemo == "finv.s")  funct3 = 0b011;
+    if (mnemo == "fsqrt") funct3 = RM;
+    if (mnemo == "fmv")   funct3 = 0b000;
+    if (mnemo == "fneg")  funct3 = 0b001;
+    if (mnemo == "fabs")  funct3 = 0b010;
+    if (mnemo == "finv")  funct3 = 0b011;
     Fields fields { {7, 0b1010011},
                     {5, fregmap_.at(frd)},
                     {3, funct3},
@@ -604,10 +604,10 @@ uint32_t BinGen::f_op2(std::string mnemo, std::string frd, std::string frs) {
 // fadd.s, fsub.s, fmul.s, fdiv.s (3 operands)
 uint32_t BinGen::f_op3(std::string mnemo, std::string frd, std::string frs1, std::string frs2) {
     uint32_t funct7;
-    if (mnemo == "fadd.s") funct7 = 0b0000000;
-    if (mnemo == "fsub.s") funct7 = 0b0000100;
-    if (mnemo == "fmul.s") funct7 = 0b0001000;
-    if (mnemo == "fdiv.s") funct7 = 0b0001100;
+    if (mnemo == "fadd") funct7 = 0b0000000;
+    if (mnemo == "fsub") funct7 = 0b0000100;
+    if (mnemo == "fmul") funct7 = 0b0001000;
+    if (mnemo == "fdiv") funct7 = 0b0001100;
     Fields fields { {7, 0b1010011},
                     {5, fregmap_.at(frd)},
                     {3, RM},
@@ -620,9 +620,9 @@ uint32_t BinGen::f_op3(std::string mnemo, std::string frd, std::string frs1, std
 // feq.s, flt.s, fle.s
 uint32_t BinGen::f_cmp(std::string mnemo, std::string rd, std::string frs1, std::string frs2) {
     uint32_t funct3;
-    if (mnemo == "feq.s") funct3 = 0b010;
-    if (mnemo == "flt.s") funct3 = 0b001;
-    if (mnemo == "fle.s") funct3 = 0b000;
+    if (mnemo == "feq") funct3 = 0b010;
+    if (mnemo == "flt") funct3 = 0b001;
+    if (mnemo == "fle") funct3 = 0b000;
     Fields fields { {7, 0b1010011},
                     {5, regmap_.at(rd)},
                     {3, funct3},
