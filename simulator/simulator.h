@@ -77,3 +77,6 @@ float fpuneg(float);
 float fsqrt(float);
 float finv(float);
 float fdiv(float,float);
+unsigned int fle(float,float);
+unsigned int flt(float,float);
+unsigned int feq(float,float);

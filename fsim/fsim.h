@@ -28,7 +28,9 @@ float fpuabs(float);
 unsigned int fisneg(float);
 unsigned int fispos(float);
 unsigned int fiszero(float);
-unsigned int fless(float,float);
+unsigned int flt(float,float);
+unsigned int fle(float,float);
+unsigned int feq(float,float);
 float fpuneg(float);
 //fsqrt.cpp
 float fsqrt(float);

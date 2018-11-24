@@ -4,8 +4,6 @@ int main(){
   cout << fisneg(1.2) << endl;
   cout << fpuabs(1.2) << endl;
   cout << fpuabs(-1.2) << endl;
-  cout << fless(2.0,3.0) << endl;
-  cout << fless(3.0,2.0) << endl;
   cout << fpuneg(-1.25) << endl;
   cout << fpuneg(1.25) << endl;
   cout << fispos(-1.25) << endl;
@@ -36,5 +34,13 @@ int main(){
   cout << fdiv(-23.451,31.35) << endl;
   cout << fdiv(1146408,364913) << endl;
   cout << fadd(-1.24,1.24) << endl;
+  cout << fle(0,0) << endl;
+  cout << feq(0,0) << endl;
+  cout << flt(0,0) << endl;
+  cout << flt(1.2333,1.2444) << endl;
+  cout << fle(1.2333,1.2333) << endl;
+  cout << flt(-12.45,98) << endl;
+  cout << fle(0,3) << endl;
+  cout << feq(0,0) << endl;
   return 0;
 }

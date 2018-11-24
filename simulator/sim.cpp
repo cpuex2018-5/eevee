@@ -495,7 +495,6 @@ void exec(Simulator *sim,Op *op){
         }
         else if(op->funct7 == 0b0101100 && op->rs2 == 0b00000){
           //fsqrt.s
-
           if(fpu_mode==0){
             sim -> f_registers[op->rd] = std::sqrt(sim->f_registers[op->rs1]);
           }
@@ -507,21 +506,74 @@ void exec(Simulator *sim,Op *op){
         }
         else if(op->funct7 == 0b1010000 && op->funct3 == 0b010){
           //feq.s
+          
+          /*
           if(sim->f_registers[op->rs1] == sim->f_registers[op->rs2]){
             sim->registers[op->rd] = 1;
           }
           else{
             sim->registers[op->rd] = 0;
           }
+          */
+          if(fpu_mode==0){
+            if(sim->f_registers[op->rs1] == sim->f_registers[op->rs2]){
+              sim->registers[op->rd] = 1;
+            }
+            else{
+              sim->registers[op->rd] = 0;
+            }
+          }
+          else{
+            unsigned int true_val = 0;
+            if(sim->f_registers[op->rs1] == sim->f_registers[op->rs2]){
+              true_val = 1;
+            }
+            else{
+              true_val = 0;
+            }
+            unsigned int fpu_val = feq(sim->f_registers[op->rs1],sim->f_registers[op->rs2]);
+            if(true_val != fpu_val){
+              fprintf(stderr,"warning!! from feq\ntrue_val is %d,however fpu_val is %d rs1:%f,rs2:%f\n",true_val,fpu_val,sim->f_registers[op->rs1],sim->f_registers[op->rs2]);
+            }
+            sim -> registers[op->rd] = fpu_val;
+          }
+          
         }
         else if(op->funct7 == 0b1010000 && op->funct3 == 0b000){
           //fle.s
+          
+          /*
           if(sim->f_registers[op->rs1] <= sim->f_registers[op->rs2]){
             sim->registers[op->rd] = 1;
           }
           else{
             sim->registers[op->rd] = 0;
           }
+          */
+          
+          if(fpu_mode==0){
+            if(sim->f_registers[op->rs1] <= sim->f_registers[op->rs2]){
+              sim->registers[op->rd] = 1;
+            }
+            else{
+            sim->registers[op->rd] = 0;
+            }
+          }
+          else{
+            unsigned int true_val = 0;
+            if(sim->f_registers[op->rs1] <= sim->f_registers[op->rs2]){
+              true_val = 1;
+            }
+            else{
+              true_val = 0;
+            }
+            unsigned int fpu_val = fle(sim->f_registers[op->rs1],sim->f_registers[op->rs2]);
+            if(true_val != fpu_val){
+              fprintf(stderr,"warning!! from fle\ntrue_val is %d,however fpu_val is %d rs1:%f,rs2:%f\n",true_val,fpu_val,sim->f_registers[op->rs1],sim->f_registers[op->rs2]);
+            }
+            sim -> registers[op->rd] = fpu_val;
+          }
+          
         }
         else if(op->funct7 == 0b0010000 && op->rs2 == 0b00000 && op->funct3 == 0b000){
           //fmv.s
