@@ -21,6 +21,7 @@ typedef struct {
   FILE *out;
   FILE *coef;
   std::vector<unsigned int> breakpoints;
+  std::vector<unsigned long long int>inst_breakpoints;
   int bp_to_skip;
 } Simulator;
 

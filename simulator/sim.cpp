@@ -72,7 +72,7 @@ void load(Simulator *sim,FILE *fp){
 
 void exec(Simulator *sim,Op *op){
   unsigned int prev_pc = -1; //local variable to detect loop
-  unsigned long inst_counter = -4; //keep the number of inst execute
+  unsigned long inst_counter = -1; //keep the number of inst execute
   while(1){
     if(sim->pc>=sim->text_size || sim->pc<0){
       break;
@@ -80,7 +80,7 @@ void exec(Simulator *sim,Op *op){
     if(prev_pc==sim->pc){
       break;
     }
-    inst_counter = inst_counter + 4;
+    inst_counter = inst_counter + 1;
     prev_pc = sim->pc;
     
 
@@ -98,6 +98,12 @@ void exec(Simulator *sim,Op *op){
         }
         fprintf(stdout,"break!!\n");
         debug_mode=1; //break
+      }
+    }
+    for(unsigned int i = 0;i<sim->inst_breakpoints.size();i++){
+      if(inst_counter==sim->inst_breakpoints[i]){
+        fprintf(stdout,"break!!\n");
+        debug_mode=1;
       }
     }
 
@@ -626,5 +632,5 @@ void exec(Simulator *sim,Op *op){
 
   print_regs(sim);
   print_fregs(sim);
-  fprintf(stdout,"simulation finished inst_counter: %ld\n",inst_counter / 4);
+  fprintf(stdout,"simulation finished inst_counter: %ld\n",inst_counter);
 }

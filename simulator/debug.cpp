@@ -54,6 +54,10 @@ void list_breakpoints(Simulator *sim){
   for(unsigned int i=0;i<sim->breakpoints.size();i++){
     fprintf(stdout,"breakpoints[%03d]: pc: %08d\n",i,sim->breakpoints[i]);
   }
+  fprintf(stdout,"list of inst_breakpoints...\n");
+  for(unsigned int i = 0;i<sim->inst_breakpoints.size();i++){
+    fprintf(stdout,"inst_breakpoints[%03d]: inst: %08lld\n",i,sim->inst_breakpoints[i]);
+  }
 }
 
 void delete_breakpoints(Simulator *sim){
@@ -61,7 +65,18 @@ void delete_breakpoints(Simulator *sim){
     sim->breakpoints.erase(sim->breakpoints.begin());
   }
 }
-
+void add_inst_breakpoints(Simulator *sim,long long int v){
+  if (v<0){
+    fprintf(stdout,"Warning! you are setting a breakpoint outside text memory\n");
+  }
+  for(unsigned int i=0;i<sim->breakpoints.size();i++){
+    if(sim->inst_breakpoints[i]==(unsigned long long int)v){
+      fprintf(stdout,"breakpoints already set\n");
+      return;
+    }
+  }
+  sim -> inst_breakpoints.push_back(v);
+}
 void add_breakpoints(Simulator *sim,int v){
   if(v<0){
     fprintf(stdout,"Warning! you are setting a breakpoint outside text memory\n");
@@ -228,6 +243,16 @@ int debug_exec(Simulator *sim,std::vector<std::string> &dbginst){
       fprintf(stderr,"argument must be an integer!!\n");
     }
     return 0;
+  }
+  else if(dbginst[0] == "b_inst" && dbginst.size()==2){
+    long long int ibp = 0;
+    try{
+      ibp = std::stoll(dbginst[1],nullptr,10);
+      add_inst_breakpoints(sim,ibp);
+    }
+    catch (...){
+      fprintf(stderr,"argument must be an integer!!\n");
+    }
   }
   else{
     fprintf(stderr,"(unknown)\n");
