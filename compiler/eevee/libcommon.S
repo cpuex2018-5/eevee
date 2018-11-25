@@ -49,13 +49,13 @@ min_caml_floor:
 	sw	t1, 8(sp)
 	fsw	ft1, 4(sp)
 	sw	ra, 0(sp)
-	fmv.s	ft1, fa0	# ft1: before flooring
+	fmv	ft1, fa0	# ft1: before flooring
 	call	min_caml_int_of_float
 	call	min_caml_float_of_int
-	fle.s	t1, fa0, ft1	# after <= before ?
+	fle	t1, fa0, ft1	# after <= before ?
 	bne	t1, zero, .floor_ret
 	fli	ft1, L_1
-	fsub.s	fa0, fa0, ft1
+	fsub	fa0, fa0, ft1
 .floor_ret:
 	lw	t1, 8(sp)
 	flw	ft1, 4(sp)
@@ -65,57 +65,57 @@ min_caml_floor:
 
 # sin/cos
 .kernel_sin:	# use: ft1,2,3,4
-	fmv.s	ft1, fa0
-	fmul.s	ft1, ft1, ft1	# ft1: A ^ 2
+	fmv	ft1, fa0
+	fmul	ft1, ft1, ft1	# ft1: A ^ 2
 	fli	ft2, L_S3	# ft2: 係数
-	fmul.s	ft3, fa0, ft1	# ft3: A ^ 3
-	fmul.s	ft4, ft3, ft2
-	fsub.s	fa0, fa0, ft4
+	fmul	ft3, fa0, ft1	# ft3: A ^ 3
+	fmul	ft4, ft3, ft2
+	fsub	fa0, fa0, ft4
 	fli	ft2, L_S5
-	fmul.s	ft3, ft3, ft1	# ft3: A ^ 5
-	fmul.s	ft4, ft3, ft2
-	fadd.s	fa0, fa0, ft4
+	fmul	ft3, ft3, ft1	# ft3: A ^ 5
+	fmul	ft4, ft3, ft2
+	fadd	fa0, fa0, ft4
 	fli	ft2, L_S7
-	fmul.s	ft3, ft3, ft1	# ft3: A ^ 7
-	fmul.s	ft4, ft3, ft2
-	fsub.s	fa0, fa0, ft4
+	fmul	ft3, ft3, ft1	# ft3: A ^ 7
+	fmul	ft4, ft3, ft2
+	fsub	fa0, fa0, ft4
 	jr	ra
 
 .kernel_cos:	# use: ft1,2,3,4
-	fmv.s	ft1, fa0
-	fmul.s	ft1, ft1, ft1	# ft1: A ^ 2
+	fmv	ft1, fa0
+	fmul	ft1, ft1, ft1	# ft1: A ^ 2
 	fli	fa0, L_1
 	fli	ft2, L_C2
-	fmv.s	ft3, ft1	# ft3: A ^ 2
-	fmul.s	ft4, ft3, ft2
-	fsub.s	fa0, fa0, ft4
+	fmv	ft3, ft1	# ft3: A ^ 2
+	fmul	ft4, ft3, ft2
+	fsub	fa0, fa0, ft4
 	fli	ft2, L_C4
-	fmul.s	ft3, ft3, ft1	# ft3: A ^ 4
-	fmul.s	ft4, ft3, ft2
-	fadd.s	fa0, fa0, ft4
+	fmul	ft3, ft3, ft1	# ft3: A ^ 4
+	fmul	ft4, ft3, ft2
+	fadd	fa0, fa0, ft4
 	fli	ft2, L_C6
-	fmul.s	ft3, ft3, ft1	# ft3: A ^ 6
-	fmul.s	ft4, ft3, ft2
-	fsub.s	fa0, fa0, ft4
+	fmul	ft3, ft3, ft1	# ft3: A ^ 6
+	fmul	ft4, ft3, ft2
+	fsub	fa0, fa0, ft4
 	jr	ra
 
 .reduction_2pi:	# 呼ばれた時点でft2 = 2.0である必要がある
 	fli	ft3, L_2PI		# ft3: P (2pi)
 	fli	ft4, L_2PI		# ft4: 2pi (const)
 .reduction_2pi_L0:	# loop
-	fle.s	t2, ft3, fa0	# P <= A
+	fle	t2, ft3, fa0	# P <= A
 	beq	t2, zero, .reduction_2pi_L1
-	fmul.s	ft3, ft3, ft2
+	fmul	ft3, ft3, ft2
 	b	.reduction_2pi_L0
 .reduction_2pi_L1:	# loop
-	fle.s	t2, ft4, fa0	# 2pi <= A
+	fle	t2, ft4, fa0	# 2pi <= A
 	beq	t2, zero, .reduction_2pi_end
-	fle.s	t2, ft3, fa0	# P <= A
+	fle	t2, ft3, fa0	# P <= A
 	beq	t2, zero, .reduction_2pi_L2
 # if (A >= P)
-	fsub.s	fa0, fa0, ft3
+	fsub	fa0, fa0, ft3
 .reduction_2pi_L2:
-	fdiv.s	ft3, ft3, ft2
+	fdiv	ft3, ft3, ft2
 	b	.reduction_2pi_L1
 .reduction_2pi_end:
 	jr	ra
@@ -134,34 +134,34 @@ min_caml_sin:
 	fli	ft0, L_0	# 0.0
 	fli	ft1, L_PI	# pi
 	fli	ft2, L_2	# 2.0
-	fle.s	s1, ft0, fa0	# s1: FLAG
+	fle	s1, ft0, fa0	# s1: FLAG
 	xori	s1, s1, 1
-	fabs.s	fa0, fa0
+	fabs	fa0, fa0
 	call	.reduction_2pi
-	fle.s	t2, ft1, fa0	# pi <= A
+	fle	t2, ft1, fa0	# pi <= A
 	beq	t2, zero, .sin_L0
 # if (A >= pi)
-	fsub.s	fa0, fa0, ft1
+	fsub	fa0, fa0, ft1
 	xori	s1, s1, 1
 .sin_L0:
-	fdiv.s	ft3, ft1, ft2	# ft3 = pi / 2
-	fle.s	t2, ft3, fa0	# pi / 2 <= A
+	fdiv	ft3, ft1, ft2	# ft3 = pi / 2
+	fle	t2, ft3, fa0	# pi / 2 <= A
 	beq	t2, zero, .sin_L1
 # if (A >= pi / 2)
-	fsub.s	fa0, ft1, fa0
+	fsub	fa0, ft1, fa0
 .sin_L1:
-	fdiv.s	ft1, ft3, ft2	# ft1 = pi / 4 (piを上書き)
-	fle.s	t2, fa0, ft1	# A <= pi / 4
+	fdiv	ft1, ft3, ft2	# ft1 = pi / 4 (piを上書き)
+	fle	t2, fa0, ft1	# A <= pi / 4
 	beq	t2, zero, .sin_L2
 # if (A <= pi / 4)
 	call	.kernel_sin
 	b	.sin_L3
 .sin_L2: # else
-	fsub.s	fa0, ft3, fa0
+	fsub	fa0, ft3, fa0
 	call	.kernel_cos
 .sin_L3:
 	beq	s1, zero, .sin_end
-	fneg.s	fa0, fa0	# FLAG == 1ならneg
+	fneg	fa0, fa0	# FLAG == 1ならneg
 .sin_end:
 	lw	fp, 0(sp)
 	lw	ra, 4(sp)
@@ -189,33 +189,33 @@ min_caml_cos:
 	fli	ft1, L_PI	# pi
 	fli	ft2, L_2	# 2.0
 	li	s1, 0		# s1: FLAG
-	fabs.s	fa0, fa0
+	fabs	fa0, fa0
 	call	.reduction_2pi
-	fle.s	t2, ft1, fa0	# pi <= A
+	fle	t2, ft1, fa0	# pi <= A
 	beq	t2, zero, .cos_L0
 # if (A >= pi)
-	fsub.s	fa0, fa0, ft1
+	fsub	fa0, fa0, ft1
 	xori	s1, s1, 1
 .cos_L0:
-	fdiv.s	ft3, ft1, ft2	# ft3 = pi / 2
-	fle.s	t2, ft3, fa0	# pi / 2 <= A
+	fdiv	ft3, ft1, ft2	# ft3 = pi / 2
+	fle	t2, ft3, fa0	# pi / 2 <= A
 	beq	t2, zero, .cos_L1
 # if (A >= pi / 2)
-	fsub.s	fa0, ft1, fa0
+	fsub	fa0, ft1, fa0
 	xori	s1, s1, 1
 .cos_L1:
-	fdiv.s	ft1, ft3, ft2	# ft1 = pi / 4 (piを上書き)
-	fle.s	t2, fa0, ft1	# A <= pi / 4
+	fdiv	ft1, ft3, ft2	# ft1 = pi / 4 (piを上書き)
+	fle	t2, fa0, ft1	# A <= pi / 4
 	beq	t2, zero, .cos_L2
 # if (A <= pi / 4)
 	call	.kernel_cos
 	b	.cos_L3
 .cos_L2: # else
-	fsub.s	fa0, ft3, fa0
+	fsub	fa0, ft3, fa0
 	call	.kernel_sin
 .cos_L3:
 	beq	s1, zero, .cos_end
-	fneg.s	fa0, fa0	# FLAG == 1ならneg
+	fneg	fa0, fa0	# FLAG == 1ならneg
 .cos_end:
 	lw	fp, 0(sp)
 	lw	ra, 4(sp)
@@ -230,33 +230,33 @@ min_caml_cos:
 	jr	ra
 
 .kernel_atan:
-	fmv.s	ft0, fa0
-	fmv.s	ft1, fa0
-	fmul.s	ft0, ft0, ft0	# ft0: A ^ 2
-	fmul.s	ft1, ft1, ft0	# ft1: A ^ 3
+	fmv	ft0, fa0
+	fmv	ft1, fa0
+	fmul	ft0, ft0, ft0	# ft0: A ^ 2
+	fmul	ft1, ft1, ft0	# ft1: A ^ 3
 	fli	ft2, L_A3	# ft2: 係数
-	fmul.s	ft3, ft2, ft1
-	fsub.s	fa0, fa0, ft3
-	fmul.s	ft1, ft1, ft0	# ft1: A ^ 5
+	fmul	ft3, ft2, ft1
+	fsub	fa0, fa0, ft3
+	fmul	ft1, ft1, ft0	# ft1: A ^ 5
 	fli	ft2, L_A5
-	fmul.s	ft3, ft2, ft1
-	fadd.s	fa0, fa0, ft3
-	fmul.s	ft1, ft1, ft0	# ft1: A ^ 7
+	fmul	ft3, ft2, ft1
+	fadd	fa0, fa0, ft3
+	fmul	ft1, ft1, ft0	# ft1: A ^ 7
 	fli	ft2, L_A7
-	fmul.s	ft3, ft2, ft1
-	fsub.s	fa0, fa0, ft3
-	fmul.s	ft1, ft1, ft0	# ft1: A ^ 9
+	fmul	ft3, ft2, ft1
+	fsub	fa0, fa0, ft3
+	fmul	ft1, ft1, ft0	# ft1: A ^ 9
 	fli	ft2, L_A9
-	fmul.s	ft3, ft2, ft1
-	fadd.s	fa0, fa0, ft3
-	fmul.s	ft1, ft1, ft0	# ft1: A ^ 11
+	fmul	ft3, ft2, ft1
+	fadd	fa0, fa0, ft3
+	fmul	ft1, ft1, ft0	# ft1: A ^ 11
 	fli	ft2, L_A11
-	fmul.s	ft3, ft2, ft1
-	fsub.s	fa0, fa0, ft3
-	fmul.s	ft1, ft1, ft0	# ft1: A ^ 13
+	fmul	ft3, ft2, ft1
+	fsub	fa0, fa0, ft3
+	fmul	ft1, ft1, ft0	# ft1: A ^ 13
 	fli	ft2, L_A13
-	fmul.s	ft3, ft2, ft1
-	fadd.s	fa0, fa0, ft3
+	fmul	ft3, ft2, ft1
+	fadd	fa0, fa0, ft3
 	jr	ra
 
 min_caml_atan:
@@ -269,38 +269,38 @@ min_caml_atan:
 	sw	ra, 0(sp)
 	fli	ft0, L_Atan1
 	fli	ft1, L_0
-	fle.s	s1, ft1, fa0	# s1: sign flag (s1 = 1 when positive)
-	fabs.s	fa0, fa0
-	fle.s	t1, ft0, fa0	# 0.4375 <= fa0
+	fle	s1, ft1, fa0	# s1: sign flag (s1 = 1 when positive)
+	fabs	fa0, fa0
+	fle	t1, ft0, fa0	# 0.4375 <= fa0
 	bne	t1, zero, .atan_L0
 # |A| < 0.4375の場合
 	call	.kernel_atan
 	b	.atan_L2
 .atan_L0:
 	fli	ft0, L_Atan2
-	fle.s	t1, ft0, fa0	# 2.4375 <= fa0
+	fle	t1, ft0, fa0	# 2.4375 <= fa0
 	bne	t1, zero, .atan_L1
 # |A| < 2.4375の場合
 	fli	ft0, L_1
-	fsub.s	ft1, fa0, ft0	# ft1 = |A| - 1.0
-	fadd.s	ft0, fa0, ft0	# ft0 = |A| + 1.0
-	fdiv.s	fa0, ft1, ft0
+	fsub	ft1, fa0, ft0	# ft1 = |A| - 1.0
+	fadd	ft0, fa0, ft0	# ft0 = |A| + 1.0
+	fdiv	fa0, ft1, ft0
 	call	.kernel_atan
 	fli	ft0, L_PI4
-	fadd.s	fa0, fa0, ft0
+	fadd	fa0, fa0, ft0
 	# 符号処理
 	b	.atan_L2
 .atan_L1:
 # |A| >= 2.4375の場合
-	finv.s	fa0, fa0
+	finv	fa0, fa0
 	call	.kernel_atan
 	fli	ft0, L_PI2
-	fsub.s	fa0, ft0, fa0
+	fsub	fa0, ft0, fa0
 	# 符号処理
 	b	.atan_L2
 .atan_L2:
 	bne	s1, zero, .atan_end
-	fneg.s	fa0, fa0
+	fneg	fa0, fa0
 .atan_end:
 	flw	ft0, 20(sp)
 	flw	ft1, 16(sp)
@@ -323,15 +323,15 @@ min_caml_float_of_int: # int -> float
 	add	a0, a0, t1
 	sw	a0, -4(sp)
 	flw	fa0, -4(sp)
-	fsub.s	fa0, fa0, ft0
-	fneg.s	fa0, fa0
+	fsub	fa0, fa0, ft0
+	fneg	fa0, fa0
 	b	.float_of_int_ret
 .float_of_int_pos:
 	add	a0, a0, t1
 # TODO: integer -> floating レジスタ間のmv (fmv.w.x) がほしいかもしれない...
 	sw	a0, -4(sp)
 	flw	fa0, -4(sp)
-	fsub.s	fa0, fa0, ft0
+	fsub	fa0, fa0, ft0
 .float_of_int_ret:
 	flw	ft0, 4(sp)
 	lw	t1, 0(sp)
@@ -343,20 +343,20 @@ min_caml_int_of_float: # float -> int
 	fsw	ft0, 4(sp)
 	sw	t1, 0(sp)
 	fli	ft0, L_0
-	fle.s	t1, ft0, fa0
+	fle	t1, ft0, fa0
 	beq	zero, t1, .int_of_float_neg
 # positiveの場合
 	fli	ft0, L_8388608
-	fadd.s	fa0, fa0, ft0
+	fadd	fa0, fa0, ft0
 	fsw	fa0, -4(sp)
 	lw	a0, -4(sp)
 	li	t1, 1258291200
 	sub	a0, a0, t1
 	b	.int_of_float_ret
 .int_of_float_neg:
-	fabs.s	fa0, fa0
+	fabs	fa0, fa0
 	fli	ft0, L_8388608
-	fadd.s	fa0, fa0, ft0
+	fadd	fa0, fa0, ft0
 	fsw	fa0, -4(sp)
 	lw	a0, -4(sp)
 	li	t1, 1258291200

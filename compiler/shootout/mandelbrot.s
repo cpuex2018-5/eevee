@@ -17,22 +17,22 @@ iloop_59:
 	call	min_caml_print_int
 	b	iloop_59_ret
 beq_else_124:
-	fsub.s	fa2, fa2, fa3
-	fadd.s	fa2, fa2, fa4
+	fsub	fa2, fa2, fa3
+	fadd	fa2, fa2, fa4
 	fli	fa3, l_106
-	fmul.s	fa0, fa3, fa0
-	fmul.s	fa0, fa0, fa1
-	fadd.s	fa1, fa0, fa5
-	fmul.s	fa0, fa2, fa2
-	fmul.s	fa3, fa1, fa1
-	fadd.s	fa6, fa0, fa3
+	fmul	fa0, fa3, fa0
+	fmul	fa0, fa0, fa1
+	fadd	fa1, fa0, fa5
+	fmul	fa0, fa2, fa2
+	fmul	fa3, fa1, fa1
+	fadd	fa6, fa0, fa3
 	fli	fa7, l_107
-	fle.s	t6, fa6, fa7
+	fle	t6, fa6, fa7
 	beq	t6, zero, bne_else_125
 	addi	a0, a0, -1
-	fmv.s	ft11, fa2
-	fmv.s	fa2, fa0
-	fmv.s	fa0, ft11
+	fmv	ft11, fa2
+	fmv	fa2, fa0
+	fmv	fa0, ft11
 	call	iloop_59
 	b	iloop_59_ret
 bne_else_125:
@@ -56,28 +56,28 @@ bge_else_126:
 	sw	a1, 4(sp)
 	call	min_caml_float_of_int
 	fli	fa1, l_106
-	fmul.s	fa0, fa0, fa1
+	fmul	fa0, fa0, fa1
 	fli	fa2, l_108
-	fdiv.s	fa0, fa0, fa2
+	fdiv	fa0, fa0, fa2
 	fli	fa3, l_109
-	fsub.s	fa0, fa0, fa3
+	fsub	fa0, fa0, fa3
 	lw	a0, 4(sp)
 	fsw	fa0, 8(sp)
 	fsw	fa2, 16(sp)
 	fsw	fa1, 24(sp)
 	call	min_caml_float_of_int
 	flw	fa1, 24(sp)
-	fmul.s	fa0, fa0, fa1
+	fmul	fa0, fa0, fa1
 	flw	fa1, 16(sp)
-	fdiv.s	fa0, fa0, fa1
+	fdiv	fa0, fa0, fa1
 	fli	fa1, l_110
-	fsub.s	fa5, fa0, fa1
+	fsub	fa5, fa0, fa1
 	li	a0, 100
 	fli	fa0, l_111
 	flw	fa4, 8(sp)
-	fmv.s	fa3, fa0
-	fmv.s	fa2, fa0
-	fmv.s	fa1, fa0
+	fmv	fa3, fa0
+	fmv	fa2, fa0
+	fmv	fa1, fa0
 	call	iloop_59
 	lw	a0, 0(sp)
 	addi	a0, a0, 1

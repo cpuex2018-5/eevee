@@ -217,7 +217,7 @@ void exec(Simulator *sim,Op *op){
           }
         }
         else{
-          fprintf(stderr,"Unknown instruction\n");
+          fprintf(stderr,"Unknown instruction at %lu\n", sim->pc);
         }
         break;
       case 0b0000011:
@@ -249,7 +249,7 @@ void exec(Simulator *sim,Op *op){
           sim -> registers[op->rd] = (sim -> data_memory[address+1]<<8) + sim -> data_memory[address];
         }
         else{
-          fprintf(stderr,"Unknown instruction\n");
+          fprintf(stderr,"Unknown instruction at %lu\n", sim->pc);
         }
         sim -> pc = sim -> pc + 4;
         break;
@@ -275,7 +275,7 @@ void exec(Simulator *sim,Op *op){
           sim -> data_memory[address+3] = get_binary(sim->registers[op->rs2],24,32);
         }
         else{
-          fprintf(stderr,"Unknown instruction\n");
+          fprintf(stderr,"Unknown instruction at %lu\n", sim->pc);
         }
         sim -> pc = sim -> pc + 4;
         break;
@@ -336,7 +336,7 @@ void exec(Simulator *sim,Op *op){
           sim -> registers[op->rd] = (sim -> registers[op->rs1] >> shamt);
         }
         else{
-          fprintf(stderr,"Unknown instruction\n");
+          fprintf(stderr,"Unknown instruction at %lu\n", sim->pc);
         }
         sim -> pc = sim -> pc + 4;
         break;
@@ -399,7 +399,7 @@ void exec(Simulator *sim,Op *op){
           sim -> registers[op->rd] = sim -> registers[op -> rs1] & sim -> registers[op -> rs2];
         }
         else{
-          fprintf(stderr,"Unknown instruction\n");
+          fprintf(stderr,"Unknown instruction at %lu\n", sim->pc);
         }
         sim -> pc = sim -> pc + 4;
         break;
@@ -415,7 +415,7 @@ void exec(Simulator *sim,Op *op){
           sim->registers[op->rd] = (uint32_t)iobuf;
         }
         else{
-          fprintf(stderr,"Unknown instruction\n");
+          fprintf(stderr,"Unknown instruction at %lu\n", sim->pc);
         }
         sim->pc = sim -> pc + 4;
         break;
@@ -431,7 +431,7 @@ void exec(Simulator *sim,Op *op){
           sim -> f_registers[op->rd] = u1.f_f;
         }
         else{
-          fprintf(stderr,"Unknown instruction\n");
+          fprintf(stderr,"Unknown instruction at %lu\n", sim->pc);
         }
         sim -> pc = sim -> pc + 4;
         break;
@@ -449,7 +449,7 @@ void exec(Simulator *sim,Op *op){
           sim -> data_memory[address+3] = get_binary(u2.f_i,24,32);
         }
         else{
-          fprintf(stderr,"Unknown instruction\n");
+          fprintf(stderr,"Unknown instruction at %lu\n", sim->pc);
         }
         sim -> pc = sim -> pc + 4;
         break;
@@ -619,7 +619,7 @@ void exec(Simulator *sim,Op *op){
           }
         }
         else{
-          fprintf(stderr,"Unknown instruction\n");
+          fprintf(stderr,"Unknown instruction at %lu\n", sim->pc);
         }
         sim->pc = sim->pc+4;
         break;

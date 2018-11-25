@@ -51,6 +51,69 @@ min_caml_print_int:
 	addi	sp, sp, 12
 	jr	ra
 
+min_caml_print_float:
+	addi	sp, sp, -8
+	sw	a1, 4(sp)
+	sw	ra, 0(sp)
+	fsw	fa0, -4(sp)	# spをあげない横着
+	lw	a0, -4(sp)
+	bge	a0, zero, .print_uint_L0
+	li	a1, 45
+	w	a1
+	neg	a0, a0
+.print_uint_L0:
+	li	a1, 1000000000
+	call	min_caml_div_rem	# a0: 商、a1: 余り
+	addi	a0, a0, 48
+	w	a0
+	mv	a0, a1
+	li	a1, 100000000
+	call	min_caml_div_rem
+	addi	a0, a0, 48
+	w	a0
+	mv	a0, a1
+	li	a1, 10000000
+	call	min_caml_div_rem
+	addi	a0, a0, 48
+	w	a0
+	mv	a0, a1
+	li	a1, 1000000
+	call	min_caml_div_rem
+	addi	a0, a0, 48
+	w	a0
+	mv	a0, a1
+	li	a1, 100000
+	call	min_caml_div_rem
+	addi	a0, a0, 48
+	w	a0
+	mv	a0, a1
+	li	a1, 10000
+	call	min_caml_div_rem
+	addi	a0, a0, 48
+	w	a0
+	mv	a0, a1
+	li	a1, 1000
+	call	min_caml_div_rem
+	addi	a0, a0, 48
+	w	a0
+	mv	a0, a1
+	li	a1, 100
+	call	min_caml_div_rem
+	addi	a0, a0, 48
+	w	a0
+	mv	a0, a1
+	li	a1, 10
+	call	min_caml_div_rem
+	addi	a0, a0, 48
+	w	a0
+	addi	a1, a1, 48
+	w	a1
+	lw	a1, 4(sp)
+	lw	ra, 0(sp)
+	addi	sp, sp, 8
+	jr	ra
+
+
 min_caml_read_int:
 # ' '(space)または'\n'で区切る
 	addi	sp, sp, -16
@@ -150,7 +213,7 @@ min_caml_read_float:
 .read_float_end:
 	call	min_caml_float_of_int
 	fli	ft0, L_10
-	fdiv.s	fa0, fa0, ft0
+	fdiv	fa0, fa0, ft0
 	lw	t1, 20(sp)
 	lw	t2, 16(sp)
 	lw	t3, 12(sp)
