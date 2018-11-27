@@ -8,13 +8,13 @@ _min_caml_start: # main entry point
 #	main program ends
 	j	end
 iloop_59:
-	addi	sp, sp, -12
-	sw	ra, 8(sp)
-	sw	fp, 4(sp)
-	addi	fp, sp, 12
+	addi	sp, sp, -8
+	sw	ra, 4(sp)
+	sw	fp, 0(sp)
+	addi	fp, sp, 8
 	bne	a0, zero, beq_else_124
 	li	a0, 1
-	call	min_caml_print_int
+	tail	min_caml_print_int
 	b	iloop_59_ret
 beq_else_124:
 	fsub	fa2, fa2, fa3
@@ -33,21 +33,21 @@ beq_else_124:
 	fmv	ft11, fa2
 	fmv	fa2, fa0
 	fmv	fa0, ft11
-	call	iloop_59
+	tail	iloop_59
 	b	iloop_59_ret
 bne_else_125:
 	li	a0, 0
-	call	min_caml_print_int
+	tail	min_caml_print_int
 iloop_59_ret:
-	lw	ra, 8(sp)
-	lw	fp, 4(sp)
-	addi	sp, sp, 12
+	lw	ra, 4(sp)
+	lw	fp, 0(sp)
+	addi	sp, sp, 8
 	jr	ra
 xloop_47:
-	addi	sp, sp, -44
-	sw	ra, 40(sp)
-	sw	fp, 36(sp)
-	addi	fp, sp, 44
+	addi	sp, sp, -40
+	sw	ra, 36(sp)
+	sw	fp, 32(sp)
+	addi	fp, sp, 40
 	li	t6, 400
 	blt	a0, t6, bge_else_126
 	b	xloop_47_ret
@@ -82,17 +82,17 @@ bge_else_126:
 	lw	a0, 0(sp)
 	addi	a0, a0, 1
 	lw	a1, 4(sp)
-	call	xloop_47
+	tail	xloop_47
 xloop_47_ret:
-	lw	ra, 40(sp)
-	lw	fp, 36(sp)
-	addi	sp, sp, 44
+	lw	ra, 36(sp)
+	lw	fp, 32(sp)
+	addi	sp, sp, 40
 	jr	ra
 yloop_43:
-	addi	sp, sp, -16
-	sw	ra, 12(sp)
-	sw	fp, 8(sp)
-	addi	fp, sp, 16
+	addi	sp, sp, -12
+	sw	ra, 8(sp)
+	sw	fp, 4(sp)
+	addi	fp, sp, 12
 	li	t6, 400
 	blt	a0, t6, bge_else_128
 	b	yloop_43_ret
@@ -104,11 +104,11 @@ bge_else_128:
 	call	xloop_47
 	lw	a0, 0(sp)
 	addi	a0, a0, 1
-	call	yloop_43
+	tail	yloop_43
 yloop_43_ret:
-	lw	ra, 12(sp)
-	lw	fp, 8(sp)
-	addi	sp, sp, 16
+	lw	ra, 8(sp)
+	lw	fp, 4(sp)
+	addi	sp, sp, 12
 	jr	ra
 end:
 	j	end

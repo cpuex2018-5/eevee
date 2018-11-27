@@ -26,7 +26,7 @@ let locate x =
     | y :: zs -> List.map succ (loc zs) in
   loc !stackmap
 let offset x = 4 * List.hd (locate x)
-let stacksize () = (List.length !stackmap + 1) * 4
+let stacksize () = (List.length !stackmap) * 4
 
 let reg r =
   if is_reg r
@@ -85,7 +85,6 @@ and g' buf e =
   | NonTail(x), Sll(y, V(z)) -> Printf.bprintf buf "\tsll\t%s, %s, %s\n" (reg x) (reg y) (reg z)
   | NonTail(x), Sll(y, C(z)) -> Printf.bprintf buf "\tslli\t%s, %s, %d\n" (reg x) (reg y) z
   | NonTail(x), Lw(y, V(z)) ->
-    (* TODO: asml.ml, virtual.mlを変更してここが1命令になるようにする *)
     Printf.bprintf buf "\tadd\t%s, %s, %s\n" (reg reg_tmp) (reg y) (reg z);
     Printf.bprintf buf "\tlw\t%s, 0(%s)\n" (reg x) (reg reg_tmp)
   | NonTail(x), Lw(y, C(z)) -> Printf.bprintf buf "\tlw\t%s, %d(%s)\n" (reg x) z (reg y)
@@ -223,19 +222,43 @@ and g' buf e =
     Printf.bprintf buf "\tcall\t%s\n" f;
   | NonTail(a), CallCls(f, iargs, fargs) ->
     g'_args buf [(f, reg_cl)] iargs fargs;
+(*
+    let ss = stacksize() + 8 in
+    Printf.bprintf buf "\taddi\tsp, sp, %d\n" (-1 * ss);
+    Printf.bprintf buf "\tsw\tra, %d(sp)\n" (ss - 4);
+    Printf.bprintf buf "\tsw\tfp, %d(sp)\n" (ss - 8);
+    Printf.bprintf buf "\taddi\tfp, sp, %d\n" ss;
+*)
     Printf.bprintf buf "\tlw\tra, 0(%s)\n" (reg reg_cl); (* set closure address to %ra *)
     Printf.bprintf buf "\tjalr\tra, ra, 0\n";
     if List.mem a allregs && a <> regs.(0) then
       Printf.bprintf buf "\tmv\t%s, %s\n" (reg a) (reg regs.(0))
     else if List.mem a allfregs && a <> fregs.(0) then
       Printf.bprintf buf "\tfmv\t%s, %s\n" (reg a) (reg fregs.(0));
+(*
+    Printf.bprintf buf "\tlw\tra, %d(sp)\n" (ss - 4);
+    Printf.bprintf buf "\tlw\tfp, %d(sp)\n" (ss - 8);
+    Printf.bprintf buf "\taddi\tsp, sp, %d\n" ss;
+*)
   | (NonTail(a), CallDir(Id.L(f), iargs, fargs)) ->
     g'_args buf [] iargs fargs;
+(*
+    let ss = stacksize() + 8 in
+    Printf.bprintf buf "\taddi\tsp, sp, %d\n" (-1 * ss);
+    Printf.bprintf buf "\tsw\tra, %d(sp)\n" (ss - 4);
+    Printf.bprintf buf "\tsw\tfp, %d(sp)\n" (ss - 8);
+    Printf.bprintf buf "\taddi\tfp, sp, %d\n" ss;
+*)
     Printf.bprintf buf "\tcall\t%s\n" f;
     if List.mem a allregs && a <> regs.(0) then
       Printf.bprintf buf "\tmv\t%s, %s\n" (reg a) (reg regs.(0))
     else if List.mem a allfregs && a <> fregs.(0) then
       Printf.bprintf buf "\tfmv\t%s, %s\n" (reg a) (reg fregs.(0));
+(*
+    Printf.bprintf buf "\tlw\tra, %d(sp)\n" (ss - 4);
+    Printf.bprintf buf "\tlw\tfp, %d(sp)\n" (ss - 8);
+    Printf.bprintf buf "\taddi\tsp, sp, %d\n" ss;
+*)
 and g'_tail_if buf rs1 rs2 e1 e2 b bn = (* bはラベルに使うだけで命令には使わない *)
   match e2 with
   | Ans(Nop) ->
