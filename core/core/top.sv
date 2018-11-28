@@ -36,8 +36,7 @@ logic b_flag2;
 
 logic b_memory_we;
 logic [2:0] b_memory_stage;
-logic [31:0] b_r_counter;
-logic [31:0] b_w_counter;
+logic [31:0] b_addr;
 
 (* mark_debug = "true" *) logic [31:0] e_program_counter;
 (* mark_debug = "true" *) logic signed [31:0] e_registers[0:31];
@@ -57,9 +56,8 @@ logic [31:0] e_imm_b;
 logic [3:0] e_wait;
 
 (* mark_debug = "true" *) logic m_we;
-(* mark_debug = "true" *) logic [31:0] m_r_addr;
+(* mark_debug = "true" *) logic [31:0] m_addr;
 (* mark_debug = "true" *) logic [31:0] m_r_data;
-(* mark_debug = "true" *) logic [31:0] m_w_addr;
 (* mark_debug = "true" *) logic [31:0] m_w_data;
 logic [31:0] m_r_addr_buf;
 logic [31:0] m_r_data_buf;
@@ -124,16 +122,14 @@ assign e_imm_b = b_rdata[31]?{19'd524287, b_rdata[31],b_rdata[7],b_rdata[30:25],
 
 code_memory #(.CODE_SIZE(CODE_SIZE)) code_memory(.clk(clk),
     .we(b_memory_we),
-    .r_addr(b_r_counter),
+    .addr(b_addr),
     .r_data(b_rdata),
-    .w_addr(b_w_counter),
     .w_data(b_wdata));
 
 memory #(.MEMORY_SIZE(MEMORY_SIZE)) memory(.clk(clk),
     .we(m_we),
-    .r_addr(m_r_addr),
+    .addr(m_addr),
     .r_data(m_r_data),
-    .w_addr(m_w_addr),
     .w_data(m_w_data));
 
 fadd fadd(.x1(fadd_x1),
@@ -165,13 +161,13 @@ fabs fabs(.x(fabs_x),
           .y(fabs_y));
 finv finv(.x(finv_x),
           .y(finv_y));
+          
+initial begin
+    boot_stage = 0;
+    main_stage = 0;
+end
 
 always @(posedge clk) begin
-    if (b_memory_we) begin
-        b_w_counter <= b_w_counter + 1;
-        b_memory_we <= 0;
-        b_wdata <= 0;
-    end
     if (!rst) begin
         e_registers[0] <= 0;
         e_registers[1] <= 0;
@@ -250,8 +246,7 @@ always @(posedge clk) begin
         s_axi_wstrb <= 0;
         s_axi_wvalid <= 0;
         b_stage <= 0;
-        b_w_counter <= 0;
-        b_r_counter <= 1;
+        b_addr <= 1;
         b_memory_stage <= 0;
 
         b_wdata <= 0;
@@ -262,73 +257,20 @@ always @(posedge clk) begin
 
         boot_stage <= 1;
         main_stage <= 0;
+
+        m_we <= 0;
+        b_memory_we <= 0;
     end if (boot_stage) begin
-    /*
-        if (b_stage == 0) begin
-            s_axi_arvalid <= 1;
-            s_axi_araddr <= 8;
-            b_stage <= 1;
-        end else if (b_stage == 1) begin
-            if (s_axi_arready) begin
-                s_axi_arvalid <= 0;
-                s_axi_rready <= 1;
-                b_stage <= 2;
-            end
-        end else if (b_stage == 2) begin
-            if (s_axi_rvalid) begin
-                s_axi_rready <= 0;
-                b_resp <= s_axi_rresp; 
-                b_stat <= s_axi_rdata;
-                b_stage <= 3;
-            end
-        end else if (b_stage == 3) begin
-            if (b_stat[0] == 1) begin
-                s_axi_arvalid <= 1;
-                s_axi_araddr <= 0;
-                b_stage <= 4;       
-            end else begin
-                b_stage <= 0;
-            end
-        end else if (b_stage == 4) begin
-            if (s_axi_arready) begin
-                s_axi_arvalid <= 0;
-                s_axi_rready <= 1;
-                b_stage <= 5;
-            end
-        end else if (b_stage == 5) begin
-            if (s_axi_rvalid) begin
-                s_axi_rready <= 0;
-                b_wdata <= b_wdata + (s_axi_rdata[7:0] << (8*(3-b_memory_stage)));
-                b_stage <= 6;
-            end
-        end else if (b_stage == 6) begin
-            if (b_memory_stage == 3 && b_wdata == 0) begin
-                boot_stage <= 0;
-                main_stage <= 1;
-                fetch_stage <= 1;
-                b_memory_stage <= 0;
-                b_stage <= 5;
-            end else begin
-                if (b_memory_stage == 3) begin
-                    b_memory_stage <= 0;
-                    b_memory_we <= 1;
-                end else begin
-                    b_memory_stage <= b_memory_stage + 1;
-                end
-                b_stage <= 0;
-            end
-        end
-    */
         boot_stage <= 0;
         main_stage <= 1;
         fetch_stage <= 1;
     end else if (main_stage) begin
         if (fetch_stage) begin
             if (e_wait == 0) begin
-                if (b_r_counter == e_program_counter/4) begin
+                if (b_addr == e_program_counter/4) begin
                     main_stage <= 0;
                 end
-                b_r_counter <= e_program_counter/4;
+                b_addr <= e_program_counter/4;
                 e_wait <= 1;
             end else begin
                 e_wait <= 0;
@@ -404,7 +346,7 @@ always @(posedge clk) begin
                         m_r_addr_buf <= e_registers[e_rs1] + e_imm_i;
                         e_wait <= 1;
                     end else if (e_wait == 1) begin
-                        m_r_addr <= m_r_addr_buf;
+                        m_addr <= m_r_addr_buf>>2;
                         e_wait <= 2;
                     end else if (e_wait == 2) begin
                         e_wait <= 3;
@@ -426,7 +368,7 @@ always @(posedge clk) begin
                         e_wait <= 1;
                     end else if (e_wait == 1) begin
                         m_we <= 1;
-                        m_w_addr <= m_w_addr_buf;
+                        m_addr <= m_w_addr_buf>>2;
                         m_w_data <= m_w_data_buf;
                         e_wait <= 2;
                     end else if (e_wait == 2) begin
@@ -458,7 +400,7 @@ always @(posedge clk) begin
                         m_r_addr_buf <= e_registers[e_rs1] + e_imm_i;
                         e_wait <= 1;
                     end else if (e_wait == 1) begin
-                        m_r_addr <= m_r_addr_buf;
+                        m_addr <= m_r_addr_buf>>2;
                         e_wait <= 2;
                     end else if (e_wait == 2) begin
                         e_wait <= 3;
@@ -479,7 +421,7 @@ always @(posedge clk) begin
                     e_wait <= 1;
                 end else if (e_wait == 1) begin
                     m_we <= 1;
-                    m_w_addr <= m_w_addr_buf;
+                    m_addr <= m_w_addr_buf>>2;
                     m_w_data <= m_w_data_buf;
                     e_wait <= 2;
                 end else if (e_wait == 2) begin

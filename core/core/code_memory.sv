@@ -5,17 +5,16 @@ module code_memory #(
 ) (
     input clk,
     input we,
-    input [31:0] r_addr,
+    input [31:0] addr,
     output logic [31:0] r_data,
-    input [31:0] w_addr,
     input [31:0] w_data);
     
-    logic [31:0] mem [0:CODE_SIZE];
+(* ram_style = "block" *) logic [31:0] mem [0:CODE_SIZE];
     
     initial $readmemb("code.coe", mem);
     
     always @(posedge clk) begin
-        if (we) mem[w_addr] <= w_data;
-        r_data <= mem[r_addr];
+        if (we) mem[addr] <= w_data;
+        r_data <= mem[addr];
     end
 endmodule
