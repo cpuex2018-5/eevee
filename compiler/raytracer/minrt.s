@@ -3,6 +3,10 @@
 _min_caml_start: # main entry point
 	li	gp, 220	# initialize gp
 #	main program starts
+	addi	sp, sp, -168
+	sw	ra, 164(sp)
+	sw	fp, 160(sp)
+	addi	fp, sp, 168
 	li	a0, 1
 	li	a1, 0
 	call	min_caml_create_array
@@ -812,6 +816,9 @@ _min_caml_start: # main entry point
 	li	a1, 128
 	lw	ra, 0(s11)
 	jalr	ra, ra, 0
+	lw	ra, 164(sp)
+	lw	fp, 160(sp)
+	addi	sp, sp, 168
 #	main program ends
 	j	end
 sgn_2364:

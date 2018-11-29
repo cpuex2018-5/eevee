@@ -351,7 +351,15 @@ let f oc (Prog(data, fundefs, e)) =
   stackmap := [];
   let buf = Buffer.create 128 in
   g buf (NonTail("_R_0"), e);
+  let ss = stacksize () + 8 in
+  Printf.fprintf oc "\taddi\tsp, sp, %d\n" (-1 * ss);
+  Printf.fprintf oc "\tsw\tra, %d(sp)\n" (ss - 4);
+  Printf.fprintf oc "\tsw\tfp, %d(sp)\n" (ss - 8);
+  Printf.fprintf oc "\taddi\tfp, sp, %d\n" ss;
   Buffer.output_buffer oc buf;
+  Printf.fprintf oc "\tlw\tra, %d(sp)\n" (ss - 4);
+  Printf.fprintf oc "\tlw\tfp, %d(sp)\n" (ss - 8);
+  Printf.fprintf oc "\taddi\tsp, sp, %d\n" ss;
   Printf.fprintf oc "#\tmain program ends\n";
   Printf.fprintf oc "\tj\tend\n";
   List.iter (fun fundef -> h oc fundef) fundefs;
