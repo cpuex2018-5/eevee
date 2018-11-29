@@ -1,7 +1,8 @@
 #include"./simulator.h"
 extern int debug_mode;
 extern int fpu_mode;
-
+const float epsilon = pow(2,-126);
+const float fpu_check = pow(2,-23);
 Simulator *init(unsigned long m_size,unsigned long s_pos,FILE *in,FILE *out,FILE *coef){
   int i = 0;
   Simulator *sim = (Simulator *)malloc(sizeof(Simulator));
@@ -32,7 +33,10 @@ Simulator *init(unsigned long m_size,unsigned long s_pos,FILE *in,FILE *out,FILE
 
   for(int i=0;i<(1<<18)-1;i++){
     char buf[32];
-    fread(&buf,sizeof(char),32,coef);
+    int tmp = fread(&buf,sizeof(char),32,coef);
+    if(tmp < 0){
+      fprintf(stderr,"failed to read\n");
+    }
     fseek(coef,1L,SEEK_CUR);
     //buf[0] ~ buf[32] がデータでbuf[33] が'\n
       try{
@@ -63,6 +67,9 @@ void destroy(Simulator *sim){
 void load(Simulator *sim,FILE *fp){
   unsigned int size = fread(sim->text_memory,sizeof(char),MEM_SIZE,fp);
   fprintf(stdout,"code size: %d bytes\n",size);
+  if(size < 0){
+    fprintf(stderr,"failed to read\n");
+  }
   if(size == MEM_SIZE){
     fprintf(stderr,"it is possible that simulator could not load full code\n");
   }
@@ -106,7 +113,9 @@ void exec(Simulator *sim,Op *op){
         debug_mode=1;
       }
     }
-
+    if(sim->registers[2] < sim->registers[3]){
+      fprintf(stderr,"warning!! heap pointer is lower than stack pointer!!\n");
+    }
     if(debug_mode == 1){
       //for debug
       Op *dbgop = (Op *)malloc(sizeof(Op));
@@ -225,27 +234,45 @@ void exec(Simulator *sim,Op *op){
         decode_i(inst,op);
         s_imm = (op->imm) | ((op->imm & 0x800) ? 0xFFFFF800:0); //sign extension
         address = sim -> registers[op->rs1] + s_imm;
+        if(address < 0){
+          fprintf(stderr,"index out negative value at %lu\n",sim->pc);
+        }
         if(op->funct3==0b000){
           //lb
+          if(address > 0x100000){
+            fprintf(stderr,"index out of range at %lu\n",sim->pc);
+          }
           sim -> registers[op->rd] = (char)sim -> data_memory[address];
           // cast to char for sign extension
         }
         else if(op->funct3==0b001){
           //lh
+          if(address+1 > 0x100000){
+            fprintf(stderr,"index out of range at %lu\n",sim->pc);
+          }
           sim -> registers[op->rd] = (short)((sim->data_memory[address]<<8) + (sim->data_memory[address+1]));
           //cast to short for sign extension
         }
         else if(op->funct3==0b010){
           //lw
+          if(address+3 > 0x100000){
+            fprintf(stderr,"index out of range at %lu\n",sim->pc);
+          }
           sim -> registers[op->rd] = ((unsigned int)sim->data_memory[address]<<24) + ((unsigned int)sim -> data_memory[address+1]<<16)
                                       + ((unsigned int)sim->data_memory[address+2]<<8) + ((unsigned int)sim->data_memory[address+3]);
         }
         else if(op->funct3==0b100){
           //lbu
+          if(address > 0x100000){
+            fprintf(stderr,"index out of range at %lu\n",sim->pc);
+          }
           sim -> registers[op->rd] = sim -> data_memory[address];
         }
         else if(op->funct3==0b101){
           //lhu
+          if(address+1 > 0x100000){
+            fprintf(stderr,"index out of range at %lu\n",sim->pc);
+          }
           sim -> registers[op->rd] = (sim -> data_memory[address]<<8) + sim -> data_memory[address+1];
         }
         else{
@@ -258,17 +285,29 @@ void exec(Simulator *sim,Op *op){
         decode_s(inst,op);
         s_imm = (op->imm) | ((op->imm & 0x800) ? 0xFFFFF800:0); //sign extension
         address = sim -> registers[op->rs1]+s_imm;
+        if(address < 0){
+          fprintf(stderr,"index negative value at %lu\n",sim->pc);
+        }
         if(op->funct3 == 0b000){
           //sb
+          if(address > 0x100000){
+            fprintf(stderr,"index out of range at %lu\n",sim->pc);
+          }
           sim -> data_memory[address] = get_binary(sim->registers[op->rs2],0,8);
         }
         else if(op->funct3 == 0b001){
           //sh
+          if(address+1>0x100000){
+            fprintf(stderr,"index out of range at %lu\n",sim->pc);
+          }
           sim -> data_memory[address+1] = get_binary(sim->registers[op->rs2],0,8);
           sim -> data_memory[address] = get_binary(sim->registers[op->rs2],8,16);
         }
         else if(op->funct3 == 0b010){
           //sw
+          if(address+3>0x100000){
+            fprintf(stderr,"index out of range at %lu\n",sim->pc);
+          }
           sim -> data_memory[address+3] = get_binary(sim->registers[op->rs2],0,8);
           sim -> data_memory[address+2] = get_binary(sim->registers[op->rs2],8,16);
           sim -> data_memory[address+1] = get_binary(sim->registers[op->rs2],16,24);
@@ -411,7 +450,10 @@ void exec(Simulator *sim,Op *op){
         }
         else if(op->funct3 == 0b001){
           char iobuf;
-          fread(&iobuf,sizeof(char),1,sim->in);
+          int tmp = fread(&iobuf,sizeof(char),1,sim->in);
+          if(tmp < 0){
+            fprintf(stderr,"failed to read\n");
+          }
           sim->registers[op->rd] = (uint32_t)iobuf;
         }
         else{
@@ -461,7 +503,6 @@ void exec(Simulator *sim,Op *op){
             sim -> f_registers[op->rd] = sim -> f_registers[op->rs1] + sim -> f_registers[op->rs2];
           }
           else{
-            float true_val = sim -> f_registers[op->rs1] + sim -> f_registers[op->rs2];
             float fpu_val = fadd(sim->f_registers[op->rs1],sim->f_registers[op->rs2]);
             sim -> f_registers[op->rd] = fpu_val;
           }
@@ -472,7 +513,6 @@ void exec(Simulator *sim,Op *op){
             sim -> f_registers[op->rd] = sim -> f_registers[op->rs1] - sim -> f_registers[op->rs2];
           }
           else{
-            float true_val = sim -> f_registers[op->rs1] - sim->f_registers[op->rs2];
             float fpu_val = fsub(sim->f_registers[op->rs1],sim->f_registers[op->rs2]);
             sim -> f_registers[op->rd] = fpu_val;
           }
@@ -483,7 +523,6 @@ void exec(Simulator *sim,Op *op){
             sim -> f_registers[op->rd] = sim -> f_registers[op->rs1] * sim -> f_registers[op->rs2];
           }
           else{
-            float true_val = sim -> f_registers[op->rs1] * sim -> f_registers[op->rs2];
             float fpu_val = fmul(sim->f_registers[op->rs1],sim->f_registers[op->rs2]);
             sim -> f_registers[op->rd] = fpu_val;
           }
@@ -494,7 +533,6 @@ void exec(Simulator *sim,Op *op){
             sim -> f_registers[op->rd] = sim -> f_registers[op->rs1] / sim -> f_registers[op->rs2];
           }
           else{
-            float true_val = sim -> f_registers[op->rs1] / sim -> f_registers[op->rs2];
             float fpu_val = fdiv(sim->f_registers[op->rs1],sim->f_registers[op->rs2]);
             sim -> f_registers[op->rd] = fpu_val;
           }
@@ -505,22 +543,12 @@ void exec(Simulator *sim,Op *op){
             sim -> f_registers[op->rd] = std::sqrt(sim->f_registers[op->rs1]);
           }
           else{
-            float true_val = std::sqrt(sim->f_registers[op->rs1]);
             float fpu_val = fsqrt(sim->f_registers[op->rs1]);
             sim -> f_registers[op->rd] = fpu_val;
           }
         }
         else if(op->funct7 == 0b1010000 && op->funct3 == 0b010){
           //feq.s
-          
-          /*
-          if(sim->f_registers[op->rs1] == sim->f_registers[op->rs2]){
-            sim->registers[op->rd] = 1;
-          }
-          else{
-            sim->registers[op->rd] = 0;
-          }
-          */
           if(fpu_mode==0){
             if(sim->f_registers[op->rs1] == sim->f_registers[op->rs2]){
               sim->registers[op->rd] = 1;
@@ -547,15 +575,6 @@ void exec(Simulator *sim,Op *op){
         }
         else if(op->funct7 == 0b1010000 && op->funct3 == 0b000){
           //fle.s
-          
-          /*
-          if(sim->f_registers[op->rs1] <= sim->f_registers[op->rs2]){
-            sim->registers[op->rd] = 1;
-          }
-          else{
-            sim->registers[op->rd] = 0;
-          }
-          */
           
           if(fpu_mode==0){
             if(sim->f_registers[op->rs1] <= sim->f_registers[op->rs2]){
@@ -591,7 +610,6 @@ void exec(Simulator *sim,Op *op){
             sim -> f_registers[op->rd] = - (sim -> f_registers[op->rs1]);
           }
           else{
-            float true_val = - (sim -> f_registers[op->rs1]);
             float fpu_val = fpuneg(sim->f_registers[op->rs1]);
             sim -> f_registers[op->rd] = fpu_val;
           }
@@ -602,7 +620,6 @@ void exec(Simulator *sim,Op *op){
             sim -> f_registers[op->rd] = fabs(sim->f_registers[op->rs1]);
           }
           else{
-            float true_val = fabs(sim->f_registers[op->rs1]);
             float fpu_val = fpuabs(sim->f_registers[op->rs1]);
             sim -> f_registers[op->rd] = fpu_val;
           }
@@ -613,7 +630,6 @@ void exec(Simulator *sim,Op *op){
             sim -> f_registers[op->rd] = 1/sim->f_registers[op->rs1];
           }
           else{
-            float true_val = 1/sim->f_registers[op->rs1];
             float fpu_val = finv(sim->f_registers[op->rs1]);
             sim -> f_registers[op->rd] = fpu_val;
           }
