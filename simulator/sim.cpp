@@ -1,6 +1,7 @@
 #include"./simulator.h"
 extern int debug_mode;
 extern int fpu_mode;
+
 Simulator *init(unsigned long m_size,unsigned long s_pos,FILE *in,FILE *out,FILE *coef){
   int i = 0;
   Simulator *sim = (Simulator *)malloc(sizeof(Simulator));
@@ -76,6 +77,7 @@ void load(Simulator *sim,FILE *fp){
 
 
 void exec(Simulator *sim,Op *op){
+  std::map<unsigned long,unsigned long> jump_counter;
   unsigned int prev_pc = -1; //local variable to detect loop
   unsigned long inst_counter = -1; //keep the number of inst execute
   while(1){
@@ -158,6 +160,7 @@ void exec(Simulator *sim,Op *op){
         sim->registers[op->rd]=sim->pc + 4;
         s_imm = ( op -> imm ) | ((op->imm & 0x100000) ? 0xFFF00000:0); //sign extend
         sim -> pc = sim -> pc + s_imm;
+        jump_counter[sim->pc]++;
         break;
       case 0b1100111:
         //jalr
@@ -166,6 +169,7 @@ void exec(Simulator *sim,Op *op){
         sim -> pc = (sim->registers[op->rs1] + s_imm);
         sim -> pc = (sim -> pc) &~ (0b1); //clear LSB
         sim->registers[op->rd]=prev_pc + 4;
+        jump_counter[sim->pc]++;
         break;
       case 0b1100011:
         //beq,bne,blt,bge,bltu,bgeu
@@ -174,6 +178,7 @@ void exec(Simulator *sim,Op *op){
         if(op->funct3 == 0b000){//beq
           if(sim->registers[op->rs1] == sim->registers[op->rs2]){
             sim -> pc = sim -> pc + s_imm;
+            jump_counter[sim->pc]++;
           }
           else{
             sim -> pc = sim -> pc + 4;
@@ -182,6 +187,7 @@ void exec(Simulator *sim,Op *op){
         else if(op->funct3 == 0b001){//bne
           if(sim->registers[op->rs1] != sim->registers[op->rs2]){
             sim -> pc = sim -> pc + s_imm;
+            jump_counter[sim->pc]++;
           }
           else{
             sim -> pc = sim -> pc + 4;
@@ -190,6 +196,7 @@ void exec(Simulator *sim,Op *op){
         else if(op->funct3 == 0b100){//blt
           if(sim->registers[op->rs1] < sim->registers[op->rs2]){
             sim -> pc = sim -> pc + s_imm;
+            jump_counter[sim->pc]++;
           }
           else{
             sim -> pc = sim -> pc + 4;
@@ -198,6 +205,7 @@ void exec(Simulator *sim,Op *op){
         else if(op->funct3 == 0b101){//bge
           if(sim->registers[op->rs1] >= sim -> registers[op->rs2]){
             sim -> pc = sim -> pc + s_imm;
+            jump_counter[sim->pc]++;
           }
           else{
             sim -> pc = sim -> pc + 4;
@@ -208,6 +216,7 @@ void exec(Simulator *sim,Op *op){
           unsigned int u_rs2 = (unsigned int) sim->registers[op->rs2];
           if(u_rs1 < u_rs2){
             sim -> pc = sim -> pc + s_imm;
+            jump_counter[sim->pc]++;
           }
           else{
             sim -> pc = sim -> pc + 4;
@@ -218,6 +227,7 @@ void exec(Simulator *sim,Op *op){
           unsigned int u_rs2 = (unsigned int) sim->registers[op->rs2];
           if(u_rs1 >= u_rs2){
             sim -> pc = sim -> pc + s_imm;
+            jump_counter[sim->pc]++;
           }
           else{
             sim -> pc = sim -> pc + 4;
@@ -647,4 +657,5 @@ void exec(Simulator *sim,Op *op){
   print_regs(sim);
   print_fregs(sim);
   fprintf(stdout,"simulation finished inst_counter: %ld\n",inst_counter);
+  dump_map(jump_counter);
 }
