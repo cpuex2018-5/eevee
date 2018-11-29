@@ -653,7 +653,7 @@ void exec(Simulator *sim,Op *op){
     }
     sim->registers[0]=0;
   }
-
+  inst_counter++;
   print_regs(sim);
   print_fregs(sim);
   fprintf(stdout,"simulation finished inst_counter: %ld\n",inst_counter);
