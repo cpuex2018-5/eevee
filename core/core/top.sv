@@ -22,21 +22,21 @@ module subtop #(
     input [31:0] s_axi_rdata,
     input [1:0] s_axi_rresp,
     input s_axi_rvalid,
-    output logic s_axi_rready
+    output logic s_axi_rready,
+    output logic m_we,
+    output logic [18:0] m_addr,
+    input [31:0] m_r_data,
+    output logic [31:0] m_w_data,
+    output logic [14:0] b_addr,
+    input [31:0] b_rdata
 );
 
 logic [31:0] b_stat;
-(* mark_debug = "true" *) logic [31:0] b_rdata;
-logic [31:0] b_wdata;
 logic [9:0] b_stage;
 logic [1:0] b_resp;
 
 logic b_flag1;
 logic b_flag2;
-
-logic b_memory_we;
-logic [2:0] b_memory_stage;
-logic [31:0] b_addr;
 
 (* mark_debug = "true" *) logic [31:0] e_program_counter;
 (* mark_debug = "true" *) logic signed [31:0] e_registers[0:31];
@@ -54,15 +54,6 @@ logic [31:0] e_imm_u;
 logic [31:0] e_imm_b;
 
 logic [3:0] e_wait;
-
-(* mark_debug = "true" *) logic m_we;
-(* mark_debug = "true" *) logic [31:0] m_addr;
-(* mark_debug = "true" *) logic [31:0] m_r_data;
-(* mark_debug = "true" *) logic [31:0] m_w_data;
-logic [31:0] m_r_addr_buf;
-logic [31:0] m_r_data_buf;
-logic [31:0] m_w_addr_buf;
-logic [31:0] m_w_data_buf;
 
 logic [31:0] s_axi_w_buf;
 logic [31:0] s_axi_r_buf;
@@ -120,18 +111,6 @@ assign e_imm_s = b_rdata[31]?{20'd1048575, b_rdata[31:25],b_rdata[11:7]}:{20'd0,
 assign e_imm_u = {b_rdata[31:12],12'd0};
 assign e_imm_b = b_rdata[31]?{19'd524287, b_rdata[31],b_rdata[7],b_rdata[30:25],b_rdata[11:8],1'b0}:{19'd0, b_rdata[31],b_rdata[7],b_rdata[30:25],b_rdata[11:8],1'b0};
 
-code_memory #(.CODE_SIZE(CODE_SIZE)) code_memory(.clk(clk),
-    .we(b_memory_we),
-    .addr(b_addr),
-    .r_data(b_rdata),
-    .w_data(b_wdata));
-
-memory #(.MEMORY_SIZE(MEMORY_SIZE)) memory(.clk(clk),
-    .we(m_we),
-    .addr(m_addr),
-    .r_data(m_r_data),
-    .w_data(m_w_data));
-
 fadd fadd(.x1(fadd_x1),
           .x2(fadd_x2),
           .y(fadd_y));
@@ -165,6 +144,7 @@ finv finv(.x(finv_x),
 initial begin
     boot_stage = 0;
     main_stage = 0;
+    m_we = 0;
 end
 
 always @(posedge clk) begin
@@ -247,9 +227,6 @@ always @(posedge clk) begin
         s_axi_wvalid <= 0;
         b_stage <= 0;
         b_addr <= 1;
-        b_memory_stage <= 0;
-
-        b_wdata <= 0;
 
         global_counter <= 0;
         e_program_counter <= 0;
@@ -259,8 +236,7 @@ always @(posedge clk) begin
         main_stage <= 0;
 
         m_we <= 0;
-        b_memory_we <= 0;
-    end if (boot_stage) begin
+    end else if (boot_stage) begin
         boot_stage <= 0;
         main_stage <= 1;
         fetch_stage <= 1;
@@ -272,6 +248,8 @@ always @(posedge clk) begin
                 end
                 b_addr <= e_program_counter/4;
                 e_wait <= 1;
+            end else if (e_wait == 1) begin
+                e_wait <= 2;
             end else begin
                 e_wait <= 0;
                 fetch_stage <= 0;
@@ -343,18 +321,14 @@ always @(posedge clk) begin
                 end else if (e_funct == 3'b001) begin //lh
                 end else if (e_funct == 3'b010) begin //lw
                     if (e_wait == 0) begin
-                        m_r_addr_buf <= e_registers[e_rs1] + e_imm_i;
+                        m_addr <= (e_registers[e_rs1] + e_imm_i)>>2;
                         e_wait <= 1;
                     end else if (e_wait == 1) begin
-                        m_addr <= m_r_addr_buf>>2;
                         e_wait <= 2;
                     end else if (e_wait == 2) begin
                         e_wait <= 3;
                     end else if (e_wait == 3) begin
-                        e_wait <= 4;
-                        m_r_data_buf <= m_r_data;
-                    end else if (e_wait == 4) begin
-                        e_registers[e_rd] <= m_r_data_buf;
+                        e_registers[e_rd] <= m_r_data;
                         e_wait <= 0;
                         e_program_counter <= e_program_counter + 4;
                         fetch_stage <= 1;
@@ -363,13 +337,11 @@ always @(posedge clk) begin
             end else if (e_opcode == 7'b0100011) begin //store
                 if (e_funct == 3'b010) begin //sw
                     if (e_wait == 0) begin
-                        m_w_addr_buf <= e_registers[e_rs1] + e_imm_s;
-                        m_w_data_buf <= e_registers[e_rs2];
+                        m_addr <= (e_registers[e_rs1] + e_imm_s)>>2;
+                        m_w_data <= e_registers[e_rs2];
                         e_wait <= 1;
                     end else if (e_wait == 1) begin
                         m_we <= 1;
-                        m_addr <= m_w_addr_buf>>2;
-                        m_w_data <= m_w_data_buf;
                         e_wait <= 2;
                     end else if (e_wait == 2) begin
                         m_we <= 0;
@@ -397,18 +369,14 @@ always @(posedge clk) begin
             end else if (e_opcode == LOAD_FP) begin //flw
                 if (e_funct == 3'b010) begin
                     if (e_wait == 0) begin
-                        m_r_addr_buf <= e_registers[e_rs1] + e_imm_i;
+                        m_addr <= (e_registers[e_rs1] + e_imm_i)>>2;
                         e_wait <= 1;
                     end else if (e_wait == 1) begin
-                        m_addr <= m_r_addr_buf>>2;
                         e_wait <= 2;
                     end else if (e_wait == 2) begin
                         e_wait <= 3;
                     end else if (e_wait == 3) begin
-                        e_wait <= 4;
-                        m_r_data_buf <= m_r_data;
-                    end else if (e_wait == 4) begin
-                        f_registers[e_rd] <= m_r_data_buf;
+                        f_registers[e_rd] <= m_r_data;
                         e_wait <= 0;
                         e_program_counter <= e_program_counter + 4;
                         fetch_stage <= 1;
@@ -416,13 +384,11 @@ always @(posedge clk) begin
                 end
             end else if (e_opcode == STORE_FP) begin //fsw
                 if (e_wait == 0) begin
-                    m_w_addr_buf <= e_registers[e_rs1] + e_imm_s;
-                    m_w_data_buf <= f_registers[e_rs2];
+                    m_addr <= (e_registers[e_rs1] + e_imm_s)>>2;
+                    m_w_data <= f_registers[e_rs2];
                     e_wait <= 1;
                 end else if (e_wait == 1) begin
                     m_we <= 1;
-                    m_addr <= m_w_addr_buf>>2;
-                    m_w_data <= m_w_data_buf;
                     e_wait <= 2;
                 end else if (e_wait == 2) begin
                     m_we <= 0;
