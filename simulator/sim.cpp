@@ -1,8 +1,6 @@
 #include"./simulator.h"
 extern int debug_mode;
 extern int fpu_mode;
-const float epsilon = pow(2,-126);
-const float fpu_check = pow(2,-23);
 Simulator *init(unsigned long m_size,unsigned long s_pos,FILE *in,FILE *out,FILE *coef){
   int i = 0;
   Simulator *sim = (Simulator *)malloc(sizeof(Simulator));

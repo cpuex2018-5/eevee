@@ -6,6 +6,8 @@ const unsigned int sqrt_three[] = {
 const unsigned int sqrt_cube[] = {
   #include "sqrt_cube.csv"
 };
+extern float epsilon;
+extern float fpu_check;
 float fsqrt(float x){
   union {unsigned int f_i;float f_f;} u;
   u.f_f = x;
@@ -28,5 +30,10 @@ float fsqrt(float x){
   unsigned int ey = state ? get_binaryf32(62+get_binaryf32(eodd,1,8),0,8) : get_binaryf32(190-get_binaryf32(ex,1,8),0,8);
   unsigned int x_sqrt_inv = (sx<<31)+(ey<<23)+my;
   u.f_i = x_sqrt_inv;
-  return fmul(x,u.f_f);
+  float result = fmul(x,u.f_f);
+  float true_value = sqrt(x);
+  if(fabs(result-true_value) >= std::max(true_value*fpu_check*8,epsilon)){
+    fprintf(stderr,"invalid result in fsqrt");
+  }
+  return result;
 }

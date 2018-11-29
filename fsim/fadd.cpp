@@ -1,5 +1,8 @@
 #include "./fsim.h"
 
+float epsilon = pow(2,-126);
+float fpu_check = pow(2,-23);
+
 float fadd(float x1_f,float x2_f){
   union{ unsigned int f_i;float f_f;} u1,u2;
   u1.f_f = x1_f;
@@ -62,6 +65,11 @@ float fadd(float x1_f,float x2_f){
   unsigned int tmp = (sy<<31) + (ey << 23) + my;
   unsigned int y = state1 ? u2.f_i : (state2 ? u1.f_i : tmp);
   u1.f_i = y;
+
+  float true_value = x1_f + x2_f;
+  if(fabs(u1.f_f - true_value) >= std::max({fabs(x1_f)*fpu_check,fabs(x2_f)*fpu_check,fabs(true_value)*fpu_check,epsilon})){
+    fprintf(stderr,"invalid result in fadd\n");
+  }
   return u1.f_f;
 }
 

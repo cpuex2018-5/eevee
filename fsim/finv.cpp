@@ -6,6 +6,8 @@ const unsigned int inv_twice[] = {
 const unsigned int inv_square[] = {
   #include "inv_square.csv"
 };
+extern float epsilon;
+extern float fpu_check;
 float finv(float x){
   union {unsigned int f_i;float f_f;} u;
   u.f_f = x;
@@ -26,5 +28,9 @@ float finv(float x){
   unsigned int my = state ? get_binaryf32(m_inv,1,24) : get_binaryf32(m_inv,0,23);
   unsigned int y = (sx << 31) + (ey << 23) + my;
   u.f_i = y;
+  float true_value = 1/x;
+  if(fabs(u.f_f - true_value)>=std::max({fabs(true_value)*fpu_check*4,epsilon})){
+    fprintf(stderr,"invalid result in finv\n");
+  }
   return u.f_f;
 }
