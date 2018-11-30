@@ -1,5 +1,5 @@
 ## 実行方法
-./eevee_sim [-d] [-h] [-f] <binary file> <coe file>
+./eevee_sim [-d] [-h] [-f] <binary file>
 
 ## オプション
 -d:デバッグモード

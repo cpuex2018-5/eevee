@@ -33,14 +33,15 @@ int main(int argc,char **argv){
     exit(1);
   }
 
-  fp = fopen(argv[optind],"r");
+  std::string binfilename = argv[optind];
+  std::string coefilename = binfilename.substr(0, binfilename.size() - 4) + ".coe";
+  fp = fopen(binfilename.c_str(),"r");
   if(fp==NULL){
     fprintf(stderr,"fopen failed\n");
     fprintf(stderr,"can not open %s\n",argv[optind]);
     exit(1);
   }
-  optind++;
-  FILE *coef = fopen(argv[optind],"rb");
+  FILE *coef = fopen(coefilename.c_str(),"rb");
   if(coef==NULL){
     fprintf(stderr,"coe file not found\n");
   }
