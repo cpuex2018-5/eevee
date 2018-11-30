@@ -12,13 +12,6 @@ let save x =
   stackset := S.add x !stackset;
   if not (List.mem x !stackmap) then
     stackmap := !stackmap @ [x]
-let savef x =
-  (* TODO: change double-word floating point to single-word floating point *)
-  stackset := S.add x !stackset;
-  if not (List.mem x !stackmap) then
-    (let pad =
-       if List.length !stackmap mod 2 = 0 then [] else [Id.gentmp Type.Int] in
-     stackmap := !stackmap @ pad @ [x; x])
 let locate x =
   let rec loc = function
     | [] -> []
@@ -117,7 +110,7 @@ and g' buf e =
     save y;
     Printf.bprintf buf "\tsw\t%s, %d(%s)\n" (reg x) (offset y) (reg reg_sp)
   | NonTail(_), Save(x, y) when List.mem x allfregs && not (S.mem y !stackset) ->
-    savef y;
+    save y;
     Printf.bprintf buf "\tfsw\t%s, %d(%s)\n" (reg x) (offset y) (reg reg_sp)
   | NonTail(_), Save(x, y) -> assert (S.mem y !stackset); ()
   (* 復帰の仮想命令の実装 (caml2html: emit_restore) *)
