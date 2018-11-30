@@ -94,7 +94,6 @@ class BinGen {
         void CheckImmediate(uint32_t imm, int range, std::string func_name);
         void WriteInst(uint32_t inst);
         void WriteData(uint32_t data);
-        void FillUpCoe();
 
         // |imm|がラベルの場合は対応する値を返し、即値ならstoiして返す　
         uint32_t MyStoi(std::string imm);

@@ -124,7 +124,6 @@ void BinGen::Main(std::string input) {
 
 void BinGen::Finish() {
     WriteInst(0);
-    FillUpCoe();
     ofs_.close();
 }
 
@@ -681,12 +680,6 @@ void BinGen::WriteData(uint32_t data) {
         str.push_back(((data >> (31 - i)) & 0x1)? '1' : '0');
     assert(str.size() == 32);
     coefs_ << str << std::endl;
-}
-
-void BinGen::FillUpCoe() {
-    for (int i = 0; i < (1 << 18) - ndata_; i++) {
-        coefs_ << "00000000000000000000000000000000" << std::endl;
-    }
 }
 
 uint32_t BinGen::MyStoi(std::string imm) {
