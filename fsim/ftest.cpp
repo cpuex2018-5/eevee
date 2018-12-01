@@ -29,6 +29,7 @@ int main(){
   cout << finv(0.5) << endl;
   cout << finv(-0.324) << endl;
   cout << finv(0.324) << endl;
+  cout << "division by zero??" << endl;
   cout << finv(0) << endl;
   cout << fdiv(2,1) << endl;
   cout << fdiv(-23.451,31.35) << endl;

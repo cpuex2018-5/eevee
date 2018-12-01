@@ -61,6 +61,9 @@ int main(int argc,char **argv){
   free(op);
   op=NULL;
   fclose(fp);
+  fclose(out);
+  fclose(in);
+  fclose(coef);
   destroy(sim);
   free(sim);
   sim=NULL;

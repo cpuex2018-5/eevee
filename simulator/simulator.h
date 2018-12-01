@@ -7,6 +7,8 @@
 #include<iostream>
 #include<cmath>
 #include<assert.h>
+#include<map>
+#include<fstream>
 extern const unsigned int MEM_SIZE;
 extern const unsigned int STACK_POS;
 
@@ -63,7 +65,7 @@ void floatToBinary(float f);
 void floatToHex(float f);
 void disas(unsigned int,unsigned int,Op *);
 bool skip(char);
-
+void dump_map(std::map<unsigned long,unsigned long> &);
 //debug.c
 void print_fregs(Simulator *);
 void print_regs(Simulator *);

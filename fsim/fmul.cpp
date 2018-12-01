@@ -1,4 +1,6 @@
 #include "./fsim.h"
+extern float epsilon;
+extern float fpu_check;
 float fmul(float x1,float x2){
   union {unsigned int f_i;float f_f;} u1,u2;
   u1.f_f = x1;
@@ -36,5 +38,9 @@ float fmul(float x1,float x2){
 
   unsigned int y = (sy<<31) + (ey<<23) + my;
   u1.f_i = y;
+  float true_value = x1 * x2;
+  if(fabs(true_value - u1.f_f) >= std::max({fabs(true_value)*fpu_check*2,epsilon})){
+    fprintf(stderr,"invalid result in fmul\n");
+  }
   return u1.f_f;
 }

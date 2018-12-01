@@ -3,8 +3,15 @@
 _min_caml_start: # main entry point
 	li	gp, 116	# initialize gp
 #	main program starts
+	addi	sp, sp, -8
+	sw	ra, 4(sp)
+	sw	fp, 0(sp)
+	addi	fp, sp, 8
 	li	a0, 0
 	call	yloop_43
+	lw	ra, 4(sp)
+	lw	fp, 0(sp)
+	addi	sp, sp, 8
 #	main program ends
 	j	end
 iloop_59:
@@ -14,7 +21,7 @@ iloop_59:
 	addi	fp, sp, 8
 	bne	a0, zero, beq_else_124
 	li	a0, 1
-	tail	min_caml_print_int
+	call	min_caml_print_int
 	b	iloop_59_ret
 beq_else_124:
 	fsub	fa2, fa2, fa3
@@ -33,21 +40,21 @@ beq_else_124:
 	fmv	ft11, fa2
 	fmv	fa2, fa0
 	fmv	fa0, ft11
-	tail	iloop_59
+	call	iloop_59
 	b	iloop_59_ret
 bne_else_125:
 	li	a0, 0
-	tail	min_caml_print_int
+	call	min_caml_print_int
 iloop_59_ret:
 	lw	ra, 4(sp)
 	lw	fp, 0(sp)
 	addi	sp, sp, 8
 	jr	ra
 xloop_47:
-	addi	sp, sp, -40
-	sw	ra, 36(sp)
-	sw	fp, 32(sp)
-	addi	fp, sp, 40
+	addi	sp, sp, -28
+	sw	ra, 24(sp)
+	sw	fp, 20(sp)
+	addi	fp, sp, 28
 	li	t6, 400
 	blt	a0, t6, bge_else_126
 	b	xloop_47_ret
@@ -63,12 +70,12 @@ bge_else_126:
 	fsub	fa0, fa0, fa3
 	lw	a0, 4(sp)
 	fsw	fa0, 8(sp)
-	fsw	fa2, 16(sp)
-	fsw	fa1, 24(sp)
+	fsw	fa2, 12(sp)
+	fsw	fa1, 16(sp)
 	call	min_caml_float_of_int
-	flw	fa1, 24(sp)
-	fmul	fa0, fa0, fa1
 	flw	fa1, 16(sp)
+	fmul	fa0, fa0, fa1
+	flw	fa1, 12(sp)
 	fdiv	fa0, fa0, fa1
 	fli	fa1, l_110
 	fsub	fa5, fa0, fa1
@@ -82,11 +89,11 @@ bge_else_126:
 	lw	a0, 0(sp)
 	addi	a0, a0, 1
 	lw	a1, 4(sp)
-	tail	xloop_47
+	call	xloop_47
 xloop_47_ret:
-	lw	ra, 36(sp)
-	lw	fp, 32(sp)
-	addi	sp, sp, 40
+	lw	ra, 24(sp)
+	lw	fp, 20(sp)
+	addi	sp, sp, 28
 	jr	ra
 yloop_43:
 	addi	sp, sp, -12
@@ -104,7 +111,7 @@ bge_else_128:
 	call	xloop_47
 	lw	a0, 0(sp)
 	addi	a0, a0, 1
-	tail	yloop_43
+	call	yloop_43
 yloop_43_ret:
 	lw	ra, 8(sp)
 	lw	fp, 4(sp)

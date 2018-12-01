@@ -1,5 +1,7 @@
 #include<stdio.h>
 #include<iostream>
+#include<algorithm>
+#include<cmath>
 using namespace std;
 inline unsigned int get_binaryf32(unsigned int n,int start,int end){
   n = n << (32-end);

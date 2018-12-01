@@ -281,3 +281,10 @@ void disas(unsigned int inst,unsigned int opcode,Op *dbgop){
   fprintf(stdout,"\n");
 }
 
+void dump_map(std::map<unsigned long,unsigned long> &m){
+  std::ofstream data("data.txt");
+  for(auto itr = m.begin();itr!=m.end();itr++){
+    data << "pc: " << itr->first << " count: " << itr->second << std::endl;
+  }
+  data.close();
+}
