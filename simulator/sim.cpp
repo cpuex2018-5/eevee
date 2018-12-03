@@ -33,6 +33,9 @@ Simulator *init(unsigned long m_size,unsigned long s_pos,FILE *in,FILE *out,FILE
   for(int i=0;i<(1<<18)-1;i++){
     char buf[32];
     int tmp = fread(&buf,sizeof(char),32,coef);
+    if(tmp==0){
+      break;
+    }
     if(tmp < 0){
       fprintf(stderr,"failed to read\n");
     }
