@@ -75,8 +75,8 @@ class BinGen {
         // add, sub, sll, slt, sltu, xor, srl, sra, or, and
         uint32_t op(std::string mnemo, std::string rd, std::string rs1, std::string rs2);
 
-        // read, write
-        uint32_t io(std::string mnemo, std::string r);
+        uint32_t read(std::string rd);
+        uint32_t write(std::string rs);
 
         uint32_t flw(std::string frd, std::string rs, uint32_t imm);
         uint32_t fsw(std::string frs2, std::string frs1, uint32_t imm);

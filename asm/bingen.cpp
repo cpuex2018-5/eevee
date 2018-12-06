@@ -256,9 +256,13 @@ BinGen::Inst BinGen::Convert(std::string input) {
     }
 
     // I/O instructions (temporary) ==========================================================
-    else if (mnemo == "w" || mnemo == "r") {
+    else if (mnemo == "w") {
         assert(1 == arg.size());
-        inst1 = io(mnemo, arg[0]);
+        inst1 = write(arg[0]);
+    }
+    else if (mnemo == "r") {
+        assert(1 == arg.size());
+        inst1 = read(arg[0]);
     }
 
     // Floating-point instructions ===========================================================
@@ -555,16 +559,25 @@ uint32_t BinGen::op (std::string mnemo, std::string rd, std::string rs1, std::st
     return Pack(fields);
 }
 
-// |32              15|14  12|11   7|6     0|
-// |000000000000000000|funct3|  reg | opcode|
-// |000000000000000000| 000  |  rs  |1111111| w (write)
-// |000000000000000000| 001  |  rd  |1111111| r (read)
-uint32_t BinGen::io (std::string mnemo, std::string reg) {
-    uint32_t funct3 = (mnemo == "w") ? 0b000 : 0b001;
+// |31        20|19 15|14  12|11  7|6     0|
+// |000000000000|00000|funct3| reg | opcode|
+// |000000000000|  rs | 000  |00000|1111111| w (write)
+// |000000000000|00000| 001  |  rd |1111111| r (read)
+uint32_t BinGen::read (std::string rd) {
     Fields fields { {7, 0b1111111},
-                    {5, regmap_.at(reg)},
-                    {3, funct3},
-                    {18, 0x00000} };
+                    {5, regmap_.at(rd)},
+                    {3, 0b001},
+                    {5, 0x00000},
+                    {12, 0x00000} };
+    return Pack(fields);
+}
+
+uint32_t BinGen::write (std::string rs) {
+    Fields fields { {7, 0b1111111},
+                    {5, 0b00000},
+                    {3, 0b000},
+                    {5, regmap_.at(rs)},
+                    {12, 0x00000} };
     return Pack(fields);
 }
 
