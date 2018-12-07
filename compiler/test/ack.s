@@ -15,7 +15,8 @@ _min_caml_start: # main entry point
 	lw	fp, 0(sp)
 	addi	sp, sp, 8
 #	main program ends
-	j	end
+end:
+	b	end
 ack_15:
 	addi	sp, sp, -12
 	sw	ra, 8(sp)
@@ -43,5 +44,3 @@ ack_15_ret:
 	lw	fp, 4(sp)
 	addi	sp, sp, 12
 	jr	ra
-end:
-	j	end

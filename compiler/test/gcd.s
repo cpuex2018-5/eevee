@@ -15,7 +15,8 @@ _min_caml_start: # main entry point
 	lw	fp, 0(sp)
 	addi	sp, sp, 8
 #	main program ends
-	j	end
+end:
+	b	end
 gcd_7:
 	addi	sp, sp, -8
 	sw	ra, 4(sp)
@@ -40,5 +41,3 @@ gcd_7_ret:
 	lw	fp, 0(sp)
 	addi	sp, sp, 8
 	jr	ra
-end:
-	j	end
