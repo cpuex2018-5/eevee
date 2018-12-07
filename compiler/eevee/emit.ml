@@ -354,10 +354,9 @@ let f oc (Prog(data, fundefs, e)) =
   Printf.fprintf oc "\tlw\tfp, %d(sp)\n" (ss - 8);
   Printf.fprintf oc "\taddi\tsp, sp, %d\n" ss;
   Printf.fprintf oc "#\tmain program ends\n";
-  Printf.fprintf oc "\tj\tend\n";
-  List.iter (fun fundef -> h oc fundef) fundefs;
   Printf.fprintf oc "end:\n";
-  Printf.fprintf oc "\tj\tend\n";
+  Printf.fprintf oc "\tb\tend\n";
+  List.iter (fun fundef -> h oc fundef) fundefs;
   if data <> [] then
     (Printf.fprintf oc "\t.data\n";
      List.iter

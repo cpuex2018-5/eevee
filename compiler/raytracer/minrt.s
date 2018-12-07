@@ -820,7 +820,8 @@ _min_caml_start: # main entry point
 	lw	fp, 152(sp)
 	addi	sp, sp, 160
 #	main program ends
-	j	end
+end:
+	b	end
 sgn_2364:
 	addi	sp, sp, -8
 	sw	ra, 4(sp)
@@ -6748,8 +6749,6 @@ rt_2837_ret:
 	lw	fp, 68(sp)
 	addi	sp, sp, 76
 	jr	ra
-end:
-	j	end
 	.data
 l_8348:	# 128.000000
 	.word	1124073472
