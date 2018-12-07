@@ -456,7 +456,7 @@ void exec(Simulator *sim,Op *op){
       case 0b1111111:
         decode_io(inst,op);
         if(op->funct3 == 0b000){
-          char iobuf[1] = {(char)sim->registers[op->rd]};
+          char iobuf[1] = {(char)sim->registers[op->rs1]};
           fwrite(iobuf,sizeof(char),1,sim->out);
         }
         else if(op->funct3 == 0b001){
