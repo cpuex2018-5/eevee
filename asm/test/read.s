@@ -11,6 +11,5 @@ main:
 	call	min_caml_print_newline
 	call	min_caml_read_float
 #	main program ends
-	jal	zero,end
 end:
-	j	end
+	b	end

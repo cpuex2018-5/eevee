@@ -32,9 +32,8 @@ main:
 	call	min_caml_int_of_float
 	call	min_caml_print_int
 #	main program ends
-	jal	zero,end
 end:
-	j	end
+	b	end
 	.data
 l.111:	# 0.000000
 	.word	0

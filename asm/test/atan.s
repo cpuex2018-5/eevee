@@ -7,9 +7,8 @@ main:
 	fli	fa0, L_2PI	# 1.4129651365067377
 	call	min_caml_atan
 #	main program ends
-	jal	zero,end
 end:
-	j	end
+	b	end
 	.data
 L_a:	# 12.3
 	.word	1095027917

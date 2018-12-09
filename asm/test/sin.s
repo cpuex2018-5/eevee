@@ -5,9 +5,8 @@ main:
 #	fli	fa0, L_2	# 0.9092974268256817
 	call	min_caml_sin
 #	main program ends
-	jal	zero,end
 end:
-	j	end
+	b	end
 	.data
 L_a:	# 12.3
 	.word	1095027917

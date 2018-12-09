@@ -72,9 +72,8 @@ main:
 # 	call	min_caml_print_newline
 
 #	main program ends
-	jal	zero,end
 end:
-	j	end
+	b	end
 	.data
 l_8348:	# 128.000000
 	.word	1124073472

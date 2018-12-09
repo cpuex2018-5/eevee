@@ -6,6 +6,5 @@ main:
 	li	a0, 4028
 	call	min_caml_print_int
 #	main program ends
-	jal	zero,end
 end:
-	j	end
+	b	end

@@ -6,6 +6,5 @@ main:
 	lw	t1, 0(a0)
 	lw	t2, 4(a0)
 #	main program ends
-	jal	zero,end
 end:
-	j	end
+	b	end
