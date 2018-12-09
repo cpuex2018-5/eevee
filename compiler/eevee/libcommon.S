@@ -1,3 +1,181 @@
+min_caml_print_char:
+# a0の下位8bitに出力したい文字のasciiコードが入っている
+	w	a0
+	jr	ra
+
+min_caml_print_newline:
+	addi	sp, sp, -4
+	sw	t1, 0(sp)
+	li	t1, 13
+	w	t1
+	li	t1, 10
+	w	t1
+	lw	t1, 0(sp)
+	addi	sp, sp, 4
+	jr	ra
+
+min_caml_print_int:
+	addi	sp, sp, -16
+	sw	a1, 12(sp)
+	sw	t1, 8(sp)
+	sw	s1, 4(sp)
+	sw	ra, 0(sp)
+# 負数なら'-'を出力し、絶対値を取る
+	bge	a0, zero, .print_int_L0
+	li	t1, 45
+	w	t1		# '-'
+	neg	a0, a0
+############# 何桁あるか調べる
+.print_int_L0:
+	li	s1, 100000
+	bge	a0, s1, .print_int_L1	# bgeってあるよね？
+# < 10 ** 5
+	li	s1, 1000
+	bge	a0, s1, .print_int_L2
+# < 10 ** 3
+	li	s1, 100
+	bge	a0, s1, .print_int_body
+	li	s1, 10
+	bge	a0, s1, .print_int_body
+	li	s1, 1
+	b	.print_int_body
+.print_int_L2:	# >= 10 ** 3, < 10 ** 5
+	li	s1, 10000
+	bge	a0, s1, .print_int_body
+	li	s1, 1000
+	b	.print_int_body
+.print_int_L1:	# >= 10 ** 5
+	li	s1, 100000000
+	bge	a0, s1, .print_int_L3
+# >= 10 ** 5, < 10 ** 8
+	li	s1, 10000000
+	bge	a0, s1, .print_int_body
+	li	s1, 1000000
+	bge	a0, s1, .print_int_body
+	li	a0, 100000
+	b	.print_int_body
+.print_int_L3:	# >= 10 ** 8
+	li	s1, 1000000000
+	bge	a0, s1, .print_int_body
+# >= 10 ** 8, < 10 ** 9
+	li	s1, 100000000
+	b	.print_int_body
+###############
+.print_int_body:
+	mv	a1, s1
+	call	min_caml_div_rem	# a0: 商, a1: あまり
+	addi	a0, a0, 48
+	w	a0
+	li	t1, 1
+	beq	t1, s1, .print_int_end
+	mv	a0, a1
+	call	.print_int_div_10	# s1 <- s1 / 10
+	b	.print_int_body
+.print_int_end:
+	lw	a1, 12(sp)
+	lw	t1, 8(sp)
+	lw	s1, 4(sp)
+	lw	ra, 0(sp)
+	addi	sp, sp, 16
+	jr	ra
+
+.print_int_div_10:	# s1 <- s1 / 10
+	li	t1, 10
+	bne	s1, t1, .print_int_div_10_L0
+	li	s1, 1
+	jr	ra
+.print_int_div_10_L0:
+	li	t1, 100
+	bne	s1, t1, .print_int_div_10_L1
+	li	s1, 10
+	jr	ra
+.print_int_div_10_L1:
+	li	t1, 1000
+	bne	s1, t1, .print_int_div_10_L2
+	li	s1, 100
+	jr	ra
+.print_int_div_10_L2:
+	li	t1, 10000
+	bne	s1, t1, .print_int_div_10_L3
+	li	s1, 1000
+	jr	ra
+.print_int_div_10_L3:
+	li	t1, 100000
+	bne	s1, t1, .print_int_div_10_L4
+	li	s1, 10000
+	jr	ra
+.print_int_div_10_L4:
+	li	t1, 1000000
+	bne	s1, t1, .print_int_div_10_L5
+	li	s1, 100000
+	jr	ra
+.print_int_div_10_L5:
+	li	t1, 10000000
+	bne	s1, t1, .print_int_div_10_L6
+	li	s1, 1000000
+	jr	ra
+.print_int_div_10_L6:
+	li	t1, 100000000
+	bne	s1, t1, .print_int_div_10_L7
+	li	s1, 10000000
+	jr	ra
+.print_int_div_10_L7:	# s1 = 10 ** 9
+	li	s1, 100000000
+	jr	ra
+
+min_caml_print_hex:
+	addi	sp, sp, -12
+	sw	a1, 8(sp)
+	sw	t1, 4(sp)
+	sw	ra, 0(sp)
+	mv	a1, a0	# a1に元の数を保存　
+	srai	a0, a1, 28
+	call	.print_hex_write
+	srai	a0, a1, 24
+	call	.print_hex_write
+	srai	a0, a1, 20
+	call	.print_hex_write
+	srai	a0, a1, 16
+	call	.print_hex_write
+	srai	a0, a1, 12
+	call	.print_hex_write
+	srai	a0, a1, 8
+	call	.print_hex_write
+	srai	a0, a1, 4
+	call	.print_hex_write
+	mv	a0, a1
+	call	.print_hex_write
+	lw	a1, 8(sp)
+	lw	t1, 4(sp)
+	lw	ra, 0(sp)
+	addi	sp, sp, 12
+	jr	ra
+.print_hex_write:	# a0の下位4bitをhexで出力
+	srai	t1, a0, 4
+	slli	t1, t1, 4
+	sub	a0, a0, t1
+	li	t1, 10
+	bge	a0, t1, .print_hex_write_L0
+	addi	a0, a0, 48
+	w	a0
+	jr	ra
+.print_hex_write_L0:
+	addi	a0, a0, 87
+	w	a0
+	jr	ra
+
+min_caml_print_float:	# print float in hex
+	addi	sp, sp, -12
+	sw	a0, 8(sp)
+	sw	ra, 4(sp)
+	fsw	fa0, 0(sp)
+	lw	a0, 0(sp)
+	call	min_caml_print_hex
+	lw	a0, 8(sp)
+	lw	ra, 4(sp)
+	addi	sp, sp, 12
+	jr	ra
+
 min_caml_create_array:
 	addi	sp, sp, -8
 	sw	t1, 4(sp)

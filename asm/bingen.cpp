@@ -336,10 +336,6 @@ BinGen::Inst BinGen::Convert(std::string input) {
         // TODO: bgeじゃなくbeqにする？
         inst1 = branch("bge", "zero", "zero", MyStoi(arg[0]));
     }
-    else if (mnemo == "j") {
-        assert(1 == arg.size());
-        inst1 = jalr("zero", "zero", MyStoi(arg[0]));
-    }
     else if (mnemo == "jr") {
         assert(1 == arg.size());
         inst1 = jalr("zero", arg[0], 0);
