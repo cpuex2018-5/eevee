@@ -214,10 +214,6 @@ BinGen::Inst BinGen::Convert(std::string input) {
         assert(2 == arg.size());
         inst1 = auipc(arg[0], MyStoi(arg[1]));
     }
-    else if (mnemo == "jal") {
-        assert(2 == arg.size());
-        inst1 = jal(arg[0], MyStoi(arg[1]));
-    }
     else if (mnemo == "jalr") {
         assert(3 == arg.size());
         inst1 = jalr(arg[0], arg[1], MyStoi(arg[2]));
@@ -340,10 +336,6 @@ BinGen::Inst BinGen::Convert(std::string input) {
         // TODO: bgeじゃなくbeqにする？
         inst1 = branch("bge", "zero", "zero", MyStoi(arg[0]));
     }
-    else if (mnemo == "j") {
-        assert(1 == arg.size());
-        inst1 = jal("x0", MyStoi(arg[0]));
-    }
     else if (mnemo == "jr") {
         assert(1 == arg.size());
         inst1 = jalr("zero", arg[0], 0);
@@ -426,17 +418,6 @@ uint32_t BinGen::lui (std::string rd, uint32_t imm) {
 uint32_t BinGen::auipc (std::string rd, uint32_t imm) {
     CheckImmediate(imm, 20, "auipc");
     Fields fields{ {7, 0b0010111}, {5, regmap_.at(rd)}, {20, imm} };
-    return Pack(fields);
-}
-
-uint32_t BinGen::jal (std::string rd, uint32_t imm) {
-    CheckImmediate(imm, 20, "jal");
-    Fields fields { {7, 0b1101111},
-                    {5, regmap_.at(rd)},
-                    {8, (imm & 0xff000) >> 12},
-                    {1, (imm & 0x800) >> 11},
-                    {10,(imm & 0x7fe) >> 1},
-                    {1, (imm & 0x100000) >> 20} };
     return Pack(fields);
 }
 

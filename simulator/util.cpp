@@ -205,7 +205,7 @@ void disas(unsigned int inst,unsigned int opcode,Op *dbgop){
     case 0b1111111:
       decode_io(inst,dbgop);
       if(dbgop->funct3 == 0b000){
-        fprintf(stdout,"w %s",Regs[dbgop->rd]);
+        fprintf(stdout,"w %s",Regs[dbgop->rs1]);
       }
       else if(dbgop->funct3 == 0b001){
         fprintf(stdout,"r %s",Regs[dbgop->rd]);

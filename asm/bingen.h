@@ -54,7 +54,6 @@ class BinGen {
 
         uint32_t lui(std::string rd, uint32_t imm);
         uint32_t auipc(std::string rd, uint32_t imm);
-        uint32_t jal(std::string rd, uint32_t imm);
         uint32_t jalr(std::string rd, std::string rs1, uint32_t imm);
 
         // beq, bne, blt, bge, bltu, bgeu

@@ -4,6 +4,5 @@ main:
 	li	a1, 3
 	call	min_caml_div_rem
 #	main program ends
-	jal	zero,end
 end:
-	j	end
+	b	end

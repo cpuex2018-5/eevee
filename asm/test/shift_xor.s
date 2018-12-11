@@ -21,6 +21,5 @@ main:
 	call	min_caml_print_int    # 3
 
 #	main program ends
-	jal	zero,end
 end:
-	j	end
+	b	end
